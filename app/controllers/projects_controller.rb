@@ -5,6 +5,14 @@ class ProjectsController < ApplicationController
     @projects = Project.includes(:project_type).all
   end
 
+  def dashboard
+    @project_types = ProjectType.all
+    @statuses = Project.distinct.pluck(:status).compact
+    @projects = Project.includes(:project_type, project_stages: :stage_template).all
+    @projects = @projects.where(project_type_id: params[:project_type_id]) if params[:project_type_id].present?
+    @projects = @projects.where(status: params[:status]) if params[:status].present?
+  end
+
   def show
   end
 

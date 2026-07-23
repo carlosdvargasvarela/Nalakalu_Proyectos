@@ -100,4 +100,42 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       response.body
     )
   end
+
+  test "dashboard shows one row per project across all types by default" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get dashboard_projects_path
+    assert_response :success
+    assert_select "script#management-gantt-tasks", text: /#{project.name}/
+  end
+
+  test "dashboard filters by project_type" do
+    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    torre = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    otro = Project.create!(project_type: other_type, name: "Proyecto Otro Tipo", custom_fields: {})
+
+    get dashboard_projects_path, params: { project_type_id: other_type.id }
+    assert_response :success
+    assert_match(/#{otro.name}/, response.body)
+    assert_no_match(/#{torre.name}/, response.body)
+  end
+
+  test "dashboard filters by status" do
+    torre = Project.create!(
+      project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {}, status: "active"
+    )
+    vieja = Project.create!(
+      project_type: project_types(:instalaciones), name: "Torre Vieja", custom_fields: {}, status: "archived"
+    )
+
+    get dashboard_projects_path, params: { status: "archived" }
+    assert_response :success
+    assert_match(/#{vieja.name}/, response.body)
+    assert_no_match(/#{torre.name}/, response.body)
+  end
+
+  test "dashboard shows a message when no projects match the filters" do
+    get dashboard_projects_path, params: { status: "nonexistent-status" }
+    assert_response :success
+    assert_select "body", /No hay proyectos con estos filtros/
+  end
 end

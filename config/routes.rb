@@ -10,6 +10,8 @@ Rails.application.routes.draw do
       resources :stage_templates, except: [:index, :show]
     end
   end
+
+  get "projects/dashboard", to: "projects#dashboard", as: :dashboard_projects
   resources :projects do
     resources :project_stages, only: [:edit, :update]
   end
