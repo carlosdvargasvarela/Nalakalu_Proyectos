@@ -58,4 +58,24 @@ class Admin::StageTemplatesControllerTest < ActionDispatch::IntegrationTest
     assert_equal 0, entrega.reload.position
     assert_equal 1, diseno.reload.position
   end
+
+  test "update saves default_in_filter and clears the previous default" do
+    entrega = stage_templates(:entrega)
+    instalacion = stage_templates(:instalacion)
+    entrega.update!(default_in_filter: true)
+
+    patch admin_project_type_stage_template_path(@project_type, instalacion), params: {
+      stage_template: { name: instalacion.name, position: instalacion.position, default_in_filter: "1" }
+    }
+
+    assert_redirected_to admin_project_type_path(@project_type)
+    assert instalacion.reload.default_in_filter
+    assert_not entrega.reload.default_in_filter
+  end
+
+  test "new and edit show the Etapa por defecto checkbox" do
+    get new_admin_project_type_stage_template_path(@project_type)
+    assert_response :success
+    assert_select "input[type=checkbox][name=?]", "stage_template[default_in_filter]"
+  end
 end

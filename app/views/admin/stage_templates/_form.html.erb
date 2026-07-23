@@ -21,5 +21,9 @@
     <%= form.label :color, class: "form-label" %>
     <%= form.color_field :color, class: "form-control form-control-color" %>
   </div>
+  <div class="mb-3 form-check">
+    <%= form.check_box :default_in_filter, class: "form-check-input" %>
+    <%= form.label :default_in_filter, "Etapa por defecto en el filtro", class: "form-check-label" %>
+  </div>
   <%= form.submit class: "btn btn-primary" %>
 <% end %>

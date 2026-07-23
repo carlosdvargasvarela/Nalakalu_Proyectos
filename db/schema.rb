@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_07_23_150000) do
+ActiveRecord::Schema[7.2].define(version: 2026_07_23_234309) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -75,6 +75,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_07_23_150000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "color", default: "#6c757d", null: false
+    t.boolean "default_in_filter", default: false, null: false
     t.index ["project_type_id"], name: "index_stage_templates_on_project_type_id"
   end
 
