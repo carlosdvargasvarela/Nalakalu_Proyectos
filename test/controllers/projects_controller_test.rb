@@ -17,6 +17,17 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "select[name=?]", "project[custom_fields][instalador]"
   end
 
+  test "new and edit show the submit button in Spanish" do
+    get new_project_path(project_type_id: project_types(:instalaciones).id)
+    assert_response :success
+    assert_select "input[value=?]", "Crear Proyecto"
+
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get edit_project_path(project)
+    assert_response :success
+    assert_select "input[value=?]", "Actualizar Proyecto"
+  end
+
   test "create with valid custom_fields builds the project and its stages" do
     assert_difference("Project.count", 1) do
       post projects_path, params: {

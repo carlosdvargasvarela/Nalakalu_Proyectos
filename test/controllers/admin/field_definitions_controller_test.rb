@@ -28,4 +28,14 @@ class Admin::FieldDefinitionsControllerTest < ActionDispatch::IntegrationTest
       delete admin_project_type_field_definition_path(@project_type, field)
     end
   end
+
+  test "new and edit show the submit button in Spanish" do
+    get new_admin_project_type_field_definition_path(@project_type)
+    assert_response :success
+    assert_select "input[value=?]", "Crear Campo"
+
+    get edit_admin_project_type_field_definition_path(@project_type, field_definitions(:cliente))
+    assert_response :success
+    assert_select "input[value=?]", "Actualizar Campo"
+  end
 end

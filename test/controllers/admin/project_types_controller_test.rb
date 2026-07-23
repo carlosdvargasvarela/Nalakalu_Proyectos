@@ -83,4 +83,14 @@ class Admin::ProjectTypesControllerTest < ActionDispatch::IntegrationTest
     assert_select ".card .card-header", "Campos"
     assert_select ".card .card-header", "Subprocesos"
   end
+
+  test "new and edit show the submit button in Spanish" do
+    get new_admin_project_type_path
+    assert_response :success
+    assert_select "input[value=?]", "Crear Tipo de proyecto"
+
+    get edit_admin_project_type_path(project_types(:instalaciones))
+    assert_response :success
+    assert_select "input[value=?]", "Actualizar Tipo de proyecto"
+  end
 end

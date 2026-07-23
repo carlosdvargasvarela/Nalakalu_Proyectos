@@ -51,4 +51,14 @@ class Admin::InstallersControllerTest < ActionDispatch::IntegrationTest
     assert_select "form[action=?][onsubmit=?]",
       admin_installer_path(installer), "return confirm('¿Eliminar instalador?')"
   end
+
+  test "new and edit show the submit button in Spanish" do
+    get new_admin_installer_path
+    assert_response :success
+    assert_select "input[value=?]", "Crear Instalador"
+
+    get edit_admin_installer_path(installers(:juan_perez))
+    assert_response :success
+    assert_select "input[value=?]", "Actualizar Instalador"
+  end
 end

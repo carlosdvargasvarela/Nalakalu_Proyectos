@@ -5,9 +5,19 @@
 # that's an accepted gap, not a bug, per the design spec (no rails-i18n /
 # devise-i18n dependency added just for exhaustive coverage).
 es:
+  helpers:
+    submit:
+      create: "Crear %{model}"
+      update: "Actualizar %{model}"
+      submit: "Guardar %{model}"
   activerecord:
     models:
       user: "usuario"
+      project_type: "Tipo de proyecto"
+      field_definition: "Campo"
+      stage_template: "Subproceso"
+      installer: "Instalador"
+      project: "Proyecto"
     attributes:
       user:
         email: "Correo electrónico"
@@ -20,9 +30,13 @@ es:
         key: "Clave"
         label: "Etiqueta"
         data_type: "Tipo de dato"
+        reference_table: "Tabla de referencia"
+        position: "Posición"
+        show_in_gantt: "Mostrar en Gantt"
       stage_template:
         name: "Nombre"
         color: "Color"
+        position: "Posición"
       project:
         name: "Nombre"
       project_stage:
