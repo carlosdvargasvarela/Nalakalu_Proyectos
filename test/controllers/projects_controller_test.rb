@@ -190,6 +190,64 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "#gantt[style=?]", "max-height: 630px; overflow-y: auto;"
   end
 
+  test "index's Gantt shows only the filtered stage's date range for each project, not the full project span" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.find_by(name: "Instalación")
+    stage.update!(start_date: Date.new(2026, 9, 1), end_date: Date.new(2026, 9, 10))
+
+    get projects_path, params: { stage_name: "Instalación" }
+    assert_response :success
+    assert_select "script#gantt-tasks" do |elements|
+      tasks = JSON.parse(elements.first.text)
+      task = tasks.find { |t| t["id"] == project.id.to_s }
+      assert_equal "2026-09-01", task["start"]
+      assert_equal "2026-09-10", task["end"]
+    end
+  end
+
+  test "index's Gantt omits a project that has no stage matching the filtered name" do
+    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    sin_esa_etapa = Project.create!(project_type: other_type, name: "Sin Esa Etapa", custom_fields: {})
+
+    get projects_path, params: { stage_name: "Instalación" }
+    assert_response :success
+    assert_select "script#gantt-tasks" do |elements|
+      tasks = JSON.parse(elements.first.text)
+      assert_nil tasks.find { |t| t["id"] == sin_esa_etapa.id.to_s }
+    end
+  end
+
+  test "index's Gantt without a stage filter still shows each project's full range" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path
+    assert_response :success
+    assert_select "script#gantt-tasks" do |elements|
+      tasks = JSON.parse(elements.first.text)
+      task = tasks.find { |t| t["id"] == project.id.to_s }
+      first, last = project.gantt_window
+      assert_equal first.to_s, task["start"]
+      assert_equal last.to_s, task["end"]
+    end
+  end
+
+  test "index's stage filter doesn't affect the Listado table or KPI cards" do
+    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    Project.create!(project_type: project_types(:instalaciones), name: "Con Etapa", custom_fields: {})
+    Project.create!(project_type: other_type, name: "Sin Esa Etapa", custom_fields: {})
+
+    get projects_path, params: { stage_name: "Instalación" }
+    assert_response :success
+    assert_select ".card .display-6", "2"
+    assert_select "a[href=?]", project_path(Project.find_by(name: "Sin Esa Etapa"))
+  end
+
+  test "index shows an Etapa dropdown with the distinct stage template names" do
+    get projects_path
+    assert_response :success
+    assert_select "select#stage_name option", text: "Instalación"
+    assert_select "select#stage_name option", text: "Producción"
+  end
+
   test "index filters by project_type" do
     other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
     torre = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})

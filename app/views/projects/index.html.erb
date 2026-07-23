@@ -40,6 +40,11 @@
         <%= form.date_field :to_date, value: params[:to_date], class: "form-control" %>
       </div>
       <div class="col-auto">
+        <%= form.label :stage_name, "Etapa", class: "form-label" %>
+        <%= form.select :stage_name, @stage_names,
+              { include_blank: "Todas", selected: params[:stage_name] }, class: "form-select" %>
+      </div>
+      <div class="col-auto">
         <%= form.label :q, "Buscar", class: "form-label" %>
         <%= form.text_field :q, value: params[:q], class: "form-control", placeholder: "Nombre, cliente, dirección..." %>
       </div>
@@ -91,8 +96,16 @@
   <% end %>
 
   <%
-    gantt_tasks = projects_list.map do |project|
-      first, last = project.gantt_window
+    gantt_tasks = projects_list.filter_map do |project|
+      if params[:stage_name].present?
+        stage = project.project_stages.find { |s| s.name == params[:stage_name] }
+        next if stage.nil?
+        stage_start = stage.start_date || project.created_at.to_date
+        stage_end = stage.end_date || (stage_start + 7.days)
+        first, last = stage_start, stage_end
+      else
+        first, last = project.gantt_window
+      end
       progress_values = project.project_stages.map(&:progress_percent)
       average_progress = progress_values.any? ? (progress_values.sum / progress_values.size.to_f).round : 0
       {
