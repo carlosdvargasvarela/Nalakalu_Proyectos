@@ -25,6 +25,16 @@ class Project < ApplicationRecord
     project_stages.select { |stage| stage.progress_percent > 0 }.max_by(&:id) || project_stages.min_by(&:id)
   end
 
+  def installer
+    key = project_type.field_definitions.find_by(reference_table: "installers")&.key
+    return nil if key.nil?
+
+    installer_id = custom_fields[key]
+    return nil if installer_id.blank?
+
+    Installer.find_by(id: installer_id)
+  end
+
   private
 
   def build_stages_from_template

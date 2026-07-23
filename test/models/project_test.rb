@@ -90,4 +90,26 @@ class ProjectTest < ActiveSupport::TestCase
 
     assert_equal 75, stage.reload.progress_percent
   end
+
+  test "installer resolves the assigned Installer through the dynamic reference field" do
+    project = Project.create!(
+      project_type: @project_type, name: "Torre Norte",
+      custom_fields: { "instalador" => installers(:juan_perez).id }
+    )
+    assert_equal installers(:juan_perez), project.installer
+  end
+
+  test "installer is nil when no installer has been assigned yet" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    assert_nil project.installer
+  end
+
+  test "installer is nil when the assigned id no longer exists" do
+    project = Project.new(
+      project_type: @project_type, name: "Torre Norte",
+      custom_fields: { "instalador" => 999_999 }
+    )
+    project.save!(validate: false)
+    assert_nil project.installer
+  end
 end
