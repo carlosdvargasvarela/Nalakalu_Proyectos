@@ -77,6 +77,17 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "script#gantt-tasks", text: /#{project.project_stages.first.name}/
   end
 
+  test "show configures the Gantt in Spanish with a read-only snap-back on drag" do
+    project = Project.create!(
+      project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {}
+    )
+    get project_path(project)
+    assert_response :success
+    assert_match(/language:\s*"es"/, response.body)
+    assert_match(/on_date_change:\s*function\s*\(\)\s*\{\s*gantt\.refresh\(tasks\);\s*\}/, response.body)
+    assert_match(/on_progress_change:\s*function\s*\(\)\s*\{\s*gantt\.refresh\(tasks\);\s*\}/, response.body)
+  end
+
   test "index shows an edit link for each project" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get projects_path
@@ -101,25 +112,33 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     )
   end
 
-  test "dashboard shows one row per project across all types by default" do
+  test "index shows one Gantt task per project by default" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
-    get dashboard_projects_path
+    get projects_path
     assert_response :success
-    assert_select "script#management-gantt-tasks", text: /#{project.name}/
+    assert_select "script#gantt-tasks", text: /#{project.name}/
   end
 
-  test "dashboard filters by project_type" do
+  test "index configures the Gantt in Spanish with a read-only snap-back on drag" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path
+    assert_response :success
+    assert_match(/language:\s*"es"/, response.body)
+    assert_match(/on_date_change:\s*function\s*\(\)\s*\{\s*gantt\.refresh\(tasks\);\s*\}/, response.body)
+  end
+
+  test "index filters by project_type" do
     other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
     torre = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     otro = Project.create!(project_type: other_type, name: "Proyecto Otro Tipo", custom_fields: {})
 
-    get dashboard_projects_path, params: { project_type_id: other_type.id }
+    get projects_path, params: { project_type_id: other_type.id }
     assert_response :success
     assert_match(/#{otro.name}/, response.body)
     assert_no_match(/#{torre.name}/, response.body)
   end
 
-  test "dashboard filters by status" do
+  test "index filters by status" do
     torre = Project.create!(
       project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {}, status: "active"
     )
@@ -127,19 +146,35 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       project_type: project_types(:instalaciones), name: "Torre Vieja", custom_fields: {}, status: "archived"
     )
 
-    get dashboard_projects_path, params: { status: "archived" }
+    get projects_path, params: { status: "archived" }
     assert_response :success
     assert_match(/#{vieja.name}/, response.body)
     assert_no_match(/#{torre.name}/, response.body)
   end
 
-  test "dashboard shows a message when no projects match the filters" do
-    get dashboard_projects_path, params: { status: "nonexistent-status" }
+  test "index filters by installer" do
+    otro_instalador = Installer.create!(name: "Otro Instalador")
+    con_juan = Project.create!(
+      project_type: project_types(:instalaciones), name: "Con Juan", custom_fields: { instalador: installers(:juan_perez).id }
+    )
+    con_otro = Project.create!(
+      project_type: project_types(:instalaciones), name: "Con Otro", custom_fields: { instalador: otro_instalador.id }
+    )
+
+    get projects_path, params: { installer_id: installers(:juan_perez).id }
     assert_response :success
-    assert_select "body", /No hay proyectos con estos filtros/
+    assert_match(/#{con_juan.name}/, response.body)
+    assert_no_match(/#{con_otro.name}/, response.body)
   end
 
-  test "index excludes archived projects" do
+  test "index shows a message and no Gantt when no projects match the filters" do
+    get projects_path, params: { status: "nonexistent-status" }
+    assert_response :success
+    assert_select "body", /No hay proyectos con estos filtros/
+    assert_select "#gantt", count: 0
+  end
+
+  test "index excludes archived projects by default" do
     Project.create!(project_type: project_types(:instalaciones), name: "Activo", custom_fields: {})
     Project.create!(
       project_type: project_types(:instalaciones), name: "Archivado", custom_fields: {}, status: "archived"

@@ -60,8 +60,11 @@
   document.addEventListener("DOMContentLoaded", function () {
     var tasks = JSON.parse(document.getElementById("gantt-tasks").textContent);
     if (tasks.length > 0) {
-      new Gantt("#gantt", tasks, {
-        on_click: function (task) { window.location.hash = "stage-" + task.id; }
+      var gantt = new Gantt("#gantt", tasks, {
+        language: "es",
+        on_click: function (task) { window.location.hash = "stage-" + task.id; },
+        on_date_change: function () { gantt.refresh(tasks); },
+        on_progress_change: function () { gantt.refresh(tasks); }
       });
     }
   });

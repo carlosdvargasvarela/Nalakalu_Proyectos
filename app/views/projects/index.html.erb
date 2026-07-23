@@ -1,25 +1,102 @@
 <h1>Proyectos</h1>
-<table class="table table-striped">
-  <thead>
-    <tr><th>Nombre</th><th>Tipo</th><th>Estado</th><th></th></tr>
-  </thead>
-  <tbody>
-    <% @projects.each do |project| %>
-      <tr>
-        <td><%= link_to project.name, project_path(project) %></td>
-        <td><%= project.project_type.name %></td>
-        <td><%= project.status %></td>
-        <td>
-          <%= link_to "Editar", edit_project_path(project), class: "btn btn-outline-secondary btn-sm" %>
-          <%= form_with(model: project, local: true, method: :patch, style: "display:inline-block") do |f| %>
-            <%= f.hidden_field :status, value: "archived" %>
-            <%= f.submit "Archivar", class: "btn btn-outline-danger btn-sm" %>
-          <% end %>
-        </td>
-      </tr>
+
+<%= form_with url: projects_path, method: :get, local: true, class: "row g-2 mb-4" do |form| %>
+  <div class="col-auto">
+    <%= form.label :project_type_id, "Tipo", class: "form-label" %>
+    <%= form.select :project_type_id, @project_types.collect { |pt| [pt.name, pt.id] },
+          { include_blank: "Todos", selected: params[:project_type_id] }, class: "form-select" %>
+  </div>
+  <div class="col-auto">
+    <%= form.label :status, "Estado", class: "form-label" %>
+    <%= form.select :status, @statuses, { include_blank: "Todos", selected: params[:status] }, class: "form-select" %>
+  </div>
+  <div class="col-auto">
+    <%= form.label :installer_id, "Instalador", class: "form-label" %>
+    <%= form.select :installer_id, @installers.collect { |i| [i.name, i.id] },
+          { include_blank: "Todos", selected: params[:installer_id] }, class: "form-select" %>
+  </div>
+  <div class="col-auto align-self-end">
+    <%= form.submit "Filtrar", class: "btn btn-primary" %>
+  </div>
+<% end %>
+
+<% if @projects.none? %>
+  <p>No hay proyectos con estos filtros.</p>
+<% else %>
+  <% content_for :head do %>
+    <link href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css" rel="stylesheet">
+  <% end %>
+
+  <%
+    gantt_tasks = @projects.map do |project|
+      first, last = project.gantt_window
+      current = project.current_stage
+      progress_values = project.project_stages.map(&:progress_percent)
+      average_progress = progress_values.any? ? (progress_values.sum / progress_values.size.to_f).round : 0
+      {
+        id: project.id.to_s,
+        name: project.name,
+        start: first.to_s,
+        end: last.to_s,
+        progress: average_progress,
+        edit_url: project_path(project),
+        custom_class: "stage-color-#{current&.stage_template_id || 'none'}"
+      }
+    end
+    gantt_colors = @projects.map do |project|
+      template_id = project.current_stage&.stage_template_id || "none"
+      color = project.current_stage&.stage_template&.color || "#6c757d"
+      [template_id, color]
+    end.uniq
+  %>
+  <style>
+    <% gantt_colors.each do |template_id, color| %>
+      .bar-wrapper.stage-color-<%= template_id %> .bar { fill: <%= color %>; }
     <% end %>
-  </tbody>
-</table>
+  </style>
+
+  <div id="gantt" class="mb-4"></div>
+
+  <script type="application/json" id="gantt-tasks"><%== gantt_tasks.to_json %></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var tasks = JSON.parse(document.getElementById("gantt-tasks").textContent);
+      if (tasks.length > 0) {
+        var gantt = new Gantt("#gantt", tasks, {
+          language: "es",
+          on_click: function (task) { window.location = task.edit_url; },
+          on_date_change: function () { gantt.refresh(tasks); },
+          on_progress_change: function () { gantt.refresh(tasks); }
+        });
+      }
+    });
+  </script>
+
+  <table class="table table-striped">
+    <thead>
+      <tr><th>Nombre</th><th>Tipo</th><th>Estado</th><th></th></tr>
+    </thead>
+    <tbody>
+      <% @projects.each do |project| %>
+        <tr>
+          <td><%= link_to project.name, project_path(project) %></td>
+          <td><%= project.project_type.name %></td>
+          <td><%= project.status %></td>
+          <td>
+            <%= link_to "Editar", edit_project_path(project), class: "btn btn-outline-secondary btn-sm" %>
+            <%= form_with(model: project, local: true, method: :patch, style: "display:inline-block") do |f| %>
+              <%= f.hidden_field :status, value: "archived" %>
+              <%= f.submit "Archivar", class: "btn btn-outline-danger btn-sm" %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
+
 <h2>Nuevo proyecto</h2>
 <ul class="list-unstyled">
   <% ProjectType.all.each do |project_type| %>

@@ -2,15 +2,13 @@ class ProjectsController < ApplicationController
   before_action :set_project, only: [:show, :edit, :update]
 
   def index
-    @projects = Project.includes(:project_type).where.not(status: "archived")
-  end
-
-  def dashboard
     @project_types = ProjectType.all
     @statuses = Project.distinct.pluck(:status).compact
-    @projects = Project.includes(:project_type, project_stages: :stage_template).all
+    @installers = Installer.all
+    @projects = Project.includes(:project_type, project_stages: :stage_template)
+    @projects = params[:status].present? ? @projects.where(status: params[:status]) : @projects.where.not(status: "archived")
     @projects = @projects.where(project_type_id: params[:project_type_id]) if params[:project_type_id].present?
-    @projects = @projects.where(status: params[:status]) if params[:status].present?
+    @projects = filter_by_installer(@projects, params[:installer_id]) if params[:installer_id].present?
   end
 
   def show
@@ -55,5 +53,11 @@ class ProjectsController < ApplicationController
       :project_type_id, :name, :status, custom_fields: {},
       project_stages_attributes: [:id, :start_date, :end_date, :progress_percent]
     )
+  end
+
+  def filter_by_installer(scope, installer_id)
+    keys = FieldDefinition.where(reference_table: "installers").distinct.pluck(:key)
+    return scope.none if keys.empty?
+    keys.map { |key| scope.where("custom_fields ->> ? = ?", key, installer_id.to_s) }.reduce(:or)
   end
 end

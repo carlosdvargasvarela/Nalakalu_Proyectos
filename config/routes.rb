@@ -12,7 +12,6 @@ Rails.application.routes.draw do
     resources :installers
   end
 
-  get "projects/dashboard", to: "projects#dashboard", as: :dashboard_projects
   resources :projects
 
   root "projects#index"
