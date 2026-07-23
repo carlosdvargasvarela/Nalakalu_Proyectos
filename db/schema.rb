@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_07_23_012218) do
+ActiveRecord::Schema[7.2].define(version: 2026_07_23_012646) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -36,5 +36,15 @@ ActiveRecord::Schema[7.2].define(version: 2026_07_23_012218) do
     t.index ["slug"], name: "index_project_types_on_slug", unique: true
   end
 
+  create_table "stage_templates", force: :cascade do |t|
+    t.bigint "project_type_id", null: false
+    t.string "name", null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["project_type_id"], name: "index_stage_templates_on_project_type_id"
+  end
+
   add_foreign_key "field_definitions", "project_types"
+  add_foreign_key "stage_templates", "project_types"
 end
