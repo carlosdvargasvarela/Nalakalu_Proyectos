@@ -118,16 +118,28 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/\.gantt \.bar-wrapper\.stage-color-#{id}\.active \.bar \{\s*fill:\s*#ff0000;?\s*\}/, response.body)
   end
 
-  test "index colors each project's Gantt bar including hover/active states" do
-    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
-    stage_templates(:diseno_aprobacion).update!(color: "#00ff00")
-    id = stage_templates(:diseno_aprobacion).id
+  test "index colors a project's Gantt bar by its assigned installer" do
+    installer = installers(:juan_perez)
+    installer.update!(color: "#00ff00")
+    Project.create!(
+      project_type: project_types(:instalaciones), name: "Torre Norte",
+      custom_fields: { instalador: installer.id }
+    )
 
     get projects_path
     assert_response :success
-    assert_match(/\.gantt \.bar-wrapper\.stage-color-#{id} \.bar,/, response.body)
-    assert_match(/\.gantt \.bar-wrapper\.stage-color-#{id}:hover \.bar,/, response.body)
-    assert_match(/\.gantt \.bar-wrapper\.stage-color-#{id}\.active \.bar \{\s*fill:\s*#00ff00;?\s*\}/, response.body)
+    assert_match(/\.gantt \.bar-wrapper\.installer-color-#{installer.id} \.bar,/, response.body)
+    assert_match(/\.gantt \.bar-wrapper\.installer-color-#{installer.id}:hover \.bar,/, response.body)
+    assert_match(/\.gantt \.bar-wrapper\.installer-color-#{installer.id}\.active \.bar \{\s*fill:\s*#00ff00;?\s*\}/, response.body)
+  end
+
+  test "index colors a project with no installer assigned yet using the default gray" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+
+    get projects_path
+    assert_response :success
+    assert_match(/\.gantt \.bar-wrapper\.installer-color-none \.bar,/, response.body)
+    assert_match(/\.gantt \.bar-wrapper\.installer-color-none\.active \.bar \{\s*fill:\s*#6c757d;?\s*\}/, response.body)
   end
 
   test "index shows one Gantt task per project by default" do

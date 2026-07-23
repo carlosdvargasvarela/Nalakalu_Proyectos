@@ -31,7 +31,6 @@
   <%
     gantt_tasks = @projects.map do |project|
       first, last = project.gantt_window
-      current = project.current_stage
       progress_values = project.project_stages.map(&:progress_percent)
       average_progress = progress_values.any? ? (progress_values.sum / progress_values.size.to_f).round : 0
       {
@@ -41,20 +40,19 @@
         end: last.to_s,
         progress: average_progress,
         edit_url: project_path(project),
-        custom_class: "stage-color-#{current&.stage_template_id || 'none'}"
+        custom_class: "installer-color-#{project.installer&.id || 'none'}"
       }
     end
     gantt_colors = @projects.map do |project|
-      template_id = project.current_stage&.stage_template_id || "none"
-      color = project.current_stage&.stage_template&.color || "#6c757d"
-      [template_id, color]
+      installer = project.installer
+      [installer&.id || "none", installer&.color || "#6c757d"]
     end.uniq
   %>
   <style>
-    <% gantt_colors.each do |template_id, color| %>
-      .gantt .bar-wrapper.stage-color-<%= template_id %> .bar,
-      .gantt .bar-wrapper.stage-color-<%= template_id %>:hover .bar,
-      .gantt .bar-wrapper.stage-color-<%= template_id %>.active .bar {
+    <% gantt_colors.each do |installer_id, color| %>
+      .gantt .bar-wrapper.installer-color-<%= installer_id %> .bar,
+      .gantt .bar-wrapper.installer-color-<%= installer_id %>:hover .bar,
+      .gantt .bar-wrapper.installer-color-<%= installer_id %>.active .bar {
         fill: <%= color %>;
       }
     <% end %>
