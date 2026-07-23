@@ -88,4 +88,16 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     get project_path(project)
     assert_select "a[href=?]", edit_project_path(project), text: "Editar"
   end
+
+  test "show colors each stage's Gantt bar by its stage_template's color" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage_templates(:produccion).update!(color: "#ff0000")
+
+    get project_path(project)
+    assert_response :success
+    assert_match(
+      /\.bar-wrapper\.stage-color-#{stage_templates(:produccion).id}\s*\.bar\s*\{\s*fill:\s*#ff0000;?\s*\}/,
+      response.body
+    )
+  end
 end
