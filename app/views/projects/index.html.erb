@@ -52,7 +52,11 @@
   %>
   <style>
     <% gantt_colors.each do |template_id, color| %>
-      .bar-wrapper.stage-color-<%= template_id %> .bar { fill: <%= color %>; }
+      .gantt .bar-wrapper.stage-color-<%= template_id %> .bar,
+      .gantt .bar-wrapper.stage-color-<%= template_id %>:hover .bar,
+      .gantt .bar-wrapper.stage-color-<%= template_id %>.active .bar {
+        fill: <%= color %>;
+      }
     <% end %>
   </style>
 

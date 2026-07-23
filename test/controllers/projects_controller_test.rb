@@ -117,16 +117,28 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", edit_project_path(project), text: "Editar"
   end
 
-  test "show colors each stage's Gantt bar by its stage_template's color" do
+  test "show colors each stage's Gantt bar by its stage_template's color, including hover/active states" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     stage_templates(:produccion).update!(color: "#ff0000")
+    id = stage_templates(:produccion).id
 
     get project_path(project)
     assert_response :success
-    assert_match(
-      /\.bar-wrapper\.stage-color-#{stage_templates(:produccion).id}\s*\.bar\s*\{\s*fill:\s*#ff0000;?\s*\}/,
-      response.body
-    )
+    assert_match(/\.gantt \.bar-wrapper\.stage-color-#{id} \.bar,/, response.body)
+    assert_match(/\.gantt \.bar-wrapper\.stage-color-#{id}:hover \.bar,/, response.body)
+    assert_match(/\.gantt \.bar-wrapper\.stage-color-#{id}\.active \.bar \{\s*fill:\s*#ff0000;?\s*\}/, response.body)
+  end
+
+  test "index colors each project's Gantt bar including hover/active states" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage_templates(:diseno_aprobacion).update!(color: "#00ff00")
+    id = stage_templates(:diseno_aprobacion).id
+
+    get projects_path
+    assert_response :success
+    assert_match(/\.gantt \.bar-wrapper\.stage-color-#{id} \.bar,/, response.body)
+    assert_match(/\.gantt \.bar-wrapper\.stage-color-#{id}:hover \.bar,/, response.body)
+    assert_match(/\.gantt \.bar-wrapper\.stage-color-#{id}\.active \.bar \{\s*fill:\s*#00ff00;?\s*\}/, response.body)
   end
 
   test "index shows one Gantt task per project by default" do
