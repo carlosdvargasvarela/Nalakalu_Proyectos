@@ -1,5 +1,5 @@
 <div>
-  <%= label_tag "custom_fields_#{field.key}", field.label %>
+  <%= label_tag "project_custom_fields_#{field.key}", field.label %>
   <% case field.data_type %>
   <% when "text" %>
     <%= text_field_tag "project[custom_fields][#{field.key}]", project.custom_fields[field.key] %>
