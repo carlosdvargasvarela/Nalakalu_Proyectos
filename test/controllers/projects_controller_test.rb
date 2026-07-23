@@ -381,4 +381,21 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "body", /No hay tipos de proyecto configurados todavía/
   end
+
+  test "new shows the project type in the title, wraps the form in a card, and links Cancelar to the list" do
+    get new_project_path(project_type_id: project_types(:instalaciones).id)
+    assert_response :success
+    assert_select "h1", /Instalaciones/
+    assert_select ".card form"
+    assert_select "a[href=?]", projects_path, text: "Cancelar"
+  end
+
+  test "edit shows the project name in the title, wraps the form in a card, and links Cancelar to the project" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get edit_project_path(project)
+    assert_response :success
+    assert_select "h1", /Torre Norte/
+    assert_select ".card form"
+    assert_select "a[href=?]", project_path(project), text: "Cancelar"
+  end
 end

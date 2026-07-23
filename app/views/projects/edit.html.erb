@@ -1,2 +1,6 @@
-<h1>Editar proyecto</h1>
-<%= render "form", project: @project, project_type: @project_type %>
+<h1>Editar proyecto — <%= @project.name %></h1>
+<div class="card">
+  <div class="card-body">
+    <%= render "form", project: @project, project_type: @project_type %>
+  </div>
+</div>

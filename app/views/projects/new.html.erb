@@ -1,2 +1,6 @@
 <h1>Nuevo proyecto — <%= @project_type.name %></h1>
-<%= render "form", project: @project, project_type: @project_type %>
+<div class="card">
+  <div class="card-body">
+    <%= render "form", project: @project, project_type: @project_type %>
+  </div>
+</div>
