@@ -7,7 +7,7 @@
       <span>
         <%= link_to "Editar", edit_admin_installer_path(installer), class: "btn btn-outline-secondary btn-sm" %>
         <%= button_to "Borrar", admin_installer_path(installer), method: :delete,
-              class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block" } %>
+              class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar instalador?')" } %>
       </span>
     </li>
   <% end %>

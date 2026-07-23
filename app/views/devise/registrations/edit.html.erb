@@ -33,6 +33,6 @@
 
 <h3>Cancelar mi cuenta</h3>
 
-<div>¿Ya no la quieres? <%= button_to "Cancelar mi cuenta", registration_path(resource_name), data: { confirm: "¿Estás seguro?", turbo_confirm: "¿Estás seguro?" }, method: :delete %></div>
+<div>¿Ya no la quieres? <%= button_to "Cancelar mi cuenta", registration_path(resource_name), method: :delete, form: { onsubmit: "return confirm('¿Estás seguro?')" } %></div>
 
 <%= link_to "Volver", :back %>

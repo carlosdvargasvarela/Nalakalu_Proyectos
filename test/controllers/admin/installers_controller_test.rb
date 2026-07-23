@@ -43,4 +43,12 @@ class Admin::InstallersControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to admin_installers_path
     assert_equal "#f60404", installer.reload.color
   end
+
+  test "index asks for confirmation before deleting an installer" do
+    installer = installers(:juan_perez)
+    get admin_installers_path
+    assert_response :success
+    assert_select "form[action=?][onsubmit=?]",
+      admin_installer_path(installer), "return confirm('¿Eliminar instalador?')"
+  end
 end
