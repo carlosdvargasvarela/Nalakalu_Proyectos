@@ -13,3 +13,25 @@
  *= require_tree .
  *= require_self
  */
+
+:root {
+  --bs-primary: #2c3e50;
+  --bs-primary-rgb: 44, 62, 80;
+  --bs-link-color: #2c3e50;
+  --bs-link-hover-color: #1a252f;
+  --bs-border-radius: 0.5rem;
+  --bs-border-radius-sm: 0.35rem;
+  --bs-border-radius-lg: 0.65rem;
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--bs-primary);
+  --bs-btn-border-color: var(--bs-primary);
+  --bs-btn-hover-bg: #1a252f;
+  --bs-btn-hover-border-color: #1a252f;
+}
+
+.navbar-brand {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}

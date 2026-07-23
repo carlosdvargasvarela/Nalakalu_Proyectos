@@ -228,4 +228,21 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_equal Date.new(2026, 8, 10), stage.end_date
     assert_equal 60, stage.progress_percent
   end
+
+  test "index shows the project status as a Spanish badge, not the raw value" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path
+    assert_response :success
+    assert_select "span.badge.bg-success", "Activo"
+    assert_select "body", text: /\bactive\b/, count: 0
+  end
+
+  test "index shows Spanish labels in the status filter while keeping English values" do
+    Project.create!(
+      project_type: project_types(:instalaciones), name: "Torre Vieja", custom_fields: {}, status: "archived"
+    )
+    get projects_path
+    assert_response :success
+    assert_select "select#status option[value=?]", "archived", text: "Archivado"
+  end
 end

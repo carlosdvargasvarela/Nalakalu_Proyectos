@@ -8,7 +8,8 @@
   </div>
   <div class="col-auto">
     <%= form.label :status, "Estado", class: "form-label" %>
-    <%= form.select :status, @statuses, { include_blank: "Todos", selected: params[:status] }, class: "form-select" %>
+    <%= form.select :status, @statuses.map { |s| [status_label(s), s] },
+          { include_blank: "Todos", selected: params[:status] }, class: "form-select" %>
   </div>
   <div class="col-auto">
     <%= form.label :installer_id, "Instalador", class: "form-label" %>
@@ -83,7 +84,7 @@
         <tr>
           <td><%= link_to project.name, project_path(project) %></td>
           <td><%= project.project_type.name %></td>
-          <td><%= project.status %></td>
+          <td><%= status_badge(project.status) %></td>
           <td>
             <%= link_to "Editar", edit_project_path(project), class: "btn btn-outline-secondary btn-sm" %>
             <%= form_with(model: project, local: true, method: :patch, style: "display:inline-block") do |f| %>
