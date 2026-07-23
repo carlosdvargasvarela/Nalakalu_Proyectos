@@ -13,5 +13,10 @@
     <%= form.label :name, class: "form-label" %>
     <%= form.text_field :name, class: "form-control" %>
   </div>
+
+  <div class="mb-3">
+    <%= form.label :color, class: "form-label" %>
+    <%= form.color_field :color, class: "form-control form-control-color" %>
+  </div>
   <%= form.submit class: "btn btn-primary" %>
 <% end %>

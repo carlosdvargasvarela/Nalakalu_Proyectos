@@ -41,6 +41,6 @@ class Admin::InstallersController < ApplicationController
   end
 
   def installer_params
-    params.require(:installer).permit(:name)
+    params.require(:installer).permit(:name, :color)
   end
 end

@@ -36,4 +36,11 @@ class Admin::InstallersControllerTest < ActionDispatch::IntegrationTest
       delete admin_installer_path(installer)
     end
   end
+
+  test "update saves the color" do
+    installer = installers(:juan_perez)
+    patch admin_installer_path(installer), params: { installer: { name: installer.name, color: "#f60404" } }
+    assert_redirected_to admin_installers_path
+    assert_equal "#f60404", installer.reload.color
+  end
 end
