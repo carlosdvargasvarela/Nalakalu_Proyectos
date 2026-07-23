@@ -6,6 +6,11 @@ class AuthenticationTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_user_session_path
   end
 
+  test "anonymous visitor cannot reach admin" do
+    get admin_project_types_path
+    assert_redirected_to new_user_session_path
+  end
+
   test "signed in user can reach the projects index" do
     sign_in users(:juan)
     get root_path
