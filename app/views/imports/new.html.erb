@@ -30,3 +30,17 @@
     </div>
   </div>
 <% end %>
+
+<% if @results %>
+  <div class="alert <%= @results[:errors].any? ? 'alert-warning' : 'alert-success' %>">
+    <%= @results[:created] %> proyecto(s) creado(s).
+    <% if @results[:errors].any? %>
+      <p class="mb-0 mt-2">Filas con error:</p>
+      <ul class="mb-0">
+        <% @results[:errors].each do |error| %>
+          <li>Fila <%= error[:row] %>: <%= error[:message] %></li>
+        <% end %>
+      </ul>
+    <% end %>
+  </div>
+<% end %>
