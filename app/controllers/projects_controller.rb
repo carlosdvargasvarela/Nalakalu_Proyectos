@@ -2,21 +2,9 @@ class ProjectsController < ApplicationController
   before_action :set_project, only: [:show, :edit, :update]
 
   def index
-    @project_types = ProjectType.all
     @statuses = Project.distinct.pluck(:status).compact
     @installers = Installer.all
-    @stage_names = StageTemplate.distinct.order(:name).pluck(:name)
-    @projects = Project.includes(:project_type, project_stages: :stage_template).order(:name)
-    @projects = params[:status].present? ? @projects.where(status: params[:status]) : @projects.where.not(status: "archived")
-    @projects = @projects.where(project_type_id: params[:project_type_id]) if params[:project_type_id].present?
-    if params[:installer_id] == "none"
-      @projects = filter_by_no_installer(@projects)
-    elsif params[:installer_id].present?
-      @projects = filter_by_installer(@projects, params[:installer_id])
-    end
-    @projects = filter_by_date_range(@projects, params[:from_date], params[:to_date])
-    @projects = filter_by_query(@projects, params[:q])
-    @page = [params[:page].to_i, 1].max
+    @sections = ProjectType.all.map { |project_type| build_section(project_type) }
   end
 
   def tracker
@@ -135,5 +123,36 @@ class ProjectsController < ApplicationController
     return scope if q.blank?
     term = "%#{q}%"
     scope.where("projects.name ILIKE :term OR projects.custom_fields::text ILIKE :term", term: term)
+  end
+
+  def build_section(project_type)
+    section_params = params.dig(:sections, project_type.slug) || {}
+
+    projects = Project.where(project_type: project_type).includes(:project_type, project_stages: :stage_template).order(:name)
+    projects = section_params[:status].present? ? projects.where(status: section_params[:status]) : projects.where.not(status: "archived")
+    if section_params[:installer_id] == "none"
+      projects = filter_by_no_installer(projects)
+    elsif section_params[:installer_id].present?
+      projects = filter_by_installer(projects, section_params[:installer_id])
+    end
+    projects = filter_by_date_range(projects, section_params[:from_date], section_params[:to_date])
+    projects = filter_by_query(projects, section_params[:q])
+
+    projects_list = projects.to_a
+    per_page = 20
+    page = [section_params[:page].to_i, 1].max
+    total_pages = (projects_list.size / per_page.to_f).ceil
+    page_projects = projects_list.drop((page - 1) * per_page).first(per_page)
+    stage_names = StageTemplate.where(project_type: project_type).order(:name).pluck(:name)
+
+    {
+      project_type: project_type,
+      params: section_params,
+      projects_list: projects_list,
+      page_projects: page_projects,
+      page: page,
+      total_pages: total_pages,
+      stage_names: stage_names
+    }
   end
 end

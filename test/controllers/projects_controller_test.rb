@@ -172,7 +172,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get projects_path
     assert_response :success
-    assert_select "script#gantt-tasks", text: /#{project.name}/
+    assert_select "script#gantt-tasks-#{project_types(:instalaciones).slug}", text: /#{project.name}/
   end
 
   test "index configures the Gantt in Spanish with a read-only snap-back on drag" do
@@ -187,17 +187,18 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get projects_path
     assert_response :success
-    assert_select "#gantt[style=?]", "max-height: 630px; overflow-y: auto;"
+    assert_select "#gantt-#{project_types(:instalaciones).slug}[style=?]", "max-height: 630px; overflow-y: auto;"
   end
 
   test "index's Gantt shows only the filtered stage's date range for each project, not the full project span" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     stage = project.project_stages.find_by(name: "Instalación")
     stage.update!(start_date: Date.new(2026, 9, 1), end_date: Date.new(2026, 9, 10))
+    slug = project_types(:instalaciones).slug
 
-    get projects_path, params: { stage_name: "Instalación" }
+    get projects_path, params: { sections: { slug => { stage_name: "Instalación" } } }
     assert_response :success
-    assert_select "script#gantt-tasks" do |elements|
+    assert_select "script#gantt-tasks-#{slug}" do |elements|
       tasks = JSON.parse(elements.first.text)
       task = tasks.find { |t| t["id"] == project.id.to_s }
       assert_equal "2026-09-01", task["start"]
@@ -205,23 +206,24 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "index's Gantt omits a project that has no stage matching the filtered name" do
-    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
-    sin_esa_etapa = Project.create!(project_type: other_type, name: "Sin Esa Etapa", custom_fields: {})
+  test "index's Gantt section omits every project when the filtered stage doesn't exist for that type" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    slug = project_types(:instalaciones).slug
 
-    get projects_path, params: { stage_name: "Instalación" }
+    get projects_path, params: { sections: { slug => { stage_name: "Etapa Inexistente" } } }
     assert_response :success
-    assert_select "script#gantt-tasks" do |elements|
+    assert_select "script#gantt-tasks-#{slug}" do |elements|
       tasks = JSON.parse(elements.first.text)
-      assert_nil tasks.find { |t| t["id"] == sin_esa_etapa.id.to_s }
+      assert_nil tasks.find { |t| t["id"] == project.id.to_s }
     end
   end
 
   test "index's Gantt without a stage filter still shows each project's full range" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    slug = project_types(:instalaciones).slug
     get projects_path
     assert_response :success
-    assert_select "script#gantt-tasks" do |elements|
+    assert_select "script#gantt-tasks-#{slug}" do |elements|
       tasks = JSON.parse(elements.first.text)
       task = tasks.find { |t| t["id"] == project.id.to_s }
       first, last = project.gantt_window
@@ -230,36 +232,91 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "index's stage filter doesn't affect the Listado table or KPI cards" do
-    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
-    Project.create!(project_type: project_types(:instalaciones), name: "Con Etapa", custom_fields: {})
-    Project.create!(project_type: other_type, name: "Sin Esa Etapa", custom_fields: {})
+  test "index's stage filter doesn't affect that section's Listado table or KPI cards" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Con Etapa", custom_fields: {})
+    slug = project_types(:instalaciones).slug
 
-    get projects_path, params: { stage_name: "Instalación" }
+    get projects_path, params: { sections: { slug => { stage_name: "Etapa Inexistente" } } }
     assert_response :success
-    assert_select ".card .display-6", "2"
-    assert_select "a[href=?]", project_path(Project.find_by(name: "Sin Esa Etapa"))
+    assert_select ".card .display-6", "1"
+    assert_select "a[href=?]", project_path(project)
+  end
+
+  test "index shows each project type as its own section, listing only that type's own projects" do
+    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    torre = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    otro = Project.create!(project_type: other_type, name: "Proyecto Otro Tipo", custom_fields: {})
+
+    get projects_path
+    assert_response :success
+    assert_select "a[href=?]", project_path(torre)
+    assert_select "a[href=?]", project_path(otro)
+    assert_select ".accordion-item", count: ProjectType.count
+  end
+
+  test "index's accordion expands the first section and collapses the rest" do
+    ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    get projects_path
+    assert_response :success
+    assert_select ".accordion-collapse.show", count: 1
+  end
+
+  test "index's filter for one section doesn't affect another section's results" do
+    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    torre = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {}, status: "active")
+    otro = Project.create!(project_type: other_type, name: "Proyecto Otro Tipo", custom_fields: {}, status: "active")
+
+    get projects_path, params: { sections: { project_types(:instalaciones).slug => { status: "archived" } } }
+    assert_response :success
+    assert_select "a[href=?]", project_path(torre), count: 0
+    assert_select "a[href=?]", project_path(otro)
+  end
+
+  test "index's pagination for one section doesn't affect another section's page" do
+    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    25.times { |n| Project.create!(project_type: project_types(:instalaciones), name: "Proyecto #{n}", custom_fields: {}) }
+    otro = Project.create!(project_type: other_type, name: "Proyecto Otro Tipo", custom_fields: {})
+
+    get projects_path, params: { sections: { project_types(:instalaciones).slug => { page: 2 } } }
+    assert_response :success
+    assert_select "a[href=?]", project_path(otro)
+  end
+
+  test "index's Etapa dropdown only lists stages belonging to that section's own project type" do
+    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    StageTemplate.create!(project_type: other_type, name: "Etapa De Otro Tipo", position: 1)
+
+    get projects_path
+    assert_response :success
+    assert_select "select#sections_#{project_types(:instalaciones).slug}_stage_name option", text: "Instalación"
+    assert_select "select#sections_#{project_types(:instalaciones).slug}_stage_name option", text: "Etapa De Otro Tipo", count: 0
+  end
+
+  test "index's ids are unique per section (Gantt, bulk-assign form, select-all checkbox)" do
+    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    Project.create!(project_type: other_type, name: "Proyecto Otro Tipo", custom_fields: {})
+
+    get projects_path
+    assert_response :success
+    assert_select "#gantt-#{project_types(:instalaciones).slug}"
+    assert_select "#gantt-#{other_type.slug}"
+    assert_select "#bulk-assign-form-#{project_types(:instalaciones).slug}"
+    assert_select "#bulk-assign-form-#{other_type.slug}"
+    assert_select "#select-all-projects-#{project_types(:instalaciones).slug}"
+    assert_select "#select-all-projects-#{other_type.slug}"
   end
 
   test "index shows an Etapa dropdown with the distinct stage template names" do
     get projects_path
     assert_response :success
-    assert_select "select#stage_name option", text: "Instalación"
-    assert_select "select#stage_name option", text: "Producción"
-  end
-
-  test "index filters by project_type" do
-    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
-    torre = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
-    otro = Project.create!(project_type: other_type, name: "Proyecto Otro Tipo", custom_fields: {})
-
-    get projects_path, params: { project_type_id: other_type.id }
-    assert_response :success
-    assert_match(/#{otro.name}/, response.body)
-    assert_no_match(/#{torre.name}/, response.body)
+    slug = project_types(:instalaciones).slug
+    assert_select "select#sections_#{slug}_stage_name option", text: "Instalación"
+    assert_select "select#sections_#{slug}_stage_name option", text: "Producción"
   end
 
   test "index filters by status" do
+    slug = project_types(:instalaciones).slug
     torre = Project.create!(
       project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {}, status: "active"
     )
@@ -267,13 +324,14 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       project_type: project_types(:instalaciones), name: "Torre Vieja", custom_fields: {}, status: "archived"
     )
 
-    get projects_path, params: { status: "archived" }
+    get projects_path, params: { sections: { slug => { status: "archived" } } }
     assert_response :success
     assert_match(/#{vieja.name}/, response.body)
     assert_no_match(/#{torre.name}/, response.body)
   end
 
   test "index filters by installer" do
+    slug = project_types(:instalaciones).slug
     otro_instalador = Installer.create!(name: "Otro Instalador")
     con_juan = Project.create!(
       project_type: project_types(:instalaciones), name: "Con Juan", custom_fields: { instalador: installers(:juan_perez).id }
@@ -282,13 +340,14 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       project_type: project_types(:instalaciones), name: "Con Otro", custom_fields: { instalador: otro_instalador.id }
     )
 
-    get projects_path, params: { installer_id: installers(:juan_perez).id }
+    get projects_path, params: { sections: { slug => { installer_id: installers(:juan_perez).id } } }
     assert_response :success
     assert_match(/#{con_juan.name}/, response.body)
     assert_no_match(/#{con_otro.name}/, response.body)
   end
 
   test "index filters by Sin instalador" do
+    slug = project_types(:instalaciones).slug
     sin_instalador = Project.create!(
       project_type: project_types(:instalaciones), name: "Sin Instalador", custom_fields: {}
     )
@@ -297,7 +356,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       custom_fields: { instalador: installers(:juan_perez).id }
     )
 
-    get projects_path, params: { installer_id: "none" }
+    get projects_path, params: { sections: { slug => { installer_id: "none" } } }
     assert_response :success
     assert_match(/#{sin_instalador.name}/, response.body)
     assert_no_match(/#{con_instalador.name}/, response.body)
@@ -306,14 +365,16 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
   test "index shows a Sin instalador option in the Instalador filter" do
     get projects_path
     assert_response :success
-    assert_select "select#installer_id option[value=?]", "none", text: "Sin instalador"
+    slug = project_types(:instalaciones).slug
+    assert_select "select#sections_#{slug}_installer_id option[value=?]", "none", text: "Sin instalador"
   end
 
   test "index shows a message and no Gantt when no projects match the filters" do
-    get projects_path, params: { status: "nonexistent-status" }
+    slug = project_types(:instalaciones).slug
+    get projects_path, params: { sections: { slug => { status: "nonexistent-status" } } }
     assert_response :success
     assert_select "body", /No hay proyectos con estos filtros/
-    assert_select "#gantt", count: 0
+    assert_select "#gantt-#{slug}", count: 0
   end
 
   test "index excludes archived projects by default" do
@@ -385,7 +446,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     )
     get projects_path
     assert_response :success
-    assert_select "select#status option[value=?]", "archived", text: "Archivado"
+    slug = project_types(:instalaciones).slug
+    assert_select "select#sections_#{slug}_status option[value=?]", "archived", text: "Archivado"
   end
 
   test "update responds with JSON stage data when Accept is application/json" do
@@ -592,7 +654,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get projects_path
     assert_response :success
-    assert_select ".card .card-header", "Cronograma general"
+    assert_select ".card .card-header", "Cronograma"
     assert_select ".card .card-header", "Listado"
   end
 
@@ -645,19 +707,22 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
   test "bulk_assign_installer preserves existing query params on redirect" do
     installer = installers(:juan_perez)
     project = Project.create!(project_type: project_types(:instalaciones), name: "Proyecto A", custom_fields: {})
+    slug = project_types(:instalaciones).slug
 
-    patch bulk_assign_installer_projects_path(project_type_id: project_types(:instalaciones).id), params: {
+    patch bulk_assign_installer_projects_path(sections: { slug => { status: "archived" } }), params: {
       installer_id: installer.id, project_ids: [project.id]
     }
 
-    assert_redirected_to projects_path(project_type_id: project_types(:instalaciones).id)
+    assert_redirected_to projects_path(sections: { slug => { status: "archived" } })
   end
 
   test "index's bulk-assign form action preserves the current installer filter" do
+    slug = project_types(:instalaciones).slug
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
-    get projects_path, params: { installer_id: "none" }
+    get projects_path, params: { sections: { slug => { installer_id: "none" } } }
     assert_response :success
-    assert_select "form#bulk-assign-form[action=?]", bulk_assign_installer_projects_path(installer_id: "none")
+    assert_select "form#bulk-assign-form-#{slug}[action=?]",
+      bulk_assign_installer_projects_path(sections: { slug => { installer_id: "none" } })
   end
 
   test "bulk_assign_installer without an installer chosen does nothing and redirects with an alert" do
@@ -699,16 +764,17 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
   test "index renders a bulk-assign form with a checkbox per project, not nested inside another form" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    slug = project_types(:instalaciones).slug
     get projects_path
     assert_response :success
 
-    assert_select "form#bulk-assign-form[action=?]", bulk_assign_installer_projects_path
-    assert_select "form#bulk-assign-form select[name=?]", "installer_id"
-    assert_select "form#bulk-assign-form input[type=submit][value=?]", "Asignar"
-    assert_select "input[type=checkbox][name=?][form=bulk-assign-form]", "project_ids[]", value: project.id.to_s
+    assert_select "form#bulk-assign-form-#{slug}[action=?]", bulk_assign_installer_projects_path
+    assert_select "form#bulk-assign-form-#{slug} select[name=?]", "installer_id"
+    assert_select "form#bulk-assign-form-#{slug} input[type=submit][value=?]", "Asignar"
+    assert_select "input[type=checkbox][name=?][form=bulk-assign-form-#{slug}]", "project_ids[]", value: project.id.to_s
 
     doc = Nokogiri::HTML5(response.body)
-    bulk_form = doc.at_css("#bulk-assign-form")
+    bulk_form = doc.at_css("#bulk-assign-form-#{slug}")
     assert_nil bulk_form.at_css("form"), "the archive button's form must not be nested inside the bulk-assign form"
   end
 
@@ -716,26 +782,29 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get projects_path
     assert_response :success
-    assert_select "input#select-all-projects[type=checkbox]"
-    assert_match(/select-all-projects/, response.body)
+    slug = project_types(:instalaciones).slug
+    assert_select "input#select-all-projects-#{slug}[type=checkbox]"
+    assert_match(/select-all-projects-#{slug}/, response.body)
     assert_match(/project_ids\[\]/, response.body)
   end
 
   test "index's pagination Anterior link points to the previous page, not itself" do
+    slug = project_types(:instalaciones).slug
     25.times { |n| Project.create!(project_type: project_types(:instalaciones), name: "Proyecto #{n}", custom_fields: {}) }
-    get projects_path, params: { page: 2 }
+    get projects_path, params: { sections: { slug => { page: 2 } } }
     assert_response :success
-    assert_select "a.page-link[href=?]", projects_path(page: 1)
+    assert_select "a.page-link[href=?]", projects_path(sections: { slug => { page: 1 } })
   end
 
   test "index filters by a Desde/Hasta date range that overlaps a project's stages" do
+    slug = project_types(:instalaciones).slug
     dentro = Project.create!(project_type: project_types(:instalaciones), name: "Dentro del Rango", custom_fields: {})
     dentro.project_stages.order(:id).first.update!(start_date: Date.new(2026, 3, 1), end_date: Date.new(2026, 3, 10))
 
     fuera = Project.create!(project_type: project_types(:instalaciones), name: "Fuera del Rango", custom_fields: {})
     fuera.project_stages.each { |s| s.update!(start_date: Date.new(2026, 6, 1), end_date: Date.new(2026, 6, 10)) }
 
-    get projects_path, params: { from_date: "2026-02-01", to_date: "2026-04-01" }
+    get projects_path, params: { sections: { slug => { from_date: "2026-02-01", to_date: "2026-04-01" } } }
     assert_response :success
     assert_match(/#{dentro.name}/, response.body)
     assert_no_match(/#{fuera.name}/, response.body)
@@ -751,32 +820,36 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
   test "index shows Desde and Hasta date fields in the filter form" do
     get projects_path
     assert_response :success
-    assert_select "input[type=date][name=?]", "from_date"
-    assert_select "input[type=date][name=?]", "to_date"
+    slug = project_types(:instalaciones).slug
+    assert_select "input[type=date][name=?]", "sections[#{slug}][from_date]"
+    assert_select "input[type=date][name=?]", "sections[#{slug}][to_date]"
   end
 
   test "index's Desde/Hasta filter always shows projects with no dated stages, regardless of the range" do
+    slug = project_types(:instalaciones).slug
     sin_fechas = Project.create!(project_type: project_types(:instalaciones), name: "Sin Fechas", custom_fields: {})
     fuera = Project.create!(project_type: project_types(:instalaciones), name: "Fuera del Rango", custom_fields: {})
     fuera.project_stages.each { |s| s.update!(start_date: Date.new(2026, 6, 1), end_date: Date.new(2026, 6, 10)) }
 
-    get projects_path, params: { from_date: "2026-02-01", to_date: "2026-04-01" }
+    get projects_path, params: { sections: { slug => { from_date: "2026-02-01", to_date: "2026-04-01" } } }
     assert_response :success
     assert_match(/#{sin_fechas.name}/, response.body)
     assert_no_match(/#{fuera.name}/, response.body)
   end
 
   test "index's q filter matches a project by name" do
+    slug = project_types(:instalaciones).slug
     match = Project.create!(project_type: project_types(:instalaciones), name: "Torre del Bosque", custom_fields: {})
     other = Project.create!(project_type: project_types(:instalaciones), name: "Otro Proyecto", custom_fields: {})
 
-    get projects_path, params: { q: "Bosque" }
+    get projects_path, params: { sections: { slug => { q: "Bosque" } } }
     assert_response :success
     assert_match(/#{match.name}/, response.body)
     assert_no_match(/#{other.name}/, response.body)
   end
 
   test "index's q filter matches a value inside custom_fields, regardless of which field holds it" do
+    slug = project_types(:instalaciones).slug
     match = Project.create!(
       project_type: project_types(:instalaciones), name: "Proyecto A",
       custom_fields: { cliente: "Constructora Acme S.R.L." }
@@ -786,38 +859,43 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       custom_fields: { cliente: "Otro Cliente" }
     )
 
-    get projects_path, params: { q: "Acme" }
+    get projects_path, params: { sections: { slug => { q: "Acme" } } }
     assert_response :success
     assert_match(/#{match.name}/, response.body)
     assert_no_match(/#{other.name}/, response.body)
   end
 
   test "index's q filter is case-insensitive" do
+    slug = project_types(:instalaciones).slug
     project = Project.create!(
       project_type: project_types(:instalaciones), name: "Proyecto Mayúsculas",
       custom_fields: { cliente: "CONSTRUCTORA GRANDE" }
     )
 
-    get projects_path, params: { q: "constructora grande" }
+    get projects_path, params: { sections: { slug => { q: "constructora grande" } } }
     assert_response :success
     assert_match(/#{project.name}/, response.body)
   end
 
-  test "index's q filter combines with other filters (AND)" do
-    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
-    match = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
-    other_project = Project.create!(project_type: other_type, name: "Torre Norte", custom_fields: {})
+  test "index's q filter combines with other filters within the same section (AND)" do
+    slug = project_types(:instalaciones).slug
+    match = Project.create!(
+      project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {}, status: "active"
+    )
+    otro_estado = Project.create!(
+      project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {}, status: "archived"
+    )
 
-    get projects_path, params: { q: "Torre Norte", project_type_id: project_types(:instalaciones).id }
+    get projects_path, params: { sections: { slug => { q: "Torre Norte", status: "active" } } }
     assert_response :success
     assert_select "a[href=?]", project_path(match)
-    assert_select "a[href=?]", project_path(other_project), count: 0
-    assert response.body.scan("Torre Norte").size >= 1
+    assert_select "a[href=?]", project_path(otro_estado), count: 0
   end
 
   test "index shows no results when q doesn't match anything" do
+    slug = project_types(:instalaciones).slug
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
-    get projects_path, params: { q: "esto-no-existe-en-ningun-proyecto" }
+    get projects_path, params: { sections: { slug => { q: "esto-no-existe-en-ningun-proyecto" } } }
     assert_response :success
     assert_select "body", /No hay proyectos con estos filtros/
   end
@@ -825,28 +903,31 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
   test "index shows the q search field in the filter form" do
     get projects_path
     assert_response :success
-    assert_select "input[type=text][name=?]", "q"
+    slug = project_types(:instalaciones).slug
+    assert_select "input[type=text][name=?]", "sections[#{slug}][q]"
   end
 
   test "index paginates the Listado table at 20 projects per page" do
+    slug = project_types(:instalaciones).slug
     25.times { |n| Project.create!(project_type: project_types(:instalaciones), name: "Proyecto #{n}", custom_fields: {}) }
 
     get projects_path
     assert_response :success
     assert_select "table tbody tr", count: 20
 
-    get projects_path, params: { page: 2 }
+    get projects_path, params: { sections: { slug => { page: 2 } } }
     assert_response :success
     assert_select "table tbody tr", count: 5
   end
 
   test "index's KPI cards and Gantt tasks count all filtered projects, not just the current page" do
+    slug = project_types(:instalaciones).slug
     25.times { |n| Project.create!(project_type: project_types(:instalaciones), name: "Proyecto #{n}", custom_fields: {}) }
 
     get projects_path
     assert_response :success
     assert_select ".card .display-6", "25"
-    assert_select "script#gantt-tasks" do |elements|
+    assert_select "script#gantt-tasks-#{slug}" do |elements|
       tasks = JSON.parse(elements.first.text)
       assert_equal 25, tasks.size
     end
@@ -859,14 +940,13 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "ul.pagination", count: 0
   end
 
-  test "index shows pagination controls that preserve the current filter" do
-    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
-    25.times { |n| Project.create!(project_type: project_types(:instalaciones), name: "Proyecto #{n}", custom_fields: {}) }
-    Project.create!(project_type: other_type, name: "Otro Tipo", custom_fields: {})
+  test "index shows pagination controls that preserve the current section's filter" do
+    slug = project_types(:instalaciones).slug
+    25.times { |n| Project.create!(project_type: project_types(:instalaciones), name: "Proyecto #{n}", custom_fields: {}, status: "active") }
 
-    get projects_path, params: { project_type_id: project_types(:instalaciones).id }
+    get projects_path, params: { sections: { slug => { status: "active" } } }
     assert_response :success
     assert_select "ul.pagination"
-    assert_select "a.page-link[href=?]", projects_path(project_type_id: project_types(:instalaciones).id, page: 2)
+    assert_select "a.page-link[href=?]", projects_path(sections: { slug => { status: "active", page: 2 } })
   end
 end

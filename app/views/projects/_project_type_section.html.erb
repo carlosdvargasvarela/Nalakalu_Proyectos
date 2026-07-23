@@ -1,0 +1,212 @@
+<%
+  project_type = section[:project_type]
+  slug = project_type.slug
+  section_params = section[:params]
+%>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <%= form_with url: projects_path, method: :get, local: true, scope: "sections[#{slug}]", class: "row g-2" do |form| %>
+      <div class="col-auto">
+        <%= form.label :status, "Estado", class: "form-label" %>
+        <%= form.select :status, @statuses.map { |s| [status_label(s), s] },
+              { include_blank: "Todos", selected: section_params[:status] }, class: "form-select" %>
+      </div>
+      <div class="col-auto">
+        <%= form.label :installer_id, "Instalador", class: "form-label" %>
+        <%= form.select :installer_id,
+              [["Sin instalador", "none"]] + @installers.collect { |i| [i.name, i.id] },
+              { include_blank: "Todos", selected: section_params[:installer_id] }, class: "form-select" %>
+      </div>
+      <div class="col-auto">
+        <%= form.label :from_date, "Desde", class: "form-label" %>
+        <%= form.date_field :from_date, value: section_params[:from_date], class: "form-control" %>
+      </div>
+      <div class="col-auto">
+        <%= form.label :to_date, "Hasta", class: "form-label" %>
+        <%= form.date_field :to_date, value: section_params[:to_date], class: "form-control" %>
+      </div>
+      <div class="col-auto">
+        <%= form.label :stage_name, "Etapa", class: "form-label" %>
+        <%= form.select :stage_name, section[:stage_names],
+              { include_blank: "Todas", selected: section_params[:stage_name] }, class: "form-select" %>
+      </div>
+      <div class="col-auto">
+        <%= form.label :q, "Buscar", class: "form-label" %>
+        <%= form.text_field :q, value: section_params[:q], class: "form-control", placeholder: "Nombre, cliente, dirección..." %>
+      </div>
+      <div class="col-auto align-self-end">
+        <%= form.submit "Filtrar", class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<% if section[:projects_list].empty? %>
+  <p>No hay proyectos con estos filtros.</p>
+<% else %>
+  <%
+    projects_list = section[:projects_list]
+    page_projects = section[:page_projects]
+  %>
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="display-6"><%= projects_list.size %></div>
+          <div class="text-muted">Total</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="display-6 text-danger"><%= projects_list.count(&:overdue?) %></div>
+          <div class="text-muted">Vencidos</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="display-6 text-success"><%= projects_list.count { |p| p.progress_status == "finalizado" } %></div>
+          <div class="text-muted">Finalizados</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <% content_for :head do %>
+    <link href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css" rel="stylesheet">
+  <% end %>
+
+  <%
+    gantt_tasks = projects_list.filter_map do |project|
+      if section_params[:stage_name].present?
+        stage = project.project_stages.find { |s| s.name == section_params[:stage_name] }
+        next if stage.nil?
+        stage_start = stage.start_date || project.created_at.to_date
+        stage_end = stage.end_date || (stage_start + 7.days)
+        first, last = stage_start, stage_end
+      else
+        first, last = project.gantt_window
+      end
+      progress_values = project.project_stages.map(&:progress_percent)
+      average_progress = progress_values.any? ? (progress_values.sum / progress_values.size.to_f).round : 0
+      {
+        id: project.id.to_s,
+        name: project.name,
+        start: first.to_s,
+        end: last.to_s,
+        progress: average_progress,
+        edit_url: project_path(project),
+        custom_class: "installer-color-#{project.installer&.id || 'none'}"
+      }
+    end
+    gantt_colors = projects_list.map do |project|
+      installer = project.installer
+      [installer&.id || "none", installer&.color || "#6c757d"]
+    end.uniq
+  %>
+
+  <div class="card mb-4">
+    <div class="card-header">Cronograma</div>
+    <div class="card-body">
+      <style>
+        .gantt .bar-label {
+          font-weight: bold;
+        }
+        <% gantt_colors.each do |installer_id, color| %>
+          .gantt .bar-wrapper.installer-color-<%= installer_id %> .bar,
+          .gantt .bar-wrapper.installer-color-<%= installer_id %>:hover .bar,
+          .gantt .bar-wrapper.installer-color-<%= installer_id %>.active .bar {
+            fill: <%= color %>;
+          }
+        <% end %>
+      </style>
+
+      <div id="gantt-<%= slug %>" class="mb-0" style="max-height: 630px; overflow-y: auto;"></div>
+
+      <script type="application/json" id="gantt-tasks-<%= slug %>"><%== gantt_tasks.to_json %></script>
+
+      <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+      <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          var tasks = JSON.parse(document.getElementById("gantt-tasks-<%= slug %>").textContent);
+          if (tasks.length > 0) {
+            var gantt = new Gantt("#gantt-<%= slug %>", tasks, {
+              language: "es",
+              on_click: function (task) { window.location = task.edit_url; },
+              on_date_change: function () { gantt.refresh(tasks); },
+              on_progress_change: function () { gantt.refresh(tasks); }
+            });
+          }
+        });
+      </script>
+    </div>
+  </div>
+
+  <%= form_with url: bulk_assign_installer_projects_path(request.query_parameters), method: :patch, local: true,
+        id: "bulk-assign-form-#{slug}", class: "d-flex gap-2 align-items-end mb-3" do |f| %>
+    <div>
+      <%= f.label :installer_id, "Asignar instalador a los seleccionados", for: "bulk-assign-installer-select-#{slug}", class: "form-label" %>
+      <%= f.select :installer_id, @installers.collect { |i| [i.name, i.id] },
+            { include_blank: "Elegí un instalador" }, class: "form-select", id: "bulk-assign-installer-select-#{slug}" %>
+    </div>
+    <%= f.submit "Asignar", class: "btn btn-primary" %>
+  <% end %>
+
+  <div class="card mb-4">
+    <div class="card-header">Listado</div>
+    <div class="card-body p-0">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="select-all-projects-<%= slug %>"></th>
+            <th>Nombre</th><th>Estado</th><th>Avance</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% page_projects.each do |project| %>
+            <tr>
+              <td><%= check_box_tag "project_ids[]", project.id, false, id: nil, form: "bulk-assign-form-#{slug}" %></td>
+              <td><%= link_to project.name, project_path(project) %></td>
+              <td><%= status_badge(project.status) %></td>
+              <td>
+                <%= progress_status_badge(project.progress_status) %>
+                <%= overdue_badge if project.overdue? %>
+              </td>
+              <td>
+                <%= link_to "Editar", edit_project_path(project), class: "btn btn-outline-secondary btn-sm" %>
+                <%= render "archive_button", project: project %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+      <% if section[:total_pages] > 1 %>
+        <nav class="p-3">
+          <ul class="pagination mb-0">
+            <li class="page-item <%= "disabled" if section[:page] <= 1 %>">
+              <%= link_to "Anterior", projects_path(request.query_parameters.deep_merge("sections" => { slug => { "page" => section[:page] - 1 } })), class: "page-link" %>
+            </li>
+            <% (1..section[:total_pages]).each do |n| %>
+              <li class="page-item <%= "active" if n == section[:page] %>">
+                <%= link_to n, projects_path(request.query_parameters.deep_merge("sections" => { slug => { "page" => n } })), class: "page-link" %>
+              </li>
+            <% end %>
+            <li class="page-item <%= "disabled" if section[:page] >= section[:total_pages] %>">
+              <%= link_to "Siguiente", projects_path(request.query_parameters.deep_merge("sections" => { slug => { "page" => section[:page] + 1 } })), class: "page-link" %>
+            </li>
+          </ul>
+        </nav>
+      <% end %>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("select-all-projects-<%= slug %>").addEventListener("change", function (e) {
+      document.querySelectorAll('input[form="bulk-assign-form-<%= slug %>"]').forEach(function (cb) { cb.checked = e.target.checked; });
+    });
+  </script>
+<% end %>
