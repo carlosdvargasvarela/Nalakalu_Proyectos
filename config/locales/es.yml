@@ -1,0 +1,42 @@
+# ponytail: covers only the generic ActiveRecord/ActiveModel error keys and
+# attribute names this app actually triggers today (confirmed by reading
+# every `validates` call in app/models/). A new model with an untranslated
+# validator will show its message in English until a key is added here —
+# that's an accepted gap, not a bug, per the design spec (no rails-i18n /
+# devise-i18n dependency added just for exhaustive coverage).
+es:
+  activerecord:
+    models:
+      user: "usuario"
+    attributes:
+      user:
+        email: "Correo electrónico"
+        password: "Contraseña"
+        password_confirmation: "Confirmación de contraseña"
+      project_type:
+        name: "Nombre"
+        slug: "Slug"
+      field_definition:
+        key: "Clave"
+        label: "Etiqueta"
+        data_type: "Tipo de dato"
+      stage_template:
+        name: "Nombre"
+        color: "Color"
+      project:
+        name: "Nombre"
+      project_stage:
+        name: "Nombre"
+        progress_percent: "Porcentaje de avance"
+      installer:
+        name: "Nombre"
+  errors:
+    messages:
+      blank: "no puede estar en blanco"
+      taken: "ya está en uso"
+      invalid: "no es válido"
+      too_short:
+        one: "es demasiado corto (mínimo 1 carácter)"
+        other: "es demasiado corto (mínimo %{count} caracteres)"
+      confirmation: "no coincide con %{attribute}"
+      inclusion: "no está incluido en la lista"
