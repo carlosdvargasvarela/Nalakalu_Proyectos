@@ -1,5 +1,5 @@
 <h1>Proyectos</h1>
-<table>
+<table class="table table-striped">
   <thead>
     <tr><th>Nombre</th><th>Tipo</th><th>Estado</th></tr>
   </thead>
@@ -14,8 +14,8 @@
   </tbody>
 </table>
 <h2>Nuevo proyecto</h2>
-<ul>
+<ul class="list-unstyled">
   <% ProjectType.all.each do |project_type| %>
-    <li><%= link_to project_type.name, new_project_path(project_type_id: project_type.id) %></li>
+    <li><%= link_to project_type.name, new_project_path(project_type_id: project_type.id), class: "btn btn-outline-primary btn-sm mb-1" %></li>
   <% end %>
 </ul>

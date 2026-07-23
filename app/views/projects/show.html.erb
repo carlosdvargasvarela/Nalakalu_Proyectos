@@ -1,16 +1,16 @@
 <h1><%= @project.name %></h1>
-<p>Tipo: <%= @project.project_type.name %></p>
+<p class="text-muted">Tipo: <%= @project.project_type.name %></p>
 
 <h2>Datos</h2>
-<ul>
+<ul class="list-group mb-4">
   <% @project.project_type.field_definitions.each do |field| %>
-    <li><%= field.label %>: <%= @project.custom_fields[field.key] %></li>
+    <li class="list-group-item"><strong><%= field.label %>:</strong> <%= @project.custom_fields[field.key] %></li>
   <% end %>
 </ul>
 
 <% gantt_fields = @project.project_type.field_definitions.where(show_in_gantt: true).order(:position) %>
 <h2>Subprocesos</h2>
-<table>
+<table class="table table-bordered">
   <thead>
     <tr>
       <th>Etapa</th><th>Inicio</th><th>Fin</th><th>Responsable</th><th>% Avance</th>

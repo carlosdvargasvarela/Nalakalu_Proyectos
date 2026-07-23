@@ -1,19 +1,21 @@
 <%= form_with model: [:admin, project_type, stage_template] do |form| %>
   <% if stage_template.errors.any? %>
-    <ul>
-      <% stage_template.errors.full_messages.each do |message| %>
-        <li><%= message %></li>
-      <% end %>
-    </ul>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% stage_template.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
   <% end %>
 
-  <div>
-    <%= form.label :name %>
-    <%= form.text_field :name %>
+  <div class="mb-3">
+    <%= form.label :name, class: "form-label" %>
+    <%= form.text_field :name, class: "form-control" %>
   </div>
-  <div>
-    <%= form.label :position %>
-    <%= form.number_field :position %>
+  <div class="mb-3">
+    <%= form.label :position, class: "form-label" %>
+    <%= form.number_field :position, class: "form-control" %>
   </div>
-  <%= form.submit %>
+  <%= form.submit class: "btn btn-primary" %>
 <% end %>

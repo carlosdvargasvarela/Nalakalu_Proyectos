@@ -1,22 +1,24 @@
 <%= form_with model: project do |form| %>
   <% if project.errors.any? %>
-    <ul>
-      <% project.errors.full_messages.each do |message| %>
-        <li><%= message %></li>
-      <% end %>
-    </ul>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% project.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
   <% end %>
 
   <%= form.hidden_field :project_type_id, value: project_type.id %>
 
-  <div>
-    <%= form.label :name %>
-    <%= form.text_field :name %>
+  <div class="mb-3">
+    <%= form.label :name, class: "form-label" %>
+    <%= form.text_field :name, class: "form-control" %>
   </div>
 
   <% project_type.field_definitions.each do |field| %>
     <%= render "field_input", form: form, field: field, project: project %>
   <% end %>
 
-  <%= form.submit %>
+  <%= form.submit class: "btn btn-primary" %>
 <% end %>
