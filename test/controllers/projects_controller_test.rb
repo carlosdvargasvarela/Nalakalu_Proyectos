@@ -697,6 +697,17 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[type=date][name=?]", "to_date"
   end
 
+  test "index's Desde/Hasta filter always shows projects with no dated stages, regardless of the range" do
+    sin_fechas = Project.create!(project_type: project_types(:instalaciones), name: "Sin Fechas", custom_fields: {})
+    fuera = Project.create!(project_type: project_types(:instalaciones), name: "Fuera del Rango", custom_fields: {})
+    fuera.project_stages.each { |s| s.update!(start_date: Date.new(2026, 6, 1), end_date: Date.new(2026, 6, 10)) }
+
+    get projects_path, params: { from_date: "2026-02-01", to_date: "2026-04-01" }
+    assert_response :success
+    assert_match(/#{sin_fechas.name}/, response.body)
+    assert_no_match(/#{fuera.name}/, response.body)
+  end
+
   test "index paginates the Listado table at 20 projects per page" do
     25.times { |n| Project.create!(project_type: project_types(:instalaciones), name: "Proyecto #{n}", custom_fields: {}) }
 

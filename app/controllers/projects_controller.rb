@@ -118,9 +118,14 @@ class ProjectsController < ApplicationController
 
   def filter_by_date_range(scope, from_date, to_date)
     return scope if from_date.blank? && to_date.blank?
-    scope = scope.joins(:project_stages).distinct
-    scope = scope.where("project_stages.end_date >= ?", from_date) if from_date.present?
-    scope = scope.where("project_stages.start_date <= ?", to_date) if to_date.present?
-    scope
+
+    dated_scope = scope.joins(:project_stages).distinct
+    dated_scope = dated_scope.where("project_stages.end_date >= ?", from_date) if from_date.present?
+    dated_scope = dated_scope.where("project_stages.start_date <= ?", to_date) if to_date.present?
+
+    dated_stage_project_ids = ProjectStage.where.not(start_date: nil).where.not(end_date: nil).select(:project_id)
+    undated_scope = scope.where.not(id: dated_stage_project_ids)
+
+    scope.where(id: dated_scope.reorder(nil).select(:id)).or(scope.where(id: undated_scope.reorder(nil).select(:id)))
   end
 end
