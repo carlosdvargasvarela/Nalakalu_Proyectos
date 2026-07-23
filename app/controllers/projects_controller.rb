@@ -2,7 +2,7 @@ class ProjectsController < ApplicationController
   before_action :set_project, only: [:show, :edit, :update]
 
   def index
-    @projects = Project.includes(:project_type).all
+    @projects = Project.includes(:project_type).where.not(status: "archived")
   end
 
   def dashboard

@@ -9,7 +9,13 @@
         <td><%= link_to project.name, project_path(project) %></td>
         <td><%= project.project_type.name %></td>
         <td><%= project.status %></td>
-        <td><%= link_to "Editar", edit_project_path(project), class: "btn btn-outline-secondary btn-sm" %></td>
+        <td>
+          <%= link_to "Editar", edit_project_path(project), class: "btn btn-outline-secondary btn-sm" %>
+          <%= form_with(model: project, local: true, method: :patch, style: "display:inline-block") do |f| %>
+            <%= f.hidden_field :status, value: "archived" %>
+            <%= f.submit "Archivar", class: "btn btn-outline-danger btn-sm" %>
+          <% end %>
+        </td>
       </tr>
     <% end %>
   </tbody>

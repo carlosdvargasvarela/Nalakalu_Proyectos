@@ -138,4 +138,30 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "body", /No hay proyectos con estos filtros/
   end
+
+  test "index excludes archived projects" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Activo", custom_fields: {})
+    Project.create!(
+      project_type: project_types(:instalaciones), name: "Archivado", custom_fields: {}, status: "archived"
+    )
+    get projects_path
+    assert_response :success
+    assert_select "body", /Activo/
+    assert_select "body", text: /Archivado/, count: 0
+  end
+
+  test "index shows an archive button for each project" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path
+    assert_select "form[action=?]", project_path(project) do
+      assert_select "input[value=?]", "Archivar"
+    end
+  end
+
+  test "archiving a project via update sets status to archived" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    patch project_path(project), params: { project: { status: "archived" } }
+    assert_redirected_to project_path(project)
+    assert_equal "archived", project.reload.status
+  end
 end
