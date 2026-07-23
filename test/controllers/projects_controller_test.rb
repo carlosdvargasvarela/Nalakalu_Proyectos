@@ -560,4 +560,68 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     end
     assert_equal "5", Project.order(:id).last.custom_fields["cantidad"]
   end
+
+  test "bulk_assign_installer assigns the installer to every selected project" do
+    otro_instalador = Installer.create!(name: "Otro Instalador")
+    proyecto_a = Project.create!(project_type: project_types(:instalaciones), name: "Proyecto A", custom_fields: {})
+    proyecto_b = Project.create!(project_type: project_types(:instalaciones), name: "Proyecto B", custom_fields: {})
+
+    patch bulk_assign_installer_projects_path, params: {
+      installer_id: otro_instalador.id, project_ids: [proyecto_a.id, proyecto_b.id]
+    }
+
+    assert_redirected_to projects_path
+    assert_equal otro_instalador.id.to_s, proyecto_a.reload.custom_fields["instalador"]
+    assert_equal otro_instalador.id.to_s, proyecto_b.reload.custom_fields["instalador"]
+    follow_redirect!
+    assert_match(/Instalador asignado a 2 proyecto\(s\)/, response.body)
+  end
+
+  test "bulk_assign_installer preserves existing query params on redirect" do
+    installer = installers(:juan_perez)
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Proyecto A", custom_fields: {})
+
+    patch bulk_assign_installer_projects_path, params: {
+      installer_id: installer.id, project_ids: [project.id], project_type_id: project_types(:instalaciones).id
+    }
+
+    assert_redirected_to projects_path(project_type_id: project_types(:instalaciones).id)
+  end
+
+  test "bulk_assign_installer without an installer chosen does nothing and redirects with an alert" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Proyecto A", custom_fields: {})
+
+    patch bulk_assign_installer_projects_path, params: { installer_id: "", project_ids: [project.id] }
+
+    assert_redirected_to projects_path
+    assert_nil project.reload.custom_fields["instalador"]
+    follow_redirect!
+    assert_match(/Elegí un instalador y al menos un proyecto/, response.body)
+  end
+
+  test "bulk_assign_installer without any project selected does nothing and redirects with an alert" do
+    installer = installers(:juan_perez)
+
+    patch bulk_assign_installer_projects_path, params: { installer_id: installer.id, project_ids: [] }
+
+    assert_redirected_to projects_path
+    follow_redirect!
+    assert_match(/Elegí un instalador y al menos un proyecto/, response.body)
+  end
+
+  test "bulk_assign_installer skips a project whose type has no installer-reference field" do
+    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    installer = installers(:juan_perez)
+    con_campo = Project.create!(project_type: project_types(:instalaciones), name: "Con Campo", custom_fields: {})
+    sin_campo = Project.create!(project_type: other_type, name: "Sin Campo", custom_fields: {})
+
+    patch bulk_assign_installer_projects_path, params: {
+      installer_id: installer.id, project_ids: [con_campo.id, sin_campo.id]
+    }
+
+    assert_equal installer.id.to_s, con_campo.reload.custom_fields["instalador"]
+    assert_equal({}, sin_campo.reload.custom_fields)
+    follow_redirect!
+    assert_match(/Instalador asignado a 1 proyecto\(s\)/, response.body)
+  end
 end

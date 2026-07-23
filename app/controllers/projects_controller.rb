@@ -65,6 +65,24 @@ class ProjectsController < ApplicationController
     end
   end
 
+  def bulk_assign_installer
+    redirect_params = request.query_parameters.merge(params.permit(:project_type_id))
+    if params[:installer_id].blank? || Array(params[:project_ids]).empty?
+      redirect_to projects_path(redirect_params), alert: "Elegí un instalador y al menos un proyecto." and return
+    end
+
+    count = 0
+    Project.where(id: params[:project_ids]).find_each do |project|
+      key = project.project_type.field_definitions.find_by(reference_table: "installers")&.key
+      next unless key
+
+      project.custom_fields = project.custom_fields.merge(key => params[:installer_id])
+      count += 1 if project.save
+    end
+
+    redirect_to projects_path(redirect_params), notice: "Instalador asignado a #{count} proyecto(s)."
+  end
+
   private
 
   def set_project

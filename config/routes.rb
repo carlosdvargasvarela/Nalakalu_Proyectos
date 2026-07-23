@@ -17,6 +17,7 @@ Rails.application.routes.draw do
   end
 
   get "projects/seguimiento", to: "projects#tracker", as: :tracker_projects
+  patch "projects/bulk_assign_installer", to: "projects#bulk_assign_installer", as: :bulk_assign_installer_projects
   resources :projects
 
   resources :imports, only: [:new, :create]
