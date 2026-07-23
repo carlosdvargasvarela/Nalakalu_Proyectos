@@ -942,7 +942,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
   test "index shows pagination controls that preserve the current section's filter" do
     slug = project_types(:instalaciones).slug
-    25.times { |n| Project.create!(project_type: project_types(:instalaciones), name: "Projeto #{n}", custom_fields: {}, status: "active") }
+    25.times { |n| Project.create!(project_type: project_types(:instalaciones), name: "Proyecto #{n}", custom_fields: {}, status: "active") }
 
     get projects_path, params: { sections: { slug => { status: "active" } } }
     assert_response :success
