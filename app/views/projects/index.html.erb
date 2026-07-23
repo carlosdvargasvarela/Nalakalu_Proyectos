@@ -1,7 +1,7 @@
 <h1>Proyectos</h1>
 <table class="table table-striped">
   <thead>
-    <tr><th>Nombre</th><th>Tipo</th><th>Estado</th></tr>
+    <tr><th>Nombre</th><th>Tipo</th><th>Estado</th><th></th></tr>
   </thead>
   <tbody>
     <% @projects.each do |project| %>
@@ -9,6 +9,7 @@
         <td><%= link_to project.name, project_path(project) %></td>
         <td><%= project.project_type.name %></td>
         <td><%= project.status %></td>
+        <td><%= link_to "Editar", edit_project_path(project), class: "btn btn-outline-secondary btn-sm" %></td>
       </tr>
     <% end %>
   </tbody>

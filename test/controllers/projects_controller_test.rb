@@ -76,4 +76,16 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "#gantt"
     assert_select "script#gantt-tasks", text: /#{project.project_stages.first.name}/
   end
+
+  test "index shows an edit link for each project" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path
+    assert_select "a[href=?]", edit_project_path(project), text: "Editar"
+  end
+
+  test "show has an edit link" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_select "a[href=?]", edit_project_path(project), text: "Editar"
+  end
 end
