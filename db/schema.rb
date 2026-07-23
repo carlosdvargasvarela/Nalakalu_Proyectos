@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_07_23_013103) do
+ActiveRecord::Schema[7.2].define(version: 2026_07_23_013426) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -42,6 +42,16 @@ ActiveRecord::Schema[7.2].define(version: 2026_07_23_013103) do
     t.index ["slug"], name: "index_project_types_on_slug", unique: true
   end
 
+  create_table "projects", force: :cascade do |t|
+    t.bigint "project_type_id", null: false
+    t.string "name", null: false
+    t.jsonb "custom_fields", default: {}, null: false
+    t.string "status", default: "active", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["project_type_id"], name: "index_projects_on_project_type_id"
+  end
+
   create_table "stage_templates", force: :cascade do |t|
     t.bigint "project_type_id", null: false
     t.string "name", null: false
@@ -52,5 +62,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_07_23_013103) do
   end
 
   add_foreign_key "field_definitions", "project_types"
+  add_foreign_key "projects", "project_types"
   add_foreign_key "stage_templates", "project_types"
 end
