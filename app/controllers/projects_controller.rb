@@ -5,7 +5,7 @@ class ProjectsController < ApplicationController
     @project_types = ProjectType.all
     @statuses = Project.distinct.pluck(:status).compact
     @installers = Installer.all
-    @projects = Project.includes(:project_type, project_stages: :stage_template)
+    @projects = Project.includes(:project_type, project_stages: :stage_template).order(:name)
     @projects = params[:status].present? ? @projects.where(status: params[:status]) : @projects.where.not(status: "archived")
     @projects = @projects.where(project_type_id: params[:project_type_id]) if params[:project_type_id].present?
     if params[:installer_id] == "none"

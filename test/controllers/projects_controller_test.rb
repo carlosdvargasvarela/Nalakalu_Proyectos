@@ -663,6 +663,13 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/project_ids\[\]/, response.body)
   end
 
+  test "index's pagination Anterior link points to the previous page, not itself" do
+    25.times { |n| Project.create!(project_type: project_types(:instalaciones), name: "Proyecto #{n}", custom_fields: {}) }
+    get projects_path, params: { page: 2 }
+    assert_response :success
+    assert_select "a.page-link[href=?]", projects_path(page: 1)
+  end
+
   test "index filters by a Desde/Hasta date range that overlaps a project's stages" do
     dentro = Project.create!(project_type: project_types(:instalaciones), name: "Dentro del Rango", custom_fields: {})
     dentro.project_stages.order(:id).first.update!(start_date: Date.new(2026, 3, 1), end_date: Date.new(2026, 3, 10))

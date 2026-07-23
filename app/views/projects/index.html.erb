@@ -184,15 +184,15 @@
         <nav class="p-3">
           <ul class="pagination mb-0">
             <li class="page-item <%= "disabled" if @page <= 1 %>">
-              <%= link_to "Anterior", projects_path(request.query_parameters.merge(page: @page - 1)), class: "page-link" %>
+              <%= link_to "Anterior", projects_path(request.query_parameters.merge("page" => @page - 1)), class: "page-link" %>
             </li>
             <% (1..total_pages).each do |n| %>
               <li class="page-item <%= "active" if n == @page %>">
-                <%= link_to n, projects_path(request.query_parameters.merge(page: n)), class: "page-link" %>
+                <%= link_to n, projects_path(request.query_parameters.merge("page" => n)), class: "page-link" %>
               </li>
             <% end %>
             <li class="page-item <%= "disabled" if @page >= total_pages %>">
-              <%= link_to "Siguiente", projects_path(request.query_parameters.merge(page: @page + 1)), class: "page-link" %>
+              <%= link_to "Siguiente", projects_path(request.query_parameters.merge("page" => @page + 1)), class: "page-link" %>
             </li>
           </ul>
         </nav>
