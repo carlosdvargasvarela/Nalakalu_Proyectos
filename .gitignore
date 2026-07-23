@@ -35,3 +35,4 @@
 /config/master.key
 graphify-out/
 .superpowers/
+.claude-flow/
