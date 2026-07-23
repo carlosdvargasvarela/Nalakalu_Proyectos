@@ -56,15 +56,32 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "body", /Producción/
   end
 
-  test "show renders a Gantt column for each show_in_gantt field, with the project's value shown once" do
+  test "show displays each custom field's value exactly once (no duplicate Gantt-columns table)" do
     project = Project.create!(
       project_type: project_types(:instalaciones), name: "Torre Norte",
       custom_fields: { cliente: "Acme S.A." }
     )
     get project_path(project)
     assert_response :success
-    assert_select "table th", text: "Cliente"
-    assert_select "table td", text: "Acme S.A.", count: 1
+    assert_select "body", text: /Acme S\.A\./, count: 1
+  end
+
+  test "show displays a status badge and an archive button" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_response :success
+    assert_select "span.badge.bg-success", "Activo"
+    assert_select "form[action=?]", project_path(project) do
+      assert_select "input[value=?]", "Archivar"
+    end
+  end
+
+  test "show groups Datos and Cronograma into cards" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_response :success
+    assert_select ".card .card-header", "Datos"
+    assert_select ".card .card-header", "Cronograma"
   end
 
   test "show renders the Gantt chart container with one task per stage" do

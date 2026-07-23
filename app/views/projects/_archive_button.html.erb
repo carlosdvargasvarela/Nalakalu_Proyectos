@@ -1,0 +1,4 @@
+<%= form_with(model: project, local: true, method: :patch, style: "display:inline-block") do |f| %>
+  <%= f.hidden_field :status, value: "archived" %>
+  <%= f.submit "Archivar", class: "btn btn-outline-danger btn-sm" %>
+<% end %>

@@ -1,33 +1,27 @@
-<h1><%= @project.name %></h1>
-<%= link_to "Editar", edit_project_path(@project), class: "btn btn-outline-secondary btn-sm mb-2" %>
-<p class="text-muted">Tipo: <%= @project.project_type.name %></p>
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h1 class="d-inline-block me-2 mb-0"><%= @project.name %></h1>
+    <%= status_badge(@project.status) %>
+    <p class="text-muted mb-0">Tipo: <%= @project.project_type.name %></p>
+  </div>
+  <div class="d-flex gap-2">
+    <%= link_to "Editar", edit_project_path(@project), class: "btn btn-outline-secondary btn-sm" %>
+    <%= render "archive_button", project: @project %>
+  </div>
+</div>
 
-<h2>Datos</h2>
-<ul class="list-group mb-4">
-  <% @project.project_type.field_definitions.each do |field| %>
-    <li class="list-group-item"><strong><%= field.label %>:</strong> <%= @project.custom_fields[field.key] %></li>
-  <% end %>
-</ul>
+<div class="card mb-4">
+  <div class="card-header">Datos</div>
+  <ul class="list-group list-group-flush">
+    <% @project.project_type.field_definitions.each do |field| %>
+      <li class="list-group-item"><strong><%= field.label %>:</strong> <%= @project.custom_fields[field.key] %></li>
+    <% end %>
+  </ul>
+</div>
 
 <% content_for :head do %>
   <link href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css" rel="stylesheet">
 <% end %>
-
-<% gantt_fields = @project.project_type.field_definitions.where(show_in_gantt: true).order(:position) %>
-<h2>Gantt</h2>
-
-<% if gantt_fields.any? %>
-  <table class="table table-sm table-bordered w-auto mb-3">
-    <thead>
-      <tr><% gantt_fields.each do |field| %><th><%= field.label %></th><% end %></tr>
-    </thead>
-    <tbody>
-      <tr><% gantt_fields.each do |field| %><td><%= @project.custom_fields[field.key] %></td><% end %></tr>
-    </tbody>
-  </table>
-<% end %>
-
-<div id="gantt" class="mb-4"></div>
 
 <%
   # ponytail: a stage with no dates gets a one-week placeholder window starting at
@@ -48,44 +42,51 @@
   end
   stage_colors = stages.map { |stage| [stage.stage_template_id || "none", stage.stage_template&.color || "#6c757d"] }.uniq
 %>
-<style>
-  <% stage_colors.each do |template_id, color| %>
-    .bar-wrapper.stage-color-<%= template_id %> .bar { fill: <%= color %>; }
-  <% end %>
-</style>
-<script type="application/json" id="gantt-tasks"><%== gantt_tasks.to_json %></script>
-
-<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    var tasks = JSON.parse(document.getElementById("gantt-tasks").textContent);
-    if (tasks.length > 0) {
-      var gantt = new Gantt("#gantt", tasks, {
-        language: "es",
-        on_click: function (task) { window.location.hash = "stage-" + task.id; },
-        on_date_change: function () { gantt.refresh(tasks); },
-        on_progress_change: function () { gantt.refresh(tasks); }
-      });
-    }
-  });
-</script>
-
-<h2>Etapas</h2>
-<%= form_with model: @project do |f| %>
-  <table class="table table-sm table-bordered w-auto">
-    <thead>
-      <tr><th>Etapa</th><th>Inicio</th><th>Fin</th><th>% Avance</th></tr>
-    </thead>
-    <tbody>
-      <%= f.fields_for :project_stages, stages do |sf| %>
-        <tr id="stage-<%= sf.object.id %>">
-          <td><%= sf.object.name %></td>
-          <td><%= sf.hidden_field :id %><%= sf.date_field :start_date, class: "form-control form-control-sm" %></td>
-          <td><%= sf.date_field :end_date, class: "form-control form-control-sm" %></td>
-          <td><%= sf.number_field :progress_percent, min: 0, max: 100, class: "form-control form-control-sm" %></td>
-        </tr>
+<div class="card mb-4">
+  <div class="card-header">Cronograma</div>
+  <div class="card-body">
+    <style>
+      <% stage_colors.each do |template_id, color| %>
+        .bar-wrapper.stage-color-<%= template_id %> .bar { fill: <%= color %>; }
       <% end %>
-    </tbody>
-  </table>
-  <%= f.submit "Guardar cambios", class: "btn btn-primary" %>
-<% end %>
+    </style>
+
+    <div id="gantt" class="mb-4"></div>
+
+    <script type="application/json" id="gantt-tasks"><%== gantt_tasks.to_json %></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var tasks = JSON.parse(document.getElementById("gantt-tasks").textContent);
+        if (tasks.length > 0) {
+          var gantt = new Gantt("#gantt", tasks, {
+            language: "es",
+            on_click: function (task) { window.location.hash = "stage-" + task.id; },
+            on_date_change: function () { gantt.refresh(tasks); },
+            on_progress_change: function () { gantt.refresh(tasks); }
+          });
+        }
+      });
+    </script>
+
+    <%= form_with model: @project do |f| %>
+      <table class="table table-sm table-bordered w-auto mb-0">
+        <thead>
+          <tr><th>Etapa</th><th>Inicio</th><th>Fin</th><th>% Avance</th></tr>
+        </thead>
+        <tbody>
+          <%= f.fields_for :project_stages, stages do |sf| %>
+            <tr id="stage-<%= sf.object.id %>">
+              <td><%= sf.object.name %></td>
+              <td><%= sf.hidden_field :id %><%= sf.date_field :start_date, class: "form-control form-control-sm" %></td>
+              <td><%= sf.date_field :end_date, class: "form-control form-control-sm" %></td>
+              <td><%= sf.number_field :progress_percent, min: 0, max: 100, class: "form-control form-control-sm" %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+      <%= f.submit "Guardar cambios", class: "btn btn-primary mt-3" %>
+    <% end %>
+  </div>
+</div>

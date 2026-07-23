@@ -87,10 +87,7 @@
           <td><%= status_badge(project.status) %></td>
           <td>
             <%= link_to "Editar", edit_project_path(project), class: "btn btn-outline-secondary btn-sm" %>
-            <%= form_with(model: project, local: true, method: :patch, style: "display:inline-block") do |f| %>
-              <%= f.hidden_field :status, value: "archived" %>
-              <%= f.submit "Archivar", class: "btn btn-outline-danger btn-sm" %>
-            <% end %>
+            <%= render "archive_button", project: project %>
           </td>
         </tr>
       <% end %>
