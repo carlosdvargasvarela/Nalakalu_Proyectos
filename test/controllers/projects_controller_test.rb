@@ -662,4 +662,31 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/select-all-projects/, response.body)
     assert_match(/project_ids\[\]/, response.body)
   end
+
+  test "index filters by a Desde/Hasta date range that overlaps a project's stages" do
+    dentro = Project.create!(project_type: project_types(:instalaciones), name: "Dentro del Rango", custom_fields: {})
+    dentro.project_stages.order(:id).first.update!(start_date: Date.new(2026, 3, 1), end_date: Date.new(2026, 3, 10))
+
+    fuera = Project.create!(project_type: project_types(:instalaciones), name: "Fuera del Rango", custom_fields: {})
+    fuera.project_stages.each { |s| s.update!(start_date: Date.new(2026, 6, 1), end_date: Date.new(2026, 6, 10)) }
+
+    get projects_path, params: { from_date: "2026-02-01", to_date: "2026-04-01" }
+    assert_response :success
+    assert_match(/#{dentro.name}/, response.body)
+    assert_no_match(/#{fuera.name}/, response.body)
+  end
+
+  test "index without from_date or to_date shows all projects allowed by the other filters" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path
+    assert_response :success
+    assert_match(/#{project.name}/, response.body)
+  end
+
+  test "index shows Desde and Hasta date fields in the filter form" do
+    get projects_path
+    assert_response :success
+    assert_select "input[type=date][name=?]", "from_date"
+    assert_select "input[type=date][name=?]", "to_date"
+  end
 end

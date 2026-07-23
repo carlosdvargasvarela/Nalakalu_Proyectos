@@ -31,6 +31,14 @@
               [["Sin instalador", "none"]] + @installers.collect { |i| [i.name, i.id] },
               { include_blank: "Todos", selected: params[:installer_id] }, class: "form-select" %>
       </div>
+      <div class="col-auto">
+        <%= form.label :from_date, "Desde", class: "form-label" %>
+        <%= form.date_field :from_date, value: params[:from_date], class: "form-control" %>
+      </div>
+      <div class="col-auto">
+        <%= form.label :to_date, "Hasta", class: "form-label" %>
+        <%= form.date_field :to_date, value: params[:to_date], class: "form-control" %>
+      </div>
       <div class="col-auto align-self-end">
         <%= form.submit "Filtrar", class: "btn btn-primary" %>
       </div>

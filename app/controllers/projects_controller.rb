@@ -13,6 +13,7 @@ class ProjectsController < ApplicationController
     elsif params[:installer_id].present?
       @projects = filter_by_installer(@projects, params[:installer_id])
     end
+    @projects = filter_by_date_range(@projects, params[:from_date], params[:to_date])
   end
 
   def tracker
@@ -112,5 +113,13 @@ class ProjectsController < ApplicationController
     keys = FieldDefinition.where(reference_table: "installers").distinct.pluck(:key)
     return scope if keys.empty?
     keys.reduce(scope) { |s, key| s.where("custom_fields ->> ? IS NULL OR custom_fields ->> ? = ''", key, key) }
+  end
+
+  def filter_by_date_range(scope, from_date, to_date)
+    return scope if from_date.blank? && to_date.blank?
+    scope = scope.joins(:project_stages).distinct
+    scope = scope.where("project_stages.end_date >= ?", from_date) if from_date.present?
+    scope = scope.where("project_stages.start_date <= ?", to_date) if to_date.present?
+    scope
   end
 end
