@@ -47,4 +47,15 @@ class Admin::StageTemplatesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "input[value=?]", "Actualizar Subproceso"
   end
+
+  test "reorder updates position according to the submitted id order" do
+    entrega = stage_templates(:entrega)
+    diseno = stage_templates(:diseno_aprobacion)
+
+    patch reorder_admin_project_type_stage_templates_path(@project_type), params: { ids: [entrega.id, diseno.id] }, as: :json
+    assert_response :success
+
+    assert_equal 0, entrega.reload.position
+    assert_equal 1, diseno.reload.position
+  end
 end

@@ -31,6 +31,13 @@ class Admin::FieldDefinitionsController < ApplicationController
     redirect_to admin_project_type_path(@project_type)
   end
 
+  def reorder
+    Array(params[:ids]).each_with_index do |id, index|
+      @project_type.field_definitions.where(id: id).update_all(position: index)
+    end
+    head :ok
+  end
+
   private
 
   def set_project_type

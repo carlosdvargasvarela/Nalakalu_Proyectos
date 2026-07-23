@@ -6,8 +6,12 @@ Rails.application.routes.draw do
 
   namespace :admin do
     resources :project_types do
-      resources :field_definitions, except: [:index, :show]
-      resources :stage_templates, except: [:index, :show]
+      resources :field_definitions, except: [:index, :show] do
+        patch :reorder, on: :collection
+      end
+      resources :stage_templates, except: [:index, :show] do
+        patch :reorder, on: :collection
+      end
     end
     resources :installers
   end
