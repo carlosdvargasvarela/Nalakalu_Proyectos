@@ -1,10 +1,18 @@
 class Project < ApplicationRecord
   belongs_to :project_type
+  has_many :project_stages, dependent: :destroy
 
   validates :name, presence: true
   validate :custom_fields_match_definitions
+  after_create :build_stages_from_template
 
   private
+
+  def build_stages_from_template
+    project_type.stage_templates.each do |template|
+      project_stages.create!(stage_template: template, name: template.name)
+    end
+  end
 
   def custom_fields_match_definitions
     project_type.field_definitions.each do |field|
