@@ -63,7 +63,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     )
     get project_path(project)
     assert_response :success
-    assert_select "body", text: /Acme S\.A\./, count: 1
+    assert_equal 1, response.body.scan("Acme S.A.").size
   end
 
   test "show displays a status badge and an archive button" do
