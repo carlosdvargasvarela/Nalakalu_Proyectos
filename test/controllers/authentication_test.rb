@@ -16,4 +16,18 @@ class AuthenticationTest < ActionDispatch::IntegrationTest
     get root_path
     assert_response :success
   end
+
+  test "sign-in page is in Spanish" do
+    get new_user_session_path
+    assert_response :success
+    assert_select "h2", "Iniciar sesión"
+    assert_select "input[value=?]", "Iniciar sesión"
+  end
+
+  test "sign-up page is in Spanish" do
+    get new_user_registration_path
+    assert_response :success
+    assert_select "h2", "Registrarse"
+    assert_select "input[value=?]", "Registrarse"
+  end
 end
