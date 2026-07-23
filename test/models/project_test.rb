@@ -41,4 +41,13 @@ class ProjectTest < ActiveSupport::TestCase
     )
     assert project.valid?
   end
+
+  test "valid when a field is blank string, as submitted by an empty form field" do
+    project = Project.new(
+      project_type: @project_type,
+      name: "Instalación Torre Norte",
+      custom_fields: { "cliente" => "Acme S.A.", "instalador" => "" }
+    )
+    assert project.valid?, project.errors.full_messages.to_s
+  end
 end

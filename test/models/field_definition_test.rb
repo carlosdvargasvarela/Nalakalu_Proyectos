@@ -24,4 +24,12 @@ class FieldDefinitionTest < ActiveSupport::TestCase
     )
     assert_not dup.valid?
   end
+
+  test "invalid reference field without a reference_table" do
+    field = FieldDefinition.new(
+      project_type: project_types(:instalaciones),
+      key: "supervisor", label: "Supervisor", data_type: "reference"
+    )
+    assert_not field.valid?
+  end
 end

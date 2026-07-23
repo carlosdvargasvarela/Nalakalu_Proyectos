@@ -6,4 +6,5 @@ class FieldDefinition < ApplicationRecord
   validates :key, presence: true, uniqueness: { scope: :project_type_id }
   validates :label, presence: true
   validates :data_type, inclusion: { in: DATA_TYPES }
+  validates :reference_table, presence: true, if: -> { data_type == "reference" }
 end

@@ -17,7 +17,7 @@ class Project < ApplicationRecord
   def custom_fields_match_definitions
     project_type.field_definitions.each do |field|
       value = custom_fields[field.key]
-      next if value.nil?
+      next if value.nil? || value == ""
 
       case field.data_type
       when "text"
@@ -40,7 +40,6 @@ class Project < ApplicationRecord
   end
 
   def valid_percent?(value)
-    Float(value) rescue false
     Float(value).between?(0, 100)
   rescue ArgumentError, TypeError
     false
@@ -48,7 +47,7 @@ class Project < ApplicationRecord
 
   def valid_reference?(field, value)
     field.reference_table.classify.constantize.exists?(id: value)
-  rescue NameError
+  rescue NameError, NoMethodError
     false
   end
 end
