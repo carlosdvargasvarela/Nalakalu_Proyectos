@@ -1,0 +1,26 @@
+<h1><%= @project.name %></h1>
+<p>Tipo: <%= @project.project_type.name %></p>
+
+<h2>Datos</h2>
+<ul>
+  <% @project.project_type.field_definitions.each do |field| %>
+    <li><%= field.label %>: <%= @project.custom_fields[field.key] %></li>
+  <% end %>
+</ul>
+
+<h2>Subprocesos</h2>
+<table>
+  <thead>
+    <tr><th>Etapa</th><th>Inicio</th><th>Fin</th><th>% Avance</th></tr>
+  </thead>
+  <tbody>
+    <% @project.project_stages.order(:id).each do |stage| %>
+      <tr>
+        <td><%= stage.name %></td>
+        <td><%= stage.start_date %></td>
+        <td><%= stage.end_date %></td>
+        <td><%= stage.progress_percent %>%</td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

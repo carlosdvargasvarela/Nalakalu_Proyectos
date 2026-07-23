@@ -1,0 +1,21 @@
+<h1>Proyectos</h1>
+<table>
+  <thead>
+    <tr><th>Nombre</th><th>Tipo</th><th>Estado</th></tr>
+  </thead>
+  <tbody>
+    <% @projects.each do |project| %>
+      <tr>
+        <td><%= link_to project.name, project_path(project) %></td>
+        <td><%= project.project_type.name %></td>
+        <td><%= project.status %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+<h2>Nuevo proyecto</h2>
+<ul>
+  <% ProjectType.all.each do |project_type| %>
+    <li><%= link_to project_type.name, new_project_path(project_type_id: project_type.id) %></li>
+  <% end %>
+</ul>

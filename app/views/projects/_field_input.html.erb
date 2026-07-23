@@ -1,0 +1,15 @@
+<div>
+  <%= label_tag "custom_fields_#{field.key}", field.label %>
+  <% case field.data_type %>
+  <% when "text" %>
+    <%= text_field_tag "project[custom_fields][#{field.key}]", project.custom_fields[field.key] %>
+  <% when "date" %>
+    <%= date_field_tag "project[custom_fields][#{field.key}]", project.custom_fields[field.key] %>
+  <% when "percent" %>
+    <%= number_field_tag "project[custom_fields][#{field.key}]", project.custom_fields[field.key], min: 0, max: 100 %>
+  <% when "reference" %>
+    <%= select_tag "project[custom_fields][#{field.key}]",
+          options_from_collection_for_select(field.reference_table.classify.constantize.all, :id, :name, project.custom_fields[field.key]),
+          { include_blank: true } %>
+  <% end %>
+</div>
