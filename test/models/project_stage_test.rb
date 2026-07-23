@@ -38,4 +38,17 @@ class ProjectStageTest < ActiveSupport::TestCase
     assert stage.present?
     assert_nil stage.reload.stage_template_id
   end
+
+  test "valid with and without an assigned user" do
+    project = Project.create!(
+      project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {}
+    )
+    stage = project.project_stages.first
+
+    stage.user = users(:juan)
+    assert stage.valid?, stage.errors.full_messages.to_s
+
+    stage.user = nil
+    assert stage.valid?, stage.errors.full_messages.to_s
+  end
 end

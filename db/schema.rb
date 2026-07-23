@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_07_23_110028) do
+ActiveRecord::Schema[7.2].define(version: 2026_07_23_110824) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -41,11 +41,12 @@ ActiveRecord::Schema[7.2].define(version: 2026_07_23_110028) do
     t.date "start_date"
     t.date "end_date"
     t.integer "progress_percent", default: 0, null: false
-    t.integer "assigned_user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id"
     t.index ["project_id"], name: "index_project_stages_on_project_id"
     t.index ["stage_template_id"], name: "index_project_stages_on_stage_template_id"
+    t.index ["user_id"], name: "index_project_stages_on_user_id"
   end
 
   create_table "project_types", force: :cascade do |t|
@@ -90,6 +91,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_07_23_110028) do
   add_foreign_key "field_definitions", "project_types"
   add_foreign_key "project_stages", "projects"
   add_foreign_key "project_stages", "stage_templates", on_delete: :nullify
+  add_foreign_key "project_stages", "users"
   add_foreign_key "projects", "project_types"
   add_foreign_key "stage_templates", "project_types"
 end
