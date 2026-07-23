@@ -15,5 +15,8 @@ Rails.application.routes.draw do
   get "projects/seguimiento", to: "projects#tracker", as: :tracker_projects
   resources :projects
 
+  resources :imports, only: [:new, :create]
+  get "imports/template", to: "imports#template", as: :template_imports
+
   root "projects#index"
 end

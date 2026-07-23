@@ -1,0 +1,32 @@
+<h1>Importar proyectos</h1>
+
+<%= form_with url: new_import_path, method: :get, local: true, class: "row g-2 mb-4" do |form| %>
+  <div class="col-auto">
+    <%= form.label :project_type_id, "Tipo de proyecto", class: "form-label" %>
+    <%= form.select :project_type_id, @project_types.collect { |pt| [pt.name, pt.id] },
+          { selected: @project_type&.id, include_blank: "Elegí un tipo" }, class: "form-select" %>
+  </div>
+  <div class="col-auto align-self-end">
+    <%= form.submit "Ver plantilla", class: "btn btn-outline-secondary" %>
+  </div>
+<% end %>
+
+<% if @project_type %>
+  <div class="card mb-4">
+    <div class="card-body">
+      <p>
+        1. <%= link_to "Descargar plantilla de #{@project_type.name}", template_imports_path(project_type_id: @project_type.id) %>
+      </p>
+      <p>2. Llená una fila por proyecto. La columna "Nombre" es obligatoria.</p>
+
+      <%= form_with url: imports_path, method: :post, local: true, multipart: true do |form| %>
+        <%= form.hidden_field :project_type_id, value: @project_type.id %>
+        <div class="mb-3">
+          <%= form.label :file, "Archivo lleno (CSV)", class: "form-label" %>
+          <%= form.file_field :file, class: "form-control", accept: ".csv" %>
+        </div>
+        <%= form.submit "Importar", class: "btn btn-primary" %>
+      <% end %>
+    </div>
+  </div>
+<% end %>

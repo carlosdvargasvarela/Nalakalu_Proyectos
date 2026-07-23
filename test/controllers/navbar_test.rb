@@ -16,4 +16,11 @@ class NavbarTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "nav a[href=?]", tracker_projects_path
   end
+
+  test "navbar includes a link to Importar" do
+    sign_in users(:juan)
+    get root_path
+    assert_response :success
+    assert_select "nav a[href=?]", new_import_path
+  end
 end
