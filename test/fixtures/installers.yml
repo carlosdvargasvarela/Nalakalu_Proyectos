@@ -1,0 +1,4 @@
+juan_perez:
+  name: Juan Pérez
+  created_at: <%= Time.current %>
+  updated_at: <%= Time.current %>
