@@ -12,6 +12,7 @@ Rails.application.routes.draw do
     resources :installers
   end
 
+  get "projects/seguimiento", to: "projects#tracker", as: :tracker_projects
   resources :projects
 
   root "projects#index"

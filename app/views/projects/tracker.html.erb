@@ -1,0 +1,53 @@
+<h1>Seguimiento</h1>
+
+<%= form_with url: tracker_projects_path, method: :get, local: true, class: "row g-2 mb-4" do |form| %>
+  <div class="col-auto">
+    <%= form.label :project_type_id, "Tipo", class: "form-label" %>
+    <%= form.select :project_type_id, @project_types.collect { |pt| [pt.name, pt.id] },
+          { selected: @project_type&.id }, class: "form-select" %>
+  </div>
+  <div class="col-auto align-self-end">
+    <%= form.submit "Ver", class: "btn btn-primary" %>
+  </div>
+<% end %>
+
+<% if @project_type.nil? %>
+  <p>No hay tipos de proyecto configurados todavía.</p>
+<% elsif @projects.none? %>
+  <p>No hay proyectos de este tipo.</p>
+<% else %>
+  <% gantt_fields = @project_type.field_definitions.where(show_in_gantt: true).order(:position) %>
+  <% @projects.each do |project| %>
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <%= link_to project.name, project_path(project), class: "fw-bold text-decoration-none" %>
+          <% gantt_fields.each do |field| %>
+            <span class="text-muted ms-3"><%= field.label %>: <%= project.custom_fields[field.key] %></span>
+          <% end %>
+        </div>
+        <%= status_badge(project.status) %>
+      </div>
+      <div class="card-body">
+        <%= form_with model: project do |f| %>
+          <table class="table table-sm table-bordered w-auto mb-0">
+            <thead>
+              <tr><th>Etapa</th><th>Inicio</th><th>Fin</th><th>% Avance</th></tr>
+            </thead>
+            <tbody>
+              <%= f.fields_for :project_stages, project.project_stages.includes(:stage_template).order(:id) do |sf| %>
+                <tr>
+                  <td><%= sf.object.name %></td>
+                  <td><%= sf.hidden_field :id %><%= sf.date_field :start_date, class: "form-control form-control-sm" %></td>
+                  <td><%= sf.date_field :end_date, class: "form-control form-control-sm" %></td>
+                  <td><%= sf.number_field :progress_percent, min: 0, max: 100, class: "form-control form-control-sm" %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+          <%= f.submit "Guardar", class: "btn btn-primary btn-sm mt-3" %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+<% end %>

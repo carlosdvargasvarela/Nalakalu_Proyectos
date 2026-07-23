@@ -318,4 +318,67 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/on_progress_change:\s*function\s*\(task,\s*progress\)/, response.body)
     assert_match(/toDateInputValue/, response.body)
   end
+
+  test "tracker defaults to the first project type when none is given" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get tracker_projects_path
+    assert_response :success
+    assert_select "body", /#{project.name}/
+  end
+
+  test "tracker filters by the given project type" do
+    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    torre = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    otro = Project.create!(project_type: other_type, name: "Proyecto Otro Tipo", custom_fields: {})
+
+    get tracker_projects_path, params: { project_type_id: other_type.id }
+    assert_response :success
+    assert_match(/#{otro.name}/, response.body)
+    assert_no_match(/#{torre.name}/, response.body)
+  end
+
+  test "tracker excludes archived projects" do
+    activo = Project.create!(project_type: project_types(:instalaciones), name: "Activo", custom_fields: {})
+    Project.create!(
+      project_type: project_types(:instalaciones), name: "Archivado", custom_fields: {}, status: "archived"
+    )
+    get tracker_projects_path
+    assert_response :success
+    assert_match(/#{activo.name}/, response.body)
+    assert_no_match(/Archivado/, response.body)
+  end
+
+  test "tracker shows each project's show_in_gantt fields and an editable stage table" do
+    project = Project.create!(
+      project_type: project_types(:instalaciones), name: "Torre Norte",
+      custom_fields: { cliente: "Acme S.A." }
+    )
+    get tracker_projects_path
+    assert_response :success
+    assert_select "body", /Cliente/
+    assert_select "body", /Acme S\.A\./
+    assert_select "input[name*='[start_date]']", count: project.project_stages.count
+  end
+
+  test "tracker saves a project's stages independently of other projects" do
+    torre = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    otra = Project.create!(project_type: project_types(:instalaciones), name: "Otra Torre", custom_fields: {})
+    stage = torre.project_stages.order(:id).first
+    otra_stage = otra.project_stages.order(:id).first
+
+    patch project_path(torre), params: {
+      project: { project_stages_attributes: { "0" => { id: stage.id, progress_percent: 80 } } }
+    }
+
+    assert_redirected_to project_path(torre)
+    assert_equal 80, stage.reload.progress_percent
+    assert_equal 0, otra_stage.reload.progress_percent
+  end
+
+  test "tracker shows a message when there are no project types at all" do
+    ProjectType.destroy_all
+    get tracker_projects_path
+    assert_response :success
+    assert_select "body", /No hay tipos de proyecto configurados todavía/
+  end
 end
