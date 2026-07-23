@@ -509,4 +509,34 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".card .card-header", "Cronograma general"
     assert_select ".card .card-header", "Listado"
   end
+
+  test "new renders the right input for each new data type" do
+    project_type = project_types(:instalaciones)
+    FieldDefinition.create!(project_type: project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    FieldDefinition.create!(project_type: project_type, key: "monto", label: "Monto", data_type: "currency", position: 11)
+    FieldDefinition.create!(project_type: project_type, key: "notas", label: "Notas", data_type: "textarea", position: 12)
+    FieldDefinition.create!(project_type: project_type, key: "permiso", label: "Permiso", data_type: "boolean", position: 13)
+
+    get new_project_path(project_type_id: project_type.id)
+    assert_response :success
+    assert_select "input[name=?][type=number]", "project[custom_fields][cantidad]"
+    assert_select "input[name=?][type=number]", "project[custom_fields][monto]"
+    assert_select "textarea[name=?]", "project[custom_fields][notas]"
+    assert_select "input[name=?][type=checkbox]", "project[custom_fields][permiso]"
+  end
+
+  test "create with valid new-type custom_fields builds the project" do
+    project_type = project_types(:instalaciones)
+    FieldDefinition.create!(project_type: project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+
+    assert_difference("Project.count", 1) do
+      post projects_path, params: {
+        project: {
+          project_type_id: project_type.id, name: "Torre Sur",
+          custom_fields: { cliente: "Acme S.A.", cantidad: "5" }
+        }
+      }
+    end
+    assert_equal "5", Project.order(:id).last.custom_fields["cantidad"]
+  end
 end

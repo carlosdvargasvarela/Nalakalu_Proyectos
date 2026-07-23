@@ -3,10 +3,23 @@
   <% case field.data_type %>
   <% when "text" %>
     <%= text_field_tag "project[custom_fields][#{field.key}]", project.custom_fields[field.key], class: "form-control" %>
+  <% when "textarea" %>
+    <%= text_area_tag "project[custom_fields][#{field.key}]", project.custom_fields[field.key], class: "form-control", rows: 3 %>
   <% when "date" %>
     <%= date_field_tag "project[custom_fields][#{field.key}]", project.custom_fields[field.key], class: "form-control" %>
   <% when "percent" %>
     <%= number_field_tag "project[custom_fields][#{field.key}]", project.custom_fields[field.key], min: 0, max: 100, class: "form-control" %>
+  <% when "number" %>
+    <%= number_field_tag "project[custom_fields][#{field.key}]", project.custom_fields[field.key], step: "any", class: "form-control" %>
+  <% when "currency" %>
+    <div class="input-group">
+      <span class="input-group-text">₡</span>
+      <%= number_field_tag "project[custom_fields][#{field.key}]", project.custom_fields[field.key], step: "0.01", class: "form-control" %>
+    </div>
+  <% when "boolean" %>
+    <div class="form-check">
+      <%= check_box_tag "project[custom_fields][#{field.key}]", "true", project.custom_fields[field.key].to_s == "true", class: "form-check-input" %>
+    </div>
   <% when "reference" %>
     <%= select_tag "project[custom_fields][#{field.key}]",
           options_from_collection_for_select(field.reference_table.classify.constantize.all, :id, :name, project.custom_fields[field.key]),
