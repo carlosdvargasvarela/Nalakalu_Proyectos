@@ -1,6 +1,7 @@
 require "test_helper"
 
 class Admin::StageTemplatesControllerTest < ActionDispatch::IntegrationTest
+  setup { sign_in users(:juan) }
   setup { @project_type = project_types(:instalaciones) }
 
   test "create adds a stage template to the project type" do

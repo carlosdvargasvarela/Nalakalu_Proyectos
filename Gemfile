@@ -56,6 +56,8 @@ group :test do
   gem "selenium-webdriver"
 end
 
+gem "devise"
+
 # Rails 7.2's test runner (railties/line_filtering) is incompatible with minitest 6.x's
 # changed Runnable.run signature; pin to the last 5.x until Rails supports minitest 6.
 gem "minitest", "~> 5.25"

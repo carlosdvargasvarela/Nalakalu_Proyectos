@@ -1,6 +1,8 @@
 require "test_helper"
 
 class Admin::ProjectTypesControllerTest < ActionDispatch::IntegrationTest
+  setup { sign_in users(:juan) }
+
   test "index lists project types" do
     get admin_project_types_path
     assert_response :success

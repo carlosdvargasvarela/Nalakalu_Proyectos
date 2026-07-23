@@ -1,6 +1,7 @@
 require "test_helper"
 
 class Admin::FieldDefinitionsControllerTest < ActionDispatch::IntegrationTest
+  setup { sign_in users(:juan) }
   setup { @project_type = project_types(:instalaciones) }
 
   test "create adds a field definition to the project type" do
