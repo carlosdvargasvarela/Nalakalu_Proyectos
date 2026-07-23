@@ -624,4 +624,28 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     follow_redirect!
     assert_match(/Instalador asignado a 1 proyecto\(s\)/, response.body)
   end
+
+  test "index renders a bulk-assign form with a checkbox per project, not nested inside another form" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path
+    assert_response :success
+
+    assert_select "form#bulk-assign-form[action=?]", bulk_assign_installer_projects_path
+    assert_select "form#bulk-assign-form select[name=?]", "installer_id"
+    assert_select "form#bulk-assign-form input[type=submit][value=?]", "Asignar"
+    assert_select "input[type=checkbox][name=?][form=bulk-assign-form]", "project_ids[]", value: project.id.to_s
+
+    doc = Nokogiri::HTML5(response.body)
+    bulk_form = doc.at_css("#bulk-assign-form")
+    assert_nil bulk_form.at_css("form"), "the archive button's form must not be nested inside the bulk-assign form"
+  end
+
+  test "index's select-all checkbox toggles every project checkbox via JS" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path
+    assert_response :success
+    assert_select "input#select-all-projects[type=checkbox]"
+    assert_match(/select-all-projects/, response.body)
+    assert_match(/project_ids\[\]/, response.body)
+  end
 end

@@ -130,16 +130,30 @@
     </div>
   </div>
 
+  <%= form_with url: bulk_assign_installer_projects_path, method: :patch, local: true,
+        id: "bulk-assign-form", class: "d-flex gap-2 align-items-end mb-3" do |f| %>
+    <div>
+      <%= f.label :installer_id, "Asignar instalador a los seleccionados", class: "form-label" %>
+      <%= f.select :installer_id, @installers.collect { |i| [i.name, i.id] },
+            { include_blank: "Elegí un instalador" }, class: "form-select" %>
+    </div>
+    <%= f.submit "Asignar", class: "btn btn-primary" %>
+  <% end %>
+
   <div class="card mb-4">
     <div class="card-header">Listado</div>
     <div class="card-body p-0">
       <table class="table table-striped mb-0">
         <thead>
-          <tr><th>Nombre</th><th>Tipo</th><th>Estado</th><th>Avance</th><th></th></tr>
+          <tr>
+            <th><input type="checkbox" id="select-all-projects"></th>
+            <th>Nombre</th><th>Tipo</th><th>Estado</th><th>Avance</th><th></th>
+          </tr>
         </thead>
         <tbody>
           <% projects_list.each do |project| %>
             <tr>
+              <td><%= check_box_tag "project_ids[]", project.id, false, id: nil, form: "bulk-assign-form" %></td>
               <td><%= link_to project.name, project_path(project) %></td>
               <td><%= project.project_type.name %></td>
               <td><%= status_badge(project.status) %></td>
@@ -157,4 +171,10 @@
       </table>
     </div>
   </div>
+
+  <script>
+    document.getElementById("select-all-projects").addEventListener("change", function (e) {
+      document.querySelectorAll('input[name="project_ids[]"]').forEach(function (cb) { cb.checked = e.target.checked; });
+    });
+  </script>
 <% end %>
