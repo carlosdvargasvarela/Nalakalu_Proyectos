@@ -100,4 +100,23 @@ class Admin::ProjectTypesControllerTest < ActionDispatch::IntegrationTest
     assert_select "body", /Texto/
     assert_no_match(/\(text\)/, response.body)
   end
+
+  test "show renders a drag handle and data-id for each field definition and stage template" do
+    project_type = project_types(:instalaciones)
+    field = field_definitions(:cliente)
+    stage = stage_templates(:entrega)
+
+    get admin_project_type_path(project_type)
+    assert_response :success
+    assert_select "#field-definitions-list li[data-id=?] .drag-handle", field.id.to_s
+    assert_select "#stage-templates-list li[data-id=?] .drag-handle", stage.id.to_s
+  end
+
+  test "show wires the drag-reorder script to the correct endpoints" do
+    project_type = project_types(:instalaciones)
+    get admin_project_type_path(project_type)
+    assert_response :success
+    assert_match(/initDragReorder\("field-definitions-list",\s*"#{Regexp.escape(reorder_admin_project_type_field_definitions_path(project_type))}"\)/, response.body)
+    assert_match(/initDragReorder\("stage-templates-list",\s*"#{Regexp.escape(reorder_admin_project_type_stage_templates_path(project_type))}"\)/, response.body)
+  end
 end
