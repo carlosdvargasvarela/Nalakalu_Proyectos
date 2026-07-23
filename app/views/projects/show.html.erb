@@ -2,6 +2,8 @@
   <div>
     <h1 class="d-inline-block me-2 mb-0"><%= @project.name %></h1>
     <%= status_badge(@project.status) %>
+    <%= progress_status_badge(@project.progress_status) %>
+    <%= overdue_badge if @project.overdue? %>
     <p class="text-muted mb-0">Tipo: <%= @project.project_type.name %></p>
   </div>
   <div class="d-flex gap-2">

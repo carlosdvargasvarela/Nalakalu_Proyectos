@@ -21,4 +21,18 @@ class ApplicationHelperTest < ActionView::TestCase
     assert_match(/badge bg-light text-dark/, status_badge("weird_status"))
     assert_match(/weird_status/, status_badge("weird_status"))
   end
+
+  test "progress_status_badge renders the right label and color for each state" do
+    assert_match(/badge bg-secondary/, progress_status_badge("sin_iniciar"))
+    assert_match(/Sin iniciar/, progress_status_badge("sin_iniciar"))
+    assert_match(/badge bg-info/, progress_status_badge("iniciado"))
+    assert_match(/Iniciado/, progress_status_badge("iniciado"))
+    assert_match(/badge bg-success/, progress_status_badge("finalizado"))
+    assert_match(/Finalizado/, progress_status_badge("finalizado"))
+  end
+
+  test "overdue_badge renders a red Vencido badge" do
+    assert_match(/badge bg-danger/, overdue_badge)
+    assert_match(/Vencido/, overdue_badge)
+  end
 end

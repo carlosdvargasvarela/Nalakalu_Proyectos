@@ -1,7 +1,7 @@
 <%= form_with model: project do |f| %>
   <table class="table table-sm table-bordered mb-0 stage-table">
     <thead>
-      <tr><th>Etapa</th><th>Inicio</th><th>Fin</th><th>% Avance</th></tr>
+      <tr><th>Etapa</th><th>Inicio</th><th>Fin</th><th>% Avance</th><th>Estado</th></tr>
     </thead>
     <tbody>
       <%= f.fields_for :project_stages, project.project_stages.includes(:stage_template).order(:id) do |sf| %>
@@ -10,6 +10,10 @@
           <td><%= sf.hidden_field :id %><%= sf.date_field :start_date, class: "form-control form-control-sm fecha-input" %></td>
           <td><%= sf.date_field :end_date, class: "form-control form-control-sm fecha-input" %></td>
           <td><%= sf.number_field :progress_percent, min: 0, max: 100, class: "form-control form-control-sm avance-input" %></td>
+          <td>
+            <%= progress_status_badge(sf.object.progress_status) %>
+            <%= overdue_badge if sf.object.overdue? %>
+          </td>
         </tr>
       <% end %>
     </tbody>

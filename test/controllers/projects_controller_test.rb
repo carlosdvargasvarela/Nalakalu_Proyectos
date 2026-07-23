@@ -441,4 +441,32 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".card form"
     assert_select "a[href=?]", project_path(project), text: "Cancelar"
   end
+
+  test "show displays the project's progress status and overdue badges" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    project.project_stages.order(:id).first.update!(end_date: Date.current - 1.day, progress_percent: 40)
+
+    get project_path(project)
+    assert_response :success
+    assert_select "span.badge.bg-info", "Iniciado"
+    assert_select "span.badge.bg-danger", "Vencido"
+  end
+
+  test "tracker displays each project's progress status badge" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get tracker_projects_path
+    assert_response :success
+    assert_select "span.badge.bg-secondary", "Sin iniciar"
+  end
+
+  test "the stage table shows each stage's progress status and overdue badges" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.order(:id).first
+    stage.update!(end_date: Date.current - 1.day, progress_percent: 40)
+
+    get project_path(project)
+    assert_response :success
+    assert_select "#stage-#{stage.id} span.badge.bg-info", "Iniciado"
+    assert_select "#stage-#{stage.id} span.badge.bg-danger", "Vencido"
+  end
 end
