@@ -87,12 +87,27 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "show groups Datos and Cronograma into cards" do
-    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+  test "show renders the project data as a graphite band and keeps the Cronograma card" do
+    project = Project.create!(
+      project_type: project_types(:instalaciones), name: "Torre Norte",
+      custom_fields: { cliente: "Acme S.A." }
+    )
     get project_path(project)
     assert_response :success
-    assert_select ".card .card-header", "Datos"
+    assert_select ".bg-primary", /Acme S\.A\./
     assert_select ".card .card-header", "Cronograma"
+  end
+
+  test "tracker renders each project's data as a graphite band without a bordered card" do
+    installer = installers(:juan_perez)
+    project = Project.create!(
+      project_type: project_types(:instalaciones), name: "Torre Norte",
+      custom_fields: { cliente: "Acme S.A.", instalador: installer.id }
+    )
+    get tracker_projects_path
+    assert_response :success
+    assert_select ".bg-primary", /Acme S\.A\./
+    assert_select ".card", count: 0
   end
 
   test "show renders the Gantt chart container with one task per stage" do

@@ -10,14 +10,7 @@
   </div>
 </div>
 
-<div class="card mb-4">
-  <div class="card-header">Datos</div>
-  <ul class="list-group list-group-flush">
-    <% @project.project_type.field_definitions.each do |field| %>
-      <li class="list-group-item"><strong><%= field.label %>:</strong> <%= @project.custom_fields[field.key] %></li>
-    <% end %>
-  </ul>
-</div>
+<%= render "data_band", project: @project, fields: @project.project_type.field_definitions %>
 
 <% content_for :head do %>
   <link href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css" rel="stylesheet">
@@ -115,23 +108,6 @@
       });
     </script>
 
-    <%= form_with model: @project do |f| %>
-      <table class="table table-sm table-bordered w-auto mb-0">
-        <thead>
-          <tr><th>Etapa</th><th>Inicio</th><th>Fin</th><th>% Avance</th></tr>
-        </thead>
-        <tbody>
-          <%= f.fields_for :project_stages, stages do |sf| %>
-            <tr id="stage-<%= sf.object.id %>">
-              <td><%= sf.object.name %></td>
-              <td><%= sf.hidden_field :id %><%= sf.date_field :start_date, class: "form-control form-control-sm" %></td>
-              <td><%= sf.date_field :end_date, class: "form-control form-control-sm" %></td>
-              <td><%= sf.number_field :progress_percent, min: 0, max: 100, class: "form-control form-control-sm" %></td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
-      <%= f.submit "Guardar cambios", class: "btn btn-primary mt-3" %>
-    <% end %>
+    <%= render "stage_table", project: @project %>
   </div>
 </div>

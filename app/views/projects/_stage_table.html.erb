@@ -1,0 +1,18 @@
+<%= form_with model: project do |f| %>
+  <table class="table table-sm table-bordered mb-0 stage-table">
+    <thead>
+      <tr><th>Etapa</th><th>Inicio</th><th>Fin</th><th>% Avance</th></tr>
+    </thead>
+    <tbody>
+      <%= f.fields_for :project_stages, project.project_stages.includes(:stage_template).order(:id) do |sf| %>
+        <tr id="stage-<%= sf.object.id %>">
+          <td><%= sf.object.name %></td>
+          <td><%= sf.hidden_field :id %><%= sf.date_field :start_date, class: "form-control form-control-sm fecha-input" %></td>
+          <td><%= sf.date_field :end_date, class: "form-control form-control-sm fecha-input" %></td>
+          <td><%= sf.number_field :progress_percent, min: 0, max: 100, class: "form-control form-control-sm avance-input" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <%= f.submit "Guardar cambios", class: "btn btn-primary btn-sm mt-3" %>
+<% end %>
