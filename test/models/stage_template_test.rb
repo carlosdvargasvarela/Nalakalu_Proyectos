@@ -15,4 +15,17 @@ class StageTemplateTest < ActiveSupport::TestCase
     ordered = project_types(:instalaciones).stage_templates.map(&:name)
     assert_equal ["Diseño-Aprobación", "Revisión Inicial", "Producción", "Entrega", "Instalación"], ordered
   end
+
+  test "valid with default color" do
+    stage = StageTemplate.new(project_type: project_types(:instalaciones), name: "Producción", position: 3)
+    assert stage.valid?
+    assert_equal "#6c757d", stage.color
+  end
+
+  test "invalid with a malformed color" do
+    stage = StageTemplate.new(
+      project_type: project_types(:instalaciones), name: "Producción", position: 3, color: "blue"
+    )
+    assert_not stage.valid?
+  end
 end
