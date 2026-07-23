@@ -59,12 +59,16 @@ class Project < ApplicationRecord
       next if value.nil? || value == ""
 
       case field.data_type
-      when "text"
+      when "text", "textarea"
         errors.add(:custom_fields, "#{field.label} debe ser texto") unless value.is_a?(String)
       when "date"
         errors.add(:custom_fields, "#{field.label} debe ser una fecha válida") unless valid_date?(value)
       when "percent"
         errors.add(:custom_fields, "#{field.label} debe ser un porcentaje entre 0 y 100") unless valid_percent?(value)
+      when "number", "currency"
+        errors.add(:custom_fields, "#{field.label} debe ser un número") unless valid_number?(value)
+      when "boolean"
+        errors.add(:custom_fields, "#{field.label} debe ser Sí o No") unless valid_boolean?(value)
       when "reference"
         errors.add(:custom_fields, "#{field.label} debe referenciar un registro existente") unless valid_reference?(field, value)
       end
@@ -82,6 +86,17 @@ class Project < ApplicationRecord
     Float(value).between?(0, 100)
   rescue ArgumentError, TypeError
     false
+  end
+
+  def valid_number?(value)
+    Float(value)
+    true
+  rescue ArgumentError, TypeError
+    false
+  end
+
+  def valid_boolean?(value)
+    %w[true false].include?(value.to_s.downcase)
   end
 
   def valid_reference?(field, value)

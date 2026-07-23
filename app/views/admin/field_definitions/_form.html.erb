@@ -19,7 +19,7 @@
   </div>
   <div class="mb-3">
     <%= form.label :data_type, class: "form-label" %>
-    <%= form.select :data_type, FieldDefinition::DATA_TYPES, {}, class: "form-select" %>
+    <%= form.select :data_type, FieldDefinition::DATA_TYPES.map { |dt| [FieldDefinition::DATA_TYPE_LABELS[dt], dt] }, {}, class: "form-select" %>
   </div>
   <div class="mb-3">
     <%= form.label :reference_table, class: "form-label" %>

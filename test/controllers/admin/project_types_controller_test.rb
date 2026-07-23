@@ -93,4 +93,11 @@ class Admin::ProjectTypesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "input[value=?]", "Actualizar Tipo de proyecto"
   end
+
+  test "show displays the Spanish label for a field's data type, not the raw value" do
+    get admin_project_type_path(project_types(:instalaciones))
+    assert_response :success
+    assert_select "body", /Texto/
+    assert_no_match(/\(text\)/, response.body)
+  end
 end

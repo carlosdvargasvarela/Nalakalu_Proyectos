@@ -146,4 +146,49 @@ class ProjectTest < ActiveSupport::TestCase
     assert_nil project.end_date
     assert_not project.overdue?
   end
+
+  test "valid with correct values for the new data types" do
+    FieldDefinition.create!(project_type: @project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    FieldDefinition.create!(project_type: @project_type, key: "monto", label: "Monto", data_type: "currency", position: 11)
+    FieldDefinition.create!(project_type: @project_type, key: "notas", label: "Notas", data_type: "textarea", position: 12)
+    FieldDefinition.create!(project_type: @project_type, key: "permiso", label: "Permiso", data_type: "boolean", position: 13)
+
+    project = Project.new(
+      project_type: @project_type, name: "Torre Norte",
+      custom_fields: { "cantidad" => "3", "monto" => "1500.50", "notas" => "Cliente pidió instalación urgente", "permiso" => "true" }
+    )
+    assert project.valid?, project.errors.full_messages.to_s
+  end
+
+  test "invalid when a number or currency field isn't numeric" do
+    FieldDefinition.create!(project_type: @project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    project = Project.new(
+      project_type: @project_type, name: "Torre Norte", custom_fields: { "cantidad" => "no es un número" }
+    )
+    assert_not project.valid?
+  end
+
+  test "invalid when a boolean field isn't true or false" do
+    FieldDefinition.create!(project_type: @project_type, key: "permiso", label: "Permiso", data_type: "boolean", position: 10)
+    project = Project.new(
+      project_type: @project_type, name: "Torre Norte", custom_fields: { "permiso" => "tal vez" }
+    )
+    assert_not project.valid?
+  end
+
+  test "valid when a boolean field is True or FALSE (case-insensitive)" do
+    FieldDefinition.create!(project_type: @project_type, key: "permiso", label: "Permiso", data_type: "boolean", position: 10)
+    project = Project.new(
+      project_type: @project_type, name: "Torre Norte", custom_fields: { "permiso" => "True" }
+    )
+    assert project.valid?, project.errors.full_messages.to_s
+  end
+
+  test "valid when a textarea field is a plain string" do
+    FieldDefinition.create!(project_type: @project_type, key: "notas", label: "Notas", data_type: "textarea", position: 10)
+    project = Project.new(
+      project_type: @project_type, name: "Torre Norte", custom_fields: { "notas" => "una nota larga" }
+    )
+    assert project.valid?, project.errors.full_messages.to_s
+  end
 end

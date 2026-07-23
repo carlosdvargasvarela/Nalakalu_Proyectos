@@ -32,4 +32,31 @@ class FieldDefinitionTest < ActiveSupport::TestCase
     )
     assert_not field.valid?
   end
+
+  test "data_type_label translates every known type to Spanish" do
+    expected = {
+      "text" => "Texto", "textarea" => "Texto largo", "number" => "Número",
+      "currency" => "Monto (₡)", "percent" => "Porcentaje", "date" => "Fecha",
+      "boolean" => "Sí/No", "reference" => "Referencia"
+    }
+    expected.each do |data_type, label|
+      field = FieldDefinition.new(project_type: project_types(:instalaciones), key: "x", label: "X", data_type: data_type)
+      assert_equal label, field.data_type_label
+    end
+  end
+
+  test "data_type_label falls back to the raw value for an unknown type" do
+    field = FieldDefinition.new(project_type: project_types(:instalaciones), key: "x", label: "X", data_type: "text")
+    field.data_type = "weird_type"
+    assert_equal "weird_type", field.data_type_label
+  end
+
+  test "valid with each of the new data types" do
+    %w[number currency textarea boolean].each do |data_type|
+      field = FieldDefinition.new(
+        project_type: project_types(:instalaciones), key: "campo_#{data_type}", label: "Campo", data_type: data_type
+      )
+      assert field.valid?, "#{data_type}: #{field.errors.full_messages}"
+    end
+  end
 end
