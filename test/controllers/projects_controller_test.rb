@@ -363,6 +363,23 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/#{torre.name}/, response.body)
   end
 
+  test "tracker filters by installer" do
+    otro_instalador = Installer.create!(name: "Otro Instalador")
+    con_juan = Project.create!(
+      project_type: project_types(:instalaciones), name: "Con Juan",
+      custom_fields: { instalador: installers(:juan_perez).id }
+    )
+    con_otro = Project.create!(
+      project_type: project_types(:instalaciones), name: "Con Otro",
+      custom_fields: { instalador: otro_instalador.id }
+    )
+
+    get tracker_projects_path, params: { installer_id: installers(:juan_perez).id }
+    assert_response :success
+    assert_match(/#{con_juan.name}/, response.body)
+    assert_no_match(/#{con_otro.name}/, response.body)
+  end
+
   test "tracker excludes archived projects" do
     activo = Project.create!(project_type: project_types(:instalaciones), name: "Activo", custom_fields: {})
     Project.create!(

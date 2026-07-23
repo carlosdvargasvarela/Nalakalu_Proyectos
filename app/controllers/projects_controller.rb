@@ -13,10 +13,12 @@ class ProjectsController < ApplicationController
 
   def tracker
     @project_types = ProjectType.all
+    @installers = Installer.all
     @project_type = ProjectType.find_by(id: params[:project_type_id]) || ProjectType.first
     @projects = if @project_type
-      Project.where(project_type: @project_type).where.not(status: "archived")
-             .includes(project_stages: :stage_template).order(:name)
+      scope = Project.where(project_type: @project_type).where.not(status: "archived")
+                     .includes(project_stages: :stage_template).order(:name)
+      params[:installer_id].present? ? filter_by_installer(scope, params[:installer_id]) : scope
     else
       Project.none
     end

@@ -6,6 +6,11 @@
     <%= form.select :project_type_id, @project_types.collect { |pt| [pt.name, pt.id] },
           { selected: @project_type&.id }, class: "form-select" %>
   </div>
+  <div class="col-auto">
+    <%= form.label :installer_id, "Instalador", class: "form-label" %>
+    <%= form.select :installer_id, @installers.collect { |i| [i.name, i.id] },
+          { include_blank: "Todos", selected: params[:installer_id] }, class: "form-select" %>
+  </div>
   <div class="col-auto align-self-end">
     <%= form.submit "Ver", class: "btn btn-primary" %>
   </div>
