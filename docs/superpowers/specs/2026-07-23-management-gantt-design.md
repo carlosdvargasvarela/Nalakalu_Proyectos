@@ -17,13 +17,15 @@ Fuera de alcance: notificaciones, exportar a PDF/Excel, drag-to-reschedule en el
 
 ```ruby
 def start_date
-  project_stages.minimum(:start_date)
+  project_stages.map(&:start_date).compact.min
 end
 
 def end_date
-  project_stages.maximum(:end_date)
+  project_stages.map(&:end_date).compact.max
 end
 ```
+
+(Nota de implementación: se usan operaciones en memoria sobre `project_stages`, no `.minimum`/`.maximum` — el dashboard llama estos métodos en un loop sobre proyectos ya precargados con `.includes`, y un agregado SQL rompería ese precargado reintroduciendo N+1.)
 
 Ambos pueden devolver `nil` si ninguna etapa tiene fecha (proyecto recién creado). El fallback visual de una semana ya existente en `projects/show.html.erb` (el bloque `ponytail:` que hoy vive inline en la vista) se **centraliza** en el modelo:
 
@@ -77,9 +79,11 @@ end
 ```ruby
 # en Project
 def current_stage
-  project_stages.where("progress_percent > 0").order(:id).last || project_stages.order(:id).first
+  project_stages.select { |stage| stage.progress_percent > 0 }.max_by(&:id) || project_stages.min_by(&:id)
 end
 ```
+
+(Misma nota que arriba: operaciones en memoria, no `.where`, por la misma razón de N+1.)
 
 Si el proyecto no tiene etapas (caso imposible en la práctica — toda creación de `Project` dispara `build_stages_from_template`, pero un `project_type` sin `stage_templates` produciría un proyecto sin etapas), `current_stage` devuelve `nil` y la barra usa el color por defecto (`#6c757d`).
 
