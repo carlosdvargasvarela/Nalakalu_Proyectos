@@ -1,6 +1,7 @@
 class Project < ApplicationRecord
   belongs_to :project_type
   has_many :project_stages, dependent: :destroy
+  accepts_nested_attributes_for :project_stages, update_only: true
 
   validates :name, presence: true
   validate :custom_fields_match_definitions

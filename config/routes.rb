@@ -13,9 +13,7 @@ Rails.application.routes.draw do
   end
 
   get "projects/dashboard", to: "projects#dashboard", as: :dashboard_projects
-  resources :projects do
-    resources :project_stages, only: [:edit, :update]
-  end
+  resources :projects
 
   root "projects#index"
 end

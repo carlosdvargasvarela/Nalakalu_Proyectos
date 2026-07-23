@@ -43,7 +43,6 @@
       start: stage_start.to_s,
       end: stage_end.to_s,
       progress: stage.progress_percent,
-      edit_url: edit_project_project_stage_path(@project, stage),
       custom_class: "stage-color-#{stage.stage_template_id || 'none'}"
     }
   end
@@ -62,8 +61,28 @@
     var tasks = JSON.parse(document.getElementById("gantt-tasks").textContent);
     if (tasks.length > 0) {
       new Gantt("#gantt", tasks, {
-        on_click: function (task) { window.location = task.edit_url; }
+        on_click: function (task) { window.location.hash = "stage-" + task.id; }
       });
     }
   });
 </script>
+
+<h2>Etapas</h2>
+<%= form_with model: @project do |f| %>
+  <table class="table table-sm table-bordered w-auto">
+    <thead>
+      <tr><th>Etapa</th><th>Inicio</th><th>Fin</th><th>% Avance</th></tr>
+    </thead>
+    <tbody>
+      <%= f.fields_for :project_stages, stages do |sf| %>
+        <tr id="stage-<%= sf.object.id %>">
+          <td><%= sf.object.name %></td>
+          <td><%= sf.hidden_field :id %><%= sf.date_field :start_date, class: "form-control form-control-sm" %></td>
+          <td><%= sf.date_field :end_date, class: "form-control form-control-sm" %></td>
+          <td><%= sf.number_field :progress_percent, min: 0, max: 100, class: "form-control form-control-sm" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <%= f.submit "Guardar cambios", class: "btn btn-primary" %>
+<% end %>

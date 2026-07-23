@@ -164,4 +164,33 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to project_path(project)
     assert_equal "archived", project.reload.status
   end
+
+  test "show renders an editable table row for each stage" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_response :success
+    project.project_stages.each do |stage|
+      assert_select "input[type=hidden][value=?]", stage.id.to_s
+    end
+    assert_select "input[name$='[progress_percent]']", count: project.project_stages.count
+  end
+
+  test "updating project_stages_attributes changes stage dates and progress" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.order(:id).first
+
+    patch project_path(project), params: {
+      project: {
+        project_stages_attributes: {
+          "0" => { id: stage.id, start_date: "2026-08-01", end_date: "2026-08-10", progress_percent: 60 }
+        }
+      }
+    }
+
+    assert_redirected_to project_path(project)
+    stage.reload
+    assert_equal Date.new(2026, 8, 1), stage.start_date
+    assert_equal Date.new(2026, 8, 10), stage.end_date
+    assert_equal 60, stage.progress_percent
+  end
 end

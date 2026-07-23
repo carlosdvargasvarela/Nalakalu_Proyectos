@@ -79,4 +79,15 @@ class ProjectTest < ActiveSupport::TestCase
     stages[1].update!(progress_percent: 40)
     assert_equal stages[1], project.reload.current_stage
   end
+
+  test "project_stages_attributes updates existing stages without creating or destroying any" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.order(:id).first
+
+    assert_no_difference("project.project_stages.count") do
+      project.update!(project_stages_attributes: { "0" => { id: stage.id, progress_percent: 75 } })
+    end
+
+    assert_equal 75, stage.reload.progress_percent
+  end
 end
