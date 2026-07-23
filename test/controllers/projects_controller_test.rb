@@ -183,6 +183,13 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/on_date_change:\s*function\s*\(\)\s*\{\s*gantt\.refresh\(tasks\);\s*\}/, response.body)
   end
 
+  test "index renders the Gantt container with a fixed max-height and vertical scroll" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path
+    assert_response :success
+    assert_select "#gantt[style=?]", "max-height: 630px; overflow-y: auto;"
+  end
+
   test "index filters by project_type" do
     other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
     torre = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
