@@ -111,6 +111,9 @@
     <div class="card-header">Cronograma general</div>
     <div class="card-body">
       <style>
+        .gantt .bar-label {
+          font-weight: bold;
+        }
         <% gantt_colors.each do |installer_id, color| %>
           .gantt .bar-wrapper.installer-color-<%= installer_id %> .bar,
           .gantt .bar-wrapper.installer-color-<%= installer_id %>:hover .bar,

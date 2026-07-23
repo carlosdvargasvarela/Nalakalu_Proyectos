@@ -41,6 +41,9 @@
   <div class="card-header">Cronograma</div>
   <div class="card-body">
     <style>
+      .gantt .bar-label {
+        font-weight: bold;
+      }
       <% stage_colors.each do |template_id, color| %>
         .gantt .bar-wrapper.stage-color-<%= template_id %> .bar,
         .gantt .bar-wrapper.stage-color-<%= template_id %>:hover .bar,
