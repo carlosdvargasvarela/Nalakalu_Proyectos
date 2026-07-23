@@ -6,6 +6,24 @@ class Project < ApplicationRecord
   validate :custom_fields_match_definitions
   after_create :build_stages_from_template
 
+  def start_date
+    project_stages.map(&:start_date).compact.min
+  end
+
+  def end_date
+    project_stages.map(&:end_date).compact.max
+  end
+
+  def gantt_window
+    first = start_date || created_at.to_date
+    last = end_date || (first + 7.days)
+    [first, last]
+  end
+
+  def current_stage
+    project_stages.select { |stage| stage.progress_percent > 0 }.max_by(&:id) || project_stages.min_by(&:id)
+  end
+
   private
 
   def build_stages_from_template

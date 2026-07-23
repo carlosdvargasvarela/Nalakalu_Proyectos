@@ -50,4 +50,33 @@ class ProjectTest < ActiveSupport::TestCase
     )
     assert project.valid?, project.errors.full_messages.to_s
   end
+
+  test "start_date and end_date reflect the earliest and latest stage dates" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    stages = project.project_stages.order(:id).to_a
+    stages[0].update!(start_date: Date.new(2026, 1, 10), end_date: Date.new(2026, 1, 20))
+    stages[1].update!(start_date: Date.new(2026, 1, 5), end_date: Date.new(2026, 1, 15))
+    stages[2].update!(start_date: Date.new(2026, 2, 1), end_date: Date.new(2026, 2, 28))
+
+    assert_equal Date.new(2026, 1, 5), project.start_date
+    assert_equal Date.new(2026, 2, 28), project.end_date
+    assert_equal [Date.new(2026, 1, 5), Date.new(2026, 2, 28)], project.gantt_window
+  end
+
+  test "gantt_window falls back to a one-week window from created_at when no stage has dates" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    first, last = project.gantt_window
+    assert_equal project.created_at.to_date, first
+    assert_equal first + 7.days, last
+  end
+
+  test "current_stage is the most advanced started stage, or the first stage if none started" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    stages = project.project_stages.order(:id).to_a
+    assert_equal stages.first, project.current_stage
+
+    stages[0].update!(progress_percent: 100)
+    stages[1].update!(progress_percent: 40)
+    assert_equal stages[1], project.reload.current_stage
+  end
 end
