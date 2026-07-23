@@ -581,11 +581,18 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     installer = installers(:juan_perez)
     project = Project.create!(project_type: project_types(:instalaciones), name: "Proyecto A", custom_fields: {})
 
-    patch bulk_assign_installer_projects_path, params: {
-      installer_id: installer.id, project_ids: [project.id], project_type_id: project_types(:instalaciones).id
+    patch bulk_assign_installer_projects_path(project_type_id: project_types(:instalaciones).id), params: {
+      installer_id: installer.id, project_ids: [project.id]
     }
 
     assert_redirected_to projects_path(project_type_id: project_types(:instalaciones).id)
+  end
+
+  test "index's bulk-assign form action preserves the current installer filter" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path, params: { installer_id: "none" }
+    assert_response :success
+    assert_select "form#bulk-assign-form[action=?]", bulk_assign_installer_projects_path(installer_id: "none")
   end
 
   test "bulk_assign_installer without an installer chosen does nothing and redirects with an alert" do

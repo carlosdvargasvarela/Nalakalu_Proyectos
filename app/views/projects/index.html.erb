@@ -130,12 +130,12 @@
     </div>
   </div>
 
-  <%= form_with url: bulk_assign_installer_projects_path, method: :patch, local: true,
+  <%= form_with url: bulk_assign_installer_projects_path(request.query_parameters), method: :patch, local: true,
         id: "bulk-assign-form", class: "d-flex gap-2 align-items-end mb-3" do |f| %>
     <div>
-      <%= f.label :installer_id, "Asignar instalador a los seleccionados", class: "form-label" %>
+      <%= f.label :installer_id, "Asignar instalador a los seleccionados", for: "bulk-assign-installer-select", class: "form-label" %>
       <%= f.select :installer_id, @installers.collect { |i| [i.name, i.id] },
-            { include_blank: "Elegí un instalador" }, class: "form-select" %>
+            { include_blank: "Elegí un instalador" }, class: "form-select", id: "bulk-assign-installer-select" %>
     </div>
     <%= f.submit "Asignar", class: "btn btn-primary" %>
   <% end %>

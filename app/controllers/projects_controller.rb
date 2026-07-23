@@ -66,10 +66,9 @@ class ProjectsController < ApplicationController
   end
 
   def bulk_assign_installer
-    redirect_params = request.query_parameters.merge(params.permit(:project_type_id))
     project_ids = Array(params[:project_ids]).reject(&:blank?)
     if params[:installer_id].blank? || project_ids.empty?
-      redirect_to projects_path(redirect_params), alert: "Elegí un instalador y al menos un proyecto." and return
+      redirect_to projects_path(request.query_parameters), alert: "Elegí un instalador y al menos un proyecto." and return
     end
 
     count = 0
@@ -81,7 +80,7 @@ class ProjectsController < ApplicationController
       count += 1 if project.save
     end
 
-    redirect_to projects_path(redirect_params), notice: "Instalador asignado a #{count} proyecto(s)."
+    redirect_to projects_path(request.query_parameters), notice: "Instalador asignado a #{count} proyecto(s)."
   end
 
   private
