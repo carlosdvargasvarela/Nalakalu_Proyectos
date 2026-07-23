@@ -22,6 +22,15 @@ class Admin::StageTemplatesControllerTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
   end
 
+  test "update saves the color" do
+    stage = stage_templates(:entrega)
+    patch admin_project_type_stage_template_path(@project_type, stage), params: {
+      stage_template: { name: stage.name, position: stage.position, color: "#f60404" }
+    }
+    assert_redirected_to admin_project_type_path(@project_type)
+    assert_equal "#f60404", stage.reload.color
+  end
+
   test "destroy removes a stage template" do
     stage = stage_templates(:entrega)
     assert_difference("@project_type.stage_templates.count", -1) do

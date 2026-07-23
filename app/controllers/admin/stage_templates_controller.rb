@@ -42,6 +42,6 @@ class Admin::StageTemplatesController < ApplicationController
   end
 
   def stage_template_params
-    params.require(:stage_template).permit(:name, :position)
+    params.require(:stage_template).permit(:name, :position, :color)
   end
 end
