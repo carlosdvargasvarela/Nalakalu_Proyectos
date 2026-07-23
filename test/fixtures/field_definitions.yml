@@ -1,0 +1,20 @@
+cliente:
+  project_type_id: <%= ActiveRecord::FixtureSet.identify(:instalaciones) %>
+  key: cliente
+  label: Cliente
+  data_type: text
+  position: 1
+  show_in_gantt: true
+  created_at: <%= Time.current %>
+  updated_at: <%= Time.current %>
+
+instalador:
+  project_type_id: <%= ActiveRecord::FixtureSet.identify(:instalaciones) %>
+  key: instalador
+  label: Instalador
+  data_type: reference
+  reference_table: installers
+  position: 2
+  show_in_gantt: true
+  created_at: <%= Time.current %>
+  updated_at: <%= Time.current %>
