@@ -1,0 +1,35 @@
+<%= form_with model: [:admin, project_type, field_definition] do |form| %>
+  <% if field_definition.errors.any? %>
+    <ul>
+      <% field_definition.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  <% end %>
+
+  <div>
+    <%= form.label :key %>
+    <%= form.text_field :key %>
+  </div>
+  <div>
+    <%= form.label :label %>
+    <%= form.text_field :label %>
+  </div>
+  <div>
+    <%= form.label :data_type %>
+    <%= form.select :data_type, FieldDefinition::DATA_TYPES %>
+  </div>
+  <div>
+    <%= form.label :reference_table %>
+    <%= form.text_field :reference_table %>
+  </div>
+  <div>
+    <%= form.label :position %>
+    <%= form.number_field :position %>
+  </div>
+  <div>
+    <%= form.label :show_in_gantt %>
+    <%= form.check_box :show_in_gantt %>
+  </div>
+  <%= form.submit %>
+<% end %>

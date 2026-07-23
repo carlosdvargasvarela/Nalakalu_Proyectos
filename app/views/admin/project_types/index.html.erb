@@ -1,0 +1,7 @@
+<h1>Tipos de proyecto</h1>
+<%= link_to "Nuevo tipo de proyecto", new_admin_project_type_path %>
+<ul>
+  <% @project_types.each do |project_type| %>
+    <li><%= link_to project_type.name, admin_project_type_path(project_type) %></li>
+  <% end %>
+</ul>

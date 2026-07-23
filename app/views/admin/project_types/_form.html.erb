@@ -1,0 +1,19 @@
+<%= form_with model: [:admin, project_type] do |form| %>
+  <% if project_type.errors.any? %>
+    <ul>
+      <% project_type.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  <% end %>
+
+  <div>
+    <%= form.label :name %>
+    <%= form.text_field :name %>
+  </div>
+  <div>
+    <%= form.label :slug %>
+    <%= form.text_field :slug %>
+  </div>
+  <%= form.submit %>
+<% end %>

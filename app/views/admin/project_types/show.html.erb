@@ -1,0 +1,26 @@
+<h1><%= @project_type.name %></h1>
+<%= link_to "Editar", edit_admin_project_type_path(@project_type) %>
+
+<h2>Campos</h2>
+<%= link_to "Nuevo campo", new_admin_project_type_field_definition_path(@project_type) %>
+<ul>
+  <% @project_type.field_definitions.each do |field| %>
+    <li>
+      <%= field.label %> (<%= field.data_type %>)
+      <%= link_to "Editar", edit_admin_project_type_field_definition_path(@project_type, field) %>
+      <%= link_to "Eliminar", admin_project_type_field_definition_path(@project_type, field), data: { turbo_method: :delete, turbo_confirm: "¿Eliminar campo?" } %>
+    </li>
+  <% end %>
+</ul>
+
+<h2>Subprocesos</h2>
+<%= link_to "Nuevo subproceso", new_admin_project_type_stage_template_path(@project_type) %>
+<ol>
+  <% @project_type.stage_templates.each do |stage| %>
+    <li>
+      <%= stage.name %>
+      <%= link_to "Editar", edit_admin_project_type_stage_template_path(@project_type, stage) %>
+      <%= link_to "Eliminar", admin_project_type_stage_template_path(@project_type, stage), data: { turbo_method: :delete, turbo_confirm: "¿Eliminar subproceso?" } %>
+    </li>
+  <% end %>
+</ol>
