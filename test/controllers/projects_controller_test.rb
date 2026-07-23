@@ -223,6 +223,27 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/#{con_otro.name}/, response.body)
   end
 
+  test "index filters by Sin instalador" do
+    sin_instalador = Project.create!(
+      project_type: project_types(:instalaciones), name: "Sin Instalador", custom_fields: {}
+    )
+    con_instalador = Project.create!(
+      project_type: project_types(:instalaciones), name: "Con Instalador",
+      custom_fields: { instalador: installers(:juan_perez).id }
+    )
+
+    get projects_path, params: { installer_id: "none" }
+    assert_response :success
+    assert_match(/#{sin_instalador.name}/, response.body)
+    assert_no_match(/#{con_instalador.name}/, response.body)
+  end
+
+  test "index shows a Sin instalador option in the Instalador filter" do
+    get projects_path
+    assert_response :success
+    assert_select "select#installer_id option[value=?]", "none", text: "Sin instalador"
+  end
+
   test "index shows a message and no Gantt when no projects match the filters" do
     get projects_path, params: { status: "nonexistent-status" }
     assert_response :success

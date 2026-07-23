@@ -8,7 +8,11 @@ class ProjectsController < ApplicationController
     @projects = Project.includes(:project_type, project_stages: :stage_template)
     @projects = params[:status].present? ? @projects.where(status: params[:status]) : @projects.where.not(status: "archived")
     @projects = @projects.where(project_type_id: params[:project_type_id]) if params[:project_type_id].present?
-    @projects = filter_by_installer(@projects, params[:installer_id]) if params[:installer_id].present?
+    if params[:installer_id] == "none"
+      @projects = filter_by_no_installer(@projects)
+    elsif params[:installer_id].present?
+      @projects = filter_by_installer(@projects, params[:installer_id])
+    end
   end
 
   def tracker
@@ -84,5 +88,11 @@ class ProjectsController < ApplicationController
     keys = FieldDefinition.where(reference_table: "installers").distinct.pluck(:key)
     return scope.none if keys.empty?
     keys.map { |key| scope.where("custom_fields ->> ? = ?", key, installer_id.to_s) }.reduce(:or)
+  end
+
+  def filter_by_no_installer(scope)
+    keys = FieldDefinition.where(reference_table: "installers").distinct.pluck(:key)
+    return scope if keys.empty?
+    keys.reduce(scope) { |s, key| s.where("custom_fields ->> ? IS NULL OR custom_fields ->> ? = ''", key, key) }
   end
 end
