@@ -14,6 +14,7 @@ class ProjectsController < ApplicationController
       @projects = filter_by_installer(@projects, params[:installer_id])
     end
     @projects = filter_by_date_range(@projects, params[:from_date], params[:to_date])
+    @projects = filter_by_query(@projects, params[:q])
     @page = [params[:page].to_i, 1].max
   end
 
@@ -127,5 +128,11 @@ class ProjectsController < ApplicationController
     undated_scope = scope.where.not(id: dated_stage_project_ids)
 
     scope.where(id: dated_scope.reorder(nil).select(:id)).or(scope.where(id: undated_scope.reorder(nil).select(:id)))
+  end
+
+  def filter_by_query(scope, q)
+    return scope if q.blank?
+    term = "%#{q}%"
+    scope.where("projects.name ILIKE :term OR projects.custom_fields::text ILIKE :term", term: term)
   end
 end

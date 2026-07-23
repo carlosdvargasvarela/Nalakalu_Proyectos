@@ -39,6 +39,10 @@
         <%= form.label :to_date, "Hasta", class: "form-label" %>
         <%= form.date_field :to_date, value: params[:to_date], class: "form-control" %>
       </div>
+      <div class="col-auto">
+        <%= form.label :q, "Buscar", class: "form-label" %>
+        <%= form.text_field :q, value: params[:q], class: "form-control", placeholder: "Nombre, cliente, dirección..." %>
+      </div>
       <div class="col-auto align-self-end">
         <%= form.submit "Filtrar", class: "btn btn-primary" %>
       </div>

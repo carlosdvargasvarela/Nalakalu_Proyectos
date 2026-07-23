@@ -708,6 +708,67 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/#{fuera.name}/, response.body)
   end
 
+  test "index's q filter matches a project by name" do
+    match = Project.create!(project_type: project_types(:instalaciones), name: "Torre del Bosque", custom_fields: {})
+    other = Project.create!(project_type: project_types(:instalaciones), name: "Otro Proyecto", custom_fields: {})
+
+    get projects_path, params: { q: "Bosque" }
+    assert_response :success
+    assert_match(/#{match.name}/, response.body)
+    assert_no_match(/#{other.name}/, response.body)
+  end
+
+  test "index's q filter matches a value inside custom_fields, regardless of which field holds it" do
+    match = Project.create!(
+      project_type: project_types(:instalaciones), name: "Proyecto A",
+      custom_fields: { cliente: "Constructora Acme S.R.L." }
+    )
+    other = Project.create!(
+      project_type: project_types(:instalaciones), name: "Proyecto B",
+      custom_fields: { cliente: "Otro Cliente" }
+    )
+
+    get projects_path, params: { q: "Acme" }
+    assert_response :success
+    assert_match(/#{match.name}/, response.body)
+    assert_no_match(/#{other.name}/, response.body)
+  end
+
+  test "index's q filter is case-insensitive" do
+    project = Project.create!(
+      project_type: project_types(:instalaciones), name: "Proyecto Mayúsculas",
+      custom_fields: { cliente: "CONSTRUCTORA GRANDE" }
+    )
+
+    get projects_path, params: { q: "constructora grande" }
+    assert_response :success
+    assert_match(/#{project.name}/, response.body)
+  end
+
+  test "index's q filter combines with other filters (AND)" do
+    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    match = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    Project.create!(project_type: other_type, name: "Torre Norte", custom_fields: {})
+
+    get projects_path, params: { q: "Torre Norte", project_type_id: project_types(:instalaciones).id }
+    assert_response :success
+    assert_select "a[href=?]", project_path(match)
+    assert response.body.scan("Torre Norte").size >= 1
+  end
+
+  test "index shows no results when q doesn't match anything" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path, params: { q: "esto-no-existe-en-ningun-proyecto" }
+    assert_response :success
+    assert_select "body", /No hay proyectos con estos filtros/
+  end
+
+  test "index shows the q search field in the filter form" do
+    get projects_path
+    assert_response :success
+    assert_select "input[type=text][name=?]", "q"
+  end
+
   test "index paginates the Listado table at 20 projects per page" do
     25.times { |n| Project.create!(project_type: project_types(:instalaciones), name: "Proyecto #{n}", custom_fields: {}) }
 
