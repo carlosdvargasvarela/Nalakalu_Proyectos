@@ -689,4 +689,46 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[type=date][name=?]", "from_date"
     assert_select "input[type=date][name=?]", "to_date"
   end
+
+  test "index paginates the Listado table at 20 projects per page" do
+    25.times { |n| Project.create!(project_type: project_types(:instalaciones), name: "Proyecto #{n}", custom_fields: {}) }
+
+    get projects_path
+    assert_response :success
+    assert_select "table tbody tr", count: 20
+
+    get projects_path, params: { page: 2 }
+    assert_response :success
+    assert_select "table tbody tr", count: 5
+  end
+
+  test "index's KPI cards and Gantt tasks count all filtered projects, not just the current page" do
+    25.times { |n| Project.create!(project_type: project_types(:instalaciones), name: "Proyecto #{n}", custom_fields: {}) }
+
+    get projects_path
+    assert_response :success
+    assert_select ".card .display-6", "25"
+    assert_select "script#gantt-tasks" do |elements|
+      tasks = JSON.parse(elements.first.text)
+      assert_equal 25, tasks.size
+    end
+  end
+
+  test "index shows no pagination controls when there are 20 projects or fewer" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path
+    assert_response :success
+    assert_select "ul.pagination", count: 0
+  end
+
+  test "index shows pagination controls that preserve the current filter" do
+    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    25.times { |n| Project.create!(project_type: project_types(:instalaciones), name: "Proyecto #{n}", custom_fields: {}) }
+    Project.create!(project_type: other_type, name: "Otro Tipo", custom_fields: {})
+
+    get projects_path, params: { project_type_id: project_types(:instalaciones).id }
+    assert_response :success
+    assert_select "ul.pagination"
+    assert_select "a.page-link[href=?]", projects_path(project_type_id: project_types(:instalaciones).id, page: 2)
+  end
 end

@@ -14,6 +14,7 @@ class ProjectsController < ApplicationController
       @projects = filter_by_installer(@projects, params[:installer_id])
     end
     @projects = filter_by_date_range(@projects, params[:from_date], params[:to_date])
+    @page = [params[:page].to_i, 1].max
   end
 
   def tracker

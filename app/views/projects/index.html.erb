@@ -51,6 +51,9 @@
 <% else %>
   <%
     projects_list = @projects.to_a
+    per_page = 20
+    total_pages = (projects_list.size / per_page.to_f).ceil
+    page_projects = projects_list.drop((@page - 1) * per_page).first(per_page)
   %>
   <div class="row g-3 mb-4">
     <div class="col-sm-4">
@@ -159,7 +162,7 @@
           </tr>
         </thead>
         <tbody>
-          <% projects_list.each do |project| %>
+          <% page_projects.each do |project| %>
             <tr>
               <td><%= check_box_tag "project_ids[]", project.id, false, id: nil, form: "bulk-assign-form" %></td>
               <td><%= link_to project.name, project_path(project) %></td>
@@ -177,6 +180,23 @@
           <% end %>
         </tbody>
       </table>
+      <% if total_pages > 1 %>
+        <nav class="p-3">
+          <ul class="pagination mb-0">
+            <li class="page-item <%= "disabled" if @page <= 1 %>">
+              <%= link_to "Anterior", projects_path(request.query_parameters.merge(page: @page - 1)), class: "page-link" %>
+            </li>
+            <% (1..total_pages).each do |n| %>
+              <li class="page-item <%= "active" if n == @page %>">
+                <%= link_to n, projects_path(request.query_parameters.merge(page: n)), class: "page-link" %>
+              </li>
+            <% end %>
+            <li class="page-item <%= "disabled" if @page >= total_pages %>">
+              <%= link_to "Siguiente", projects_path(request.query_parameters.merge(page: @page + 1)), class: "page-link" %>
+            </li>
+          </ul>
+        </nav>
+      <% end %>
     </div>
   </div>
 
