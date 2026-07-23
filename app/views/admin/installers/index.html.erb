@@ -1,0 +1,14 @@
+<h1>Instaladores</h1>
+<%= link_to "Nuevo instalador", new_admin_installer_path, class: "btn btn-primary mb-3" %>
+<ul class="list-group">
+  <% @installers.each do |installer| %>
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <%= installer.name %>
+      <span>
+        <%= link_to "Editar", edit_admin_installer_path(installer), class: "btn btn-outline-secondary btn-sm" %>
+        <%= button_to "Borrar", admin_installer_path(installer), method: :delete,
+              class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block" } %>
+      </span>
+    </li>
+  <% end %>
+</ul>

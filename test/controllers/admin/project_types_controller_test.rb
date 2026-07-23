@@ -36,4 +36,10 @@ class Admin::ProjectTypesControllerTest < ActionDispatch::IntegrationTest
       delete admin_project_type_path(empty_type)
     end
   end
+
+  test "index links to installers admin" do
+    get admin_project_types_path
+    assert_response :success
+    assert_select "a[href=?]", admin_installers_path, text: "Instaladores"
+  end
 end

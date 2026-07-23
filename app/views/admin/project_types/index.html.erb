@@ -1,5 +1,6 @@
 <h1>Tipos de proyecto</h1>
 <%= link_to "Nuevo tipo de proyecto", new_admin_project_type_path, class: "btn btn-primary mb-3" %>
+<%= link_to "Instaladores", admin_installers_path, class: "btn btn-outline-secondary mb-3" %>
 <ul class="list-group">
   <% @project_types.each do |project_type| %>
     <li class="list-group-item"><%= link_to project_type.name, admin_project_type_path(project_type) %></li>

@@ -9,6 +9,7 @@ Rails.application.routes.draw do
       resources :field_definitions, except: [:index, :show]
       resources :stage_templates, except: [:index, :show]
     end
+    resources :installers
   end
 
   get "projects/dashboard", to: "projects#dashboard", as: :dashboard_projects

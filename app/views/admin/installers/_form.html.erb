@@ -1,0 +1,17 @@
+<%= form_with model: [:admin, installer] do |form| %>
+  <% if installer.errors.any? %>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% installer.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="mb-3">
+    <%= form.label :name, class: "form-label" %>
+    <%= form.text_field :name, class: "form-control" %>
+  </div>
+  <%= form.submit class: "btn btn-primary" %>
+<% end %>
