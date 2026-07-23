@@ -112,4 +112,38 @@ class ProjectTest < ActiveSupport::TestCase
     project.save!(validate: false)
     assert_nil project.installer
   end
+
+  test "progress_status is sin_iniciar when every stage is at 0%" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    assert_equal "sin_iniciar", project.progress_status
+  end
+
+  test "progress_status is iniciado when at least one stage has progress but not all are finished" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    project.project_stages.order(:id).first.update!(progress_percent: 40)
+    assert_equal "iniciado", project.reload.progress_status
+  end
+
+  test "progress_status is finalizado when every stage is at 100%" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    project.project_stages.each { |stage| stage.update!(progress_percent: 100) }
+    assert_equal "finalizado", project.reload.progress_status
+  end
+
+  test "project overdue? is true only when its end_date has passed and it isn't finalizado" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    stages = project.project_stages.order(:id).to_a
+    stages[0].update!(end_date: Date.current - 1.day, progress_percent: 50)
+
+    assert project.reload.overdue?
+
+    stages.each { |stage| stage.update!(progress_percent: 100) }
+    assert_not project.reload.overdue?
+  end
+
+  test "project overdue? is false when it has no end_date yet" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    assert_nil project.end_date
+    assert_not project.overdue?
+  end
 end

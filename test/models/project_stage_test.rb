@@ -51,4 +51,35 @@ class ProjectStageTest < ActiveSupport::TestCase
     stage.user = nil
     assert stage.valid?, stage.errors.full_messages.to_s
   end
+
+  test "progress_status is sin_iniciar at 0%, iniciado between, finalizado at 100%" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.order(:id).first
+
+    stage.update!(progress_percent: 0)
+    assert_equal "sin_iniciar", stage.progress_status
+
+    stage.update!(progress_percent: 45)
+    assert_equal "iniciado", stage.progress_status
+
+    stage.update!(progress_percent: 100)
+    assert_equal "finalizado", stage.progress_status
+  end
+
+  test "overdue? is true only with a past end_date and progress under 100%" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.order(:id).first
+
+    stage.update!(end_date: Date.current - 1.day, progress_percent: 50)
+    assert stage.overdue?
+
+    stage.update!(end_date: Date.current - 1.day, progress_percent: 100)
+    assert_not stage.overdue?
+
+    stage.update!(end_date: nil, progress_percent: 50)
+    assert_not stage.overdue?
+
+    stage.update!(end_date: Date.current + 1.day, progress_percent: 50)
+    assert_not stage.overdue?
+  end
 end

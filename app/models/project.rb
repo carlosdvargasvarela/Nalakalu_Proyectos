@@ -35,6 +35,16 @@ class Project < ApplicationRecord
     Installer.find_by(id: installer_id)
   end
 
+  def progress_status
+    return "sin_iniciar" if project_stages.all? { |stage| stage.progress_percent.zero? }
+    return "finalizado" if project_stages.all? { |stage| stage.progress_percent == 100 }
+    "iniciado"
+  end
+
+  def overdue?
+    end_date.present? && end_date < Date.current && progress_status != "finalizado"
+  end
+
   private
 
   def build_stages_from_template
