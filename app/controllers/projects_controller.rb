@@ -126,7 +126,8 @@ class ProjectsController < ApplicationController
   end
 
   def build_section(project_type)
-    section_params = params.dig(:sections, project_type.slug) || {}
+    section_submitted = params.dig(:sections, project_type.slug)
+    section_params = section_submitted || {}
 
     projects = Project.where(project_type: project_type).includes(:project_type, project_stages: :stage_template).order(:name)
     projects = section_params[:status].present? ? projects.where(status: section_params[:status]) : projects.where.not(status: "archived")
@@ -145,9 +146,16 @@ class ProjectsController < ApplicationController
     page_projects = projects_list.drop((page - 1) * per_page).first(per_page)
     stage_names = StageTemplate.where(project_type: project_type).order(:name).pluck(:name)
 
+    stage_name = if section_submitted.nil?
+      project_type.stage_templates.find_by(default_in_filter: true)&.name
+    else
+      section_params[:stage_name]
+    end
+
     {
       project_type: project_type,
       params: section_params,
+      stage_name: stage_name,
       projects_list: projects_list,
       page_projects: page_projects,
       page: page,

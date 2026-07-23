@@ -942,11 +942,77 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
   test "index shows pagination controls that preserve the current section's filter" do
     slug = project_types(:instalaciones).slug
-    25.times { |n| Project.create!(project_type: project_types(:instalaciones), name: "Proyecto #{n}", custom_fields: {}, status: "active") }
+    25.times { |n| Project.create!(project_type: project_types(:instalaciones), name: "Projeto #{n}", custom_fields: {}, status: "active") }
 
     get projects_path, params: { sections: { slug => { status: "active" } } }
     assert_response :success
     assert_select "ul.pagination"
     assert_select "a.page-link[href=?]", projects_path(sections: { slug => { status: "active", page: 2 } })
+  end
+
+  test "index's Etapa filter uses the configured default stage on a fresh, unfiltered load" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.find_by(name: "Instalación")
+    stage.update!(start_date: Date.new(2026, 9, 1), end_date: Date.new(2026, 9, 10))
+    stage_templates(:instalacion).update!(default_in_filter: true)
+    slug = project_types(:instalaciones).slug
+
+    get projects_path
+    assert_response :success
+    assert_select "select#sections_#{slug}_stage_name option[selected]", "Instalación"
+    assert_select "script#gantt-tasks-#{slug}" do |elements|
+      tasks = JSON.parse(elements.first.text)
+      task = tasks.find { |t| t["id"] == project.id.to_s }
+      assert_equal "2026-09-01", task["start"]
+      assert_equal "2026-09-10", task["end"]
+    end
+  end
+
+  test "index's Etapa filter doesn't apply the default when the section was explicitly filtered with Etapa left blank" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage_templates(:instalacion).update!(default_in_filter: true)
+    slug = project_types(:instalaciones).slug
+
+    get projects_path, params: { sections: { slug => { stage_name: "", status: "" } } }
+    assert_response :success
+    assert_select "script#gantt-tasks-#{slug}" do |elements|
+      tasks = JSON.parse(elements.first.text)
+      task = tasks.find { |t| t["id"] == project.id.to_s }
+      first, last = project.gantt_window
+      assert_equal first.to_s, task["start"]
+      assert_equal last.to_s, task["end"]
+    end
+  end
+
+  test "index without any default stage configured behaves exactly as before" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    slug = project_types(:instalaciones).slug
+
+    get projects_path
+    assert_response :success
+    assert_select "script#gantt-tasks-#{slug}" do |elements|
+      tasks = JSON.parse(elements.first.text)
+      task = tasks.find { |t| t["id"] == project.id.to_s }
+      first, last = project.gantt_window
+      assert_equal first.to_s, task["start"]
+      assert_equal last.to_s, task["end"]
+    end
+  end
+
+  test "index shows a Quitar filtros link that explicitly blanks every field for that section" do
+    slug = project_types(:instalaciones).slug
+    get projects_path
+    assert_response :success
+    assert_select "a", text: "Quitar filtros" do |elements|
+      href = elements.first["href"]
+      uri = URI.parse(href)
+      params = Rack::Utils.parse_nested_query(uri.query)
+      assert_equal "", params["sections"][slug]["status"]
+      assert_equal "", params["sections"][slug]["installer_id"]
+      assert_equal "", params["sections"][slug]["stage_name"]
+      assert_equal "", params["sections"][slug]["from_date"]
+      assert_equal "", params["sections"][slug]["to_date"]
+      assert_equal "", params["sections"][slug]["q"]
+    end
   end
 end

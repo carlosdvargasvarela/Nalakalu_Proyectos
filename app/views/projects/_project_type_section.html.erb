@@ -29,7 +29,7 @@
       <div class="col-auto">
         <%= form.label :stage_name, "Etapa", class: "form-label" %>
         <%= form.select :stage_name, section[:stage_names],
-              { include_blank: "Todas", selected: section_params[:stage_name] }, class: "form-select" %>
+              { include_blank: "Todas", selected: section[:stage_name] }, class: "form-select" %>
       </div>
       <div class="col-auto">
         <%= form.label :q, "Buscar", class: "form-label" %>
@@ -37,6 +37,11 @@
       </div>
       <div class="col-auto align-self-end">
         <%= form.submit "Filtrar", class: "btn btn-primary" %>
+        <%= link_to "Quitar filtros",
+              projects_path(request.query_parameters.deep_merge(
+                "sections" => { slug => { "status" => "", "installer_id" => "", "from_date" => "", "to_date" => "", "stage_name" => "", "q" => "", "page" => "" } }
+              )),
+              class: "btn btn-outline-secondary" %>
       </div>
     <% end %>
   </div>
@@ -82,8 +87,8 @@
 
   <%
     gantt_tasks = projects_list.filter_map do |project|
-      if section_params[:stage_name].present?
-        stage = project.project_stages.find { |s| s.name == section_params[:stage_name] }
+      if section[:stage_name].present?
+        stage = project.project_stages.find { |s| s.name == section[:stage_name] }
         next if stage.nil?
         stage_start = stage.start_date || project.created_at.to_date
         stage_end = stage.end_date || (stage_start + 7.days)
