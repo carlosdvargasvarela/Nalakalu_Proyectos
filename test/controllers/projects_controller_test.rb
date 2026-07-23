@@ -748,11 +748,12 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
   test "index's q filter combines with other filters (AND)" do
     other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
     match = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
-    Project.create!(project_type: other_type, name: "Torre Norte", custom_fields: {})
+    other_project = Project.create!(project_type: other_type, name: "Torre Norte", custom_fields: {})
 
     get projects_path, params: { q: "Torre Norte", project_type_id: project_types(:instalaciones).id }
     assert_response :success
     assert_select "a[href=?]", project_path(match)
+    assert_select "a[href=?]", project_path(other_project), count: 0
     assert response.body.scan("Torre Norte").size >= 1
   end
 
