@@ -53,4 +53,15 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "body", /Acme S.A./
     assert_select "body", /Producción/
   end
+
+  test "show renders a Gantt column for each show_in_gantt field, with the project's value on every stage row" do
+    project = Project.create!(
+      project_type: project_types(:instalaciones), name: "Torre Norte",
+      custom_fields: { cliente: "Acme S.A." }
+    )
+    get project_path(project)
+    assert_response :success
+    assert_select "table th", text: "Cliente"
+    assert_select "table td", text: "Acme S.A.", count: project.project_stages.count
+  end
 end

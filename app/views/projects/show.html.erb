@@ -8,10 +8,16 @@
   <% end %>
 </ul>
 
+<% gantt_fields = @project.project_type.field_definitions.where(show_in_gantt: true).order(:position) %>
 <h2>Subprocesos</h2>
 <table>
   <thead>
-    <tr><th>Etapa</th><th>Inicio</th><th>Fin</th><th>% Avance</th></tr>
+    <tr>
+      <th>Etapa</th><th>Inicio</th><th>Fin</th><th>Responsable</th><th>% Avance</th>
+      <% gantt_fields.each do |field| %>
+        <th><%= field.label %></th>
+      <% end %>
+    </tr>
   </thead>
   <tbody>
     <% @project.project_stages.order(:id).each do |stage| %>
@@ -19,7 +25,11 @@
         <td><%= stage.name %></td>
         <td><%= stage.start_date %></td>
         <td><%= stage.end_date %></td>
+        <td><%= stage.assigned_user_id %></td>
         <td><%= stage.progress_percent %>%</td>
+        <% gantt_fields.each do |field| %>
+          <td><%= @project.custom_fields[field.key] %></td>
+        <% end %>
       </tr>
     <% end %>
   </tbody>
