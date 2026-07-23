@@ -10,7 +10,9 @@ Rails.application.routes.draw do
       resources :stage_templates, except: [:index, :show]
     end
   end
-  resources :projects
+  resources :projects do
+    resources :project_stages, only: [:edit, :update]
+  end
 
   root "projects#index"
 end
