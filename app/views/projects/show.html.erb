@@ -61,16 +61,57 @@
 
     <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
     <script>
+      function toDateInputValue(date) {
+        var year = date.getFullYear();
+        var month = String(date.getMonth() + 1).padStart(2, "0");
+        var day = String(date.getDate()).padStart(2, "0");
+        return year + "-" + month + "-" + day;
+      }
+
       document.addEventListener("DOMContentLoaded", function () {
         var tasks = JSON.parse(document.getElementById("gantt-tasks").textContent);
-        if (tasks.length > 0) {
-          var gantt = new Gantt("#gantt", tasks, {
-            language: "es",
-            on_click: function (task) { window.location.hash = "stage-" + task.id; },
-            on_date_change: function () { gantt.refresh(tasks); },
-            on_progress_change: function () { gantt.refresh(tasks); }
-          });
+        if (tasks.length === 0) return;
+
+        function saveStage(stageId, attrs) {
+          fetch("<%= project_path(@project) %>", {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+              "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+              project: { project_stages_attributes: { "0": Object.assign({ id: stageId }, attrs) } }
+            })
+          })
+            .then(function (response) {
+              if (!response.ok) throw new Error("save failed");
+              return response.json();
+            })
+            .then(function (stages) {
+              var updated = stages.find(function (s) { return String(s.id) === String(stageId); });
+              if (!updated) return;
+              var row = document.getElementById("stage-" + stageId);
+              row.querySelector("input[name*='[start_date]']").value = updated.start_date || "";
+              row.querySelector("input[name*='[end_date]']").value = updated.end_date || "";
+              row.querySelector("input[name*='[progress_percent]']").value = updated.progress_percent;
+            })
+            .catch(function () {
+              gantt.refresh(tasks);
+              alert("No se pudo guardar el cambio. Intenta de nuevo.");
+            });
         }
+
+        var gantt = new Gantt("#gantt", tasks, {
+          language: "es",
+          on_click: function (task) { window.location.hash = "stage-" + task.id; },
+          on_date_change: function (task, start, end) {
+            saveStage(task.id, { start_date: toDateInputValue(start), end_date: toDateInputValue(end) });
+          },
+          on_progress_change: function (task, progress) {
+            saveStage(task.id, { progress_percent: Math.round(progress) });
+          }
+        });
       });
     </script>
 

@@ -36,9 +36,15 @@ class ProjectsController < ApplicationController
   def update
     @project_type = @project.project_type
     if @project.update(project_params)
-      redirect_to project_path(@project)
+      respond_to do |format|
+        format.html { redirect_to project_path(@project) }
+        format.json { render json: stage_payload }
+      end
     else
-      render :edit, status: :unprocessable_entity
+      respond_to do |format|
+        format.html { render :edit, status: :unprocessable_entity }
+        format.json { render json: { errors: @project.errors.full_messages }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -53,6 +59,12 @@ class ProjectsController < ApplicationController
       :project_type_id, :name, :status, custom_fields: {},
       project_stages_attributes: [:id, :start_date, :end_date, :progress_percent]
     )
+  end
+
+  def stage_payload
+    @project.project_stages.map do |stage|
+      { id: stage.id, start_date: stage.start_date, end_date: stage.end_date, progress_percent: stage.progress_percent }
+    end
   end
 
   def filter_by_installer(scope, installer_id)

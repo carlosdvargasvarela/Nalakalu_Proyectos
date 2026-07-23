@@ -94,17 +94,6 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "script#gantt-tasks", text: /#{project.project_stages.first.name}/
   end
 
-  test "show configures the Gantt in Spanish with a read-only snap-back on drag" do
-    project = Project.create!(
-      project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {}
-    )
-    get project_path(project)
-    assert_response :success
-    assert_match(/language:\s*"es"/, response.body)
-    assert_match(/on_date_change:\s*function\s*\(\)\s*\{\s*gantt\.refresh\(tasks\);\s*\}/, response.body)
-    assert_match(/on_progress_change:\s*function\s*\(\)\s*\{\s*gantt\.refresh\(tasks\);\s*\}/, response.body)
-  end
-
   test "index shows an edit link for each project" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get projects_path
@@ -273,5 +262,48 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     get projects_path
     assert_response :success
     assert_select "select#status option[value=?]", "archived", text: "Archivado"
+  end
+
+  test "update responds with JSON stage data when Accept is application/json" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.order(:id).first
+
+    patch project_path(project), params: {
+      project: {
+        project_stages_attributes: { "0" => { id: stage.id, start_date: "2026-08-01", end_date: "2026-08-10", progress_percent: 60 } }
+      }
+    }, as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    updated = body.find { |s| s["id"] == stage.id }
+    assert_equal "2026-08-01", updated["start_date"]
+    assert_equal "2026-08-10", updated["end_date"]
+    assert_equal 60, updated["progress_percent"]
+  end
+
+  test "update with invalid data returns a 422 JSON error when Accept is application/json" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.order(:id).first
+
+    patch project_path(project), params: {
+      project: {
+        project_stages_attributes: { "0" => { id: stage.id, progress_percent: 150 } }
+      }
+    }, as: :json
+
+    assert_response :unprocessable_entity
+    body = JSON.parse(response.body)
+    assert body["errors"].any?
+  end
+
+  test "show's Gantt script saves drag changes via fetch and syncs the stage table" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_response :success
+    assert_match(/function saveStage\(/, response.body)
+    assert_match(/on_date_change:\s*function\s*\(task,\s*start,\s*end\)/, response.body)
+    assert_match(/on_progress_change:\s*function\s*\(task,\s*progress\)/, response.body)
+    assert_match(/toDateInputValue/, response.body)
   end
 end
