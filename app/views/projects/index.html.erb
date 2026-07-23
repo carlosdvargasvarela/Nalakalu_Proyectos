@@ -1,35 +1,81 @@
-<h1>Proyectos</h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="mb-0">Proyectos</h1>
+  <div class="dropdown">
+    <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+      Nuevo proyecto
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+      <% ProjectType.all.each do |project_type| %>
+        <li><%= link_to project_type.name, new_project_path(project_type_id: project_type.id), class: "dropdown-item" %></li>
+      <% end %>
+    </ul>
+  </div>
+</div>
 
-<%= form_with url: projects_path, method: :get, local: true, class: "row g-2 mb-4" do |form| %>
-  <div class="col-auto">
-    <%= form.label :project_type_id, "Tipo", class: "form-label" %>
-    <%= form.select :project_type_id, @project_types.collect { |pt| [pt.name, pt.id] },
-          { include_blank: "Todos", selected: params[:project_type_id] }, class: "form-select" %>
+<div class="card mb-4">
+  <div class="card-body">
+    <%= form_with url: projects_path, method: :get, local: true, class: "row g-2" do |form| %>
+      <div class="col-auto">
+        <%= form.label :project_type_id, "Tipo", class: "form-label" %>
+        <%= form.select :project_type_id, @project_types.collect { |pt| [pt.name, pt.id] },
+              { include_blank: "Todos", selected: params[:project_type_id] }, class: "form-select" %>
+      </div>
+      <div class="col-auto">
+        <%= form.label :status, "Estado", class: "form-label" %>
+        <%= form.select :status, @statuses.map { |s| [status_label(s), s] },
+              { include_blank: "Todos", selected: params[:status] }, class: "form-select" %>
+      </div>
+      <div class="col-auto">
+        <%= form.label :installer_id, "Instalador", class: "form-label" %>
+        <%= form.select :installer_id, @installers.collect { |i| [i.name, i.id] },
+              { include_blank: "Todos", selected: params[:installer_id] }, class: "form-select" %>
+      </div>
+      <div class="col-auto align-self-end">
+        <%= form.submit "Filtrar", class: "btn btn-primary" %>
+      </div>
+    <% end %>
   </div>
-  <div class="col-auto">
-    <%= form.label :status, "Estado", class: "form-label" %>
-    <%= form.select :status, @statuses.map { |s| [status_label(s), s] },
-          { include_blank: "Todos", selected: params[:status] }, class: "form-select" %>
-  </div>
-  <div class="col-auto">
-    <%= form.label :installer_id, "Instalador", class: "form-label" %>
-    <%= form.select :installer_id, @installers.collect { |i| [i.name, i.id] },
-          { include_blank: "Todos", selected: params[:installer_id] }, class: "form-select" %>
-  </div>
-  <div class="col-auto align-self-end">
-    <%= form.submit "Filtrar", class: "btn btn-primary" %>
-  </div>
-<% end %>
+</div>
 
 <% if @projects.none? %>
   <p>No hay proyectos con estos filtros.</p>
 <% else %>
+  <%
+    projects_list = @projects.to_a
+  %>
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="display-6"><%= projects_list.size %></div>
+          <div class="text-muted">Total</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="display-6 text-danger"><%= projects_list.count(&:overdue?) %></div>
+          <div class="text-muted">Vencidos</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="card text-center">
+        <div class="card-body">
+          <div class="display-6 text-success"><%= projects_list.count { |p| p.progress_status == "finalizado" } %></div>
+          <div class="text-muted">Finalizados</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <% content_for :head do %>
     <link href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css" rel="stylesheet">
   <% end %>
 
   <%
-    gantt_tasks = @projects.map do |project|
+    gantt_tasks = projects_list.map do |project|
       first, last = project.gantt_window
       progress_values = project.project_stages.map(&:progress_percent)
       average_progress = progress_values.any? ? (progress_values.sum / progress_values.size.to_f).round : 0
@@ -43,63 +89,71 @@
         custom_class: "installer-color-#{project.installer&.id || 'none'}"
       }
     end
-    gantt_colors = @projects.map do |project|
+    gantt_colors = projects_list.map do |project|
       installer = project.installer
       [installer&.id || "none", installer&.color || "#6c757d"]
     end.uniq
   %>
-  <style>
-    <% gantt_colors.each do |installer_id, color| %>
-      .gantt .bar-wrapper.installer-color-<%= installer_id %> .bar,
-      .gantt .bar-wrapper.installer-color-<%= installer_id %>:hover .bar,
-      .gantt .bar-wrapper.installer-color-<%= installer_id %>.active .bar {
-        fill: <%= color %>;
-      }
-    <% end %>
-  </style>
 
-  <div id="gantt" class="mb-4"></div>
+  <div class="card mb-4">
+    <div class="card-header">Cronograma general</div>
+    <div class="card-body">
+      <style>
+        <% gantt_colors.each do |installer_id, color| %>
+          .gantt .bar-wrapper.installer-color-<%= installer_id %> .bar,
+          .gantt .bar-wrapper.installer-color-<%= installer_id %>:hover .bar,
+          .gantt .bar-wrapper.installer-color-<%= installer_id %>.active .bar {
+            fill: <%= color %>;
+          }
+        <% end %>
+      </style>
 
-  <script type="application/json" id="gantt-tasks"><%== gantt_tasks.to_json %></script>
+      <div id="gantt" class="mb-0"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      var tasks = JSON.parse(document.getElementById("gantt-tasks").textContent);
-      if (tasks.length > 0) {
-        var gantt = new Gantt("#gantt", tasks, {
-          language: "es",
-          on_click: function (task) { window.location = task.edit_url; },
-          on_date_change: function () { gantt.refresh(tasks); },
-          on_progress_change: function () { gantt.refresh(tasks); }
+      <script type="application/json" id="gantt-tasks"><%== gantt_tasks.to_json %></script>
+
+      <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+      <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          var tasks = JSON.parse(document.getElementById("gantt-tasks").textContent);
+          if (tasks.length > 0) {
+            var gantt = new Gantt("#gantt", tasks, {
+              language: "es",
+              on_click: function (task) { window.location = task.edit_url; },
+              on_date_change: function () { gantt.refresh(tasks); },
+              on_progress_change: function () { gantt.refresh(tasks); }
+            });
+          }
         });
-      }
-    });
-  </script>
+      </script>
+    </div>
+  </div>
 
-  <table class="table table-striped">
-    <thead>
-      <tr><th>Nombre</th><th>Tipo</th><th>Estado</th><th></th></tr>
-    </thead>
-    <tbody>
-      <% @projects.each do |project| %>
-        <tr>
-          <td><%= link_to project.name, project_path(project) %></td>
-          <td><%= project.project_type.name %></td>
-          <td><%= status_badge(project.status) %></td>
-          <td>
-            <%= link_to "Editar", edit_project_path(project), class: "btn btn-outline-secondary btn-sm" %>
-            <%= render "archive_button", project: project %>
-          </td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
+  <div class="card mb-4">
+    <div class="card-header">Listado</div>
+    <div class="card-body p-0">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr><th>Nombre</th><th>Tipo</th><th>Estado</th><th>Avance</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% projects_list.each do |project| %>
+            <tr>
+              <td><%= link_to project.name, project_path(project) %></td>
+              <td><%= project.project_type.name %></td>
+              <td><%= status_badge(project.status) %></td>
+              <td>
+                <%= progress_status_badge(project.progress_status) %>
+                <%= overdue_badge if project.overdue? %>
+              </td>
+              <td>
+                <%= link_to "Editar", edit_project_path(project), class: "btn btn-outline-secondary btn-sm" %>
+                <%= render "archive_button", project: project %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
 <% end %>
-
-<h2>Nuevo proyecto</h2>
-<ul class="list-unstyled">
-  <% ProjectType.all.each do |project_type| %>
-    <li><%= link_to project_type.name, new_project_path(project_type_id: project_type.id), class: "btn btn-outline-primary btn-sm mb-1" %></li>
-  <% end %>
-</ul>

@@ -469,4 +469,44 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "#stage-#{stage.id} span.badge.bg-info", "Iniciado"
     assert_select "#stage-#{stage.id} span.badge.bg-danger", "Vencido"
   end
+
+  test "index shows a Nuevo proyecto dropdown with one link per project type" do
+    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    get projects_path
+    assert_response :success
+    assert_select ".dropdown-menu a[href=?]", new_project_path(project_type_id: project_types(:instalaciones).id)
+    assert_select ".dropdown-menu a[href=?]", new_project_path(project_type_id: other_type.id)
+  end
+
+  test "index shows KPI cards for total, overdue, and finalizado projects" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Activo", custom_fields: {})
+    vencido = Project.create!(project_type: project_types(:instalaciones), name: "Vencido", custom_fields: {})
+    vencido.project_stages.order(:id).first.update!(end_date: Date.current - 1.day, progress_percent: 50)
+    finalizado = Project.create!(project_type: project_types(:instalaciones), name: "Finalizado", custom_fields: {})
+    finalizado.project_stages.each { |stage| stage.update!(progress_percent: 100) }
+
+    get projects_path
+    assert_response :success
+    assert_select ".card .display-6", "3"
+    assert_select ".card .display-6.text-danger", "1"
+    assert_select ".card .display-6.text-success", "1"
+  end
+
+  test "index shows progress-status and overdue badges in the table" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    project.project_stages.order(:id).first.update!(end_date: Date.current - 1.day, progress_percent: 40)
+
+    get projects_path
+    assert_response :success
+    assert_select "table span.badge.bg-info", "Iniciado"
+    assert_select "table span.badge.bg-danger", "Vencido"
+  end
+
+  test "index wraps the Gantt and the table in cards" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path
+    assert_response :success
+    assert_select ".card .card-header", "Cronograma general"
+    assert_select ".card .card-header", "Listado"
+  end
 end
