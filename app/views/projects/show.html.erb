@@ -8,29 +8,53 @@
   <% end %>
 </ul>
 
+<% content_for :head do %>
+  <link href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css" rel="stylesheet">
+<% end %>
+
 <% gantt_fields = @project.project_type.field_definitions.where(show_in_gantt: true).order(:position) %>
-<h2>Subprocesos</h2>
-<table class="table table-bordered">
-  <thead>
-    <tr>
-      <th>Etapa</th><th>Inicio</th><th>Fin</th><th>Responsable</th><th>% Avance</th>
-      <% gantt_fields.each do |field| %>
-        <th><%= field.label %></th>
-      <% end %>
-    </tr>
-  </thead>
-  <tbody>
-    <% @project.project_stages.order(:id).each do |stage| %>
-      <tr>
-        <td><%= stage.name %></td>
-        <td><%= stage.start_date %></td>
-        <td><%= stage.end_date %></td>
-        <td><%= stage.user&.email %></td>
-        <td><%= stage.progress_percent %>%</td>
-        <% gantt_fields.each do |field| %>
-          <td><%= @project.custom_fields[field.key] %></td>
-        <% end %>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+<h2>Gantt</h2>
+
+<% if gantt_fields.any? %>
+  <table class="table table-sm table-bordered w-auto mb-3">
+    <thead>
+      <tr><% gantt_fields.each do |field| %><th><%= field.label %></th><% end %></tr>
+    </thead>
+    <tbody>
+      <tr><% gantt_fields.each do |field| %><td><%= @project.custom_fields[field.key] %></td><% end %></tr>
+    </tbody>
+  </table>
+<% end %>
+
+<div id="gantt" class="mb-4"></div>
+
+<%
+  # ponytail: a stage with no dates gets a one-week placeholder window starting at
+  # the project's creation date, so the chart always has something to draw. This is
+  # a visual approximation, not real data — real dates come from editing the stage.
+  gantt_tasks = @project.project_stages.order(:id).map do |stage|
+    stage_start = stage.start_date || @project.created_at.to_date
+    stage_end = stage.end_date || (stage_start + 7.days)
+    {
+      id: stage.id.to_s,
+      name: stage.name,
+      start: stage_start.to_s,
+      end: stage_end.to_s,
+      progress: stage.progress_percent,
+      edit_url: edit_project_project_stage_path(@project, stage)
+    }
+  end
+%>
+<script type="application/json" id="gantt-tasks"><%== gantt_tasks.to_json %></script>
+
+<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var tasks = JSON.parse(document.getElementById("gantt-tasks").textContent);
+    if (tasks.length > 0) {
+      new Gantt("#gantt", tasks, {
+        on_click: function (task) { window.location = task.edit_url; }
+      });
+    }
+  });
+</script>
