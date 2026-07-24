@@ -1,5 +1,5 @@
 <%= form_with model: project do |f| %>
-  <table class="table table-sm table-bordered mb-0 stage-table">
+  <table id="stage-table-<%= project.id %>" class="table table-sm table-bordered mb-0 stage-table">
     <thead>
       <tr><th>Etapa</th><th>Inicio</th><th>Fin</th><th>Duración (días)</th><th>% Avance</th><th>Estado</th></tr>
     </thead>
@@ -23,7 +23,7 @@
 <% end %>
 
 <script>
-  document.querySelectorAll(".stage-table tbody tr").forEach(function (row) {
+  document.querySelectorAll("#stage-table-<%= project.id %> tbody tr").forEach(function (row) {
     var duracionInput = row.querySelector(".duracion-input");
     var startInput = row.querySelector("input[name*='[start_date]']");
     var endInput = row.querySelector("input[name*='[end_date]']");
