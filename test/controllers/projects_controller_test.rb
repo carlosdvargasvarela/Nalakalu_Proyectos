@@ -434,6 +434,23 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[name$='[progress_percent]']", count: project.project_stages.count
   end
 
+  test "show's stage table renders a Duración (días) input with no name attribute, per stage" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_response :success
+    assert_select ".stage-table th", text: "Duración (días)"
+    assert_select ".stage-table input.duracion-input", count: project.project_stages.count
+    assert_select ".stage-table input.duracion-input[name]", count: 0
+  end
+
+  test "tracker's stage table renders a Duración (días) input with no name attribute, per stage" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get tracker_projects_path
+    assert_response :success
+    assert_select ".stage-table th", text: "Duración (días)"
+    assert_select ".stage-table input.duracion-input", count: project.project_stages.count
+  end
+
   test "updating project_stages_attributes changes stage dates and progress" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     stage = project.project_stages.order(:id).first

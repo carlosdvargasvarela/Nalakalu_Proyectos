@@ -1,7 +1,7 @@
 <%= form_with model: project do |f| %>
   <table class="table table-sm table-bordered mb-0 stage-table">
     <thead>
-      <tr><th>Etapa</th><th>Inicio</th><th>Fin</th><th>% Avance</th><th>Estado</th></tr>
+      <tr><th>Etapa</th><th>Inicio</th><th>Fin</th><th>Duración (días)</th><th>% Avance</th><th>Estado</th></tr>
     </thead>
     <tbody>
       <%= f.fields_for :project_stages, project.project_stages.includes(:stage_template).order(:id) do |sf| %>
@@ -9,6 +9,7 @@
           <td><%= sf.object.name %></td>
           <td><%= sf.hidden_field :id %><%= sf.date_field :start_date, class: "form-control form-control-sm fecha-input" %></td>
           <td><%= sf.date_field :end_date, class: "form-control form-control-sm fecha-input" %></td>
+          <td><input type="number" min="1" class="form-control form-control-sm duracion-input"></td>
           <td><%= sf.number_field :progress_percent, min: 0, max: 100, class: "form-control form-control-sm avance-input" %></td>
           <td>
             <%= progress_status_badge(sf.object.progress_status) %>
@@ -20,3 +21,20 @@
   </table>
   <%= f.submit "Guardar cambios", class: "btn btn-primary btn-sm mt-3" %>
 <% end %>
+
+<script>
+  document.querySelectorAll(".stage-table tbody tr").forEach(function (row) {
+    var duracionInput = row.querySelector(".duracion-input");
+    var startInput = row.querySelector("input[name*='[start_date]']");
+    var endInput = row.querySelector("input[name*='[end_date]']");
+    if (!duracionInput || !startInput || !endInput) return;
+
+    duracionInput.addEventListener("input", function () {
+      var days = parseInt(duracionInput.value, 10);
+      if (!startInput.value || isNaN(days)) return;
+      var start = new Date(startInput.value + "T00:00:00");
+      start.setDate(start.getDate() + days);
+      endInput.value = start.toISOString().slice(0, 10);
+    });
+  });
+</script>
