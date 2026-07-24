@@ -205,6 +205,21 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/readonly_progress:\s*true/, response.body)
   end
 
+  test "index's Gantt click handler is wired via the on_click constructor option, not gantt.on" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path
+    assert_response :success
+    assert_match(/on_click:\s*function\s*\(task\)\s*\{\s*window\.location\s*=\s*task\.edit_url;\s*\}/, response.body)
+    assert_no_match(/gantt\.on\(/, response.body)
+  end
+
+  test "index's Gantt overrides the progress-bar fill for visibility against custom bar colors" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path
+    assert_response :success
+    assert_match(/\.gantt \.bar-progress \{\s*fill:\s*rgba\(0,\s*0,\s*0,\s*0\.25\);?\s*\}/, response.body)
+  end
+
   test "index configures the Gantt with a fixed container height instead of manual scroll CSS" do
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get projects_path
@@ -548,8 +563,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     get project_path(project)
     assert_response :success
     assert_match(/function saveStage\(/, response.body)
-    assert_match(/gantt\.on\(\s*"date_change"\s*,\s*function\s*\(task,\s*start,\s*end\)/, response.body)
-    assert_match(/gantt\.on\(\s*"progress_change"\s*,\s*function\s*\(task,\s*progress\)/, response.body)
+    assert_match(/on_date_change:\s*function\s*\(task,\s*start,\s*end\)/, response.body)
+    assert_match(/on_progress_change:\s*function\s*\(task,\s*progress\)/, response.body)
     assert_match(/toDateInputValue/, response.body)
   end
 
@@ -576,6 +591,21 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     get project_path(project)
     assert_response :success
     assert_match(/gantt\.refresh\(tasks\)/, response.body)
+  end
+
+  test "show's Gantt handlers are wired via constructor options, not gantt.on" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_response :success
+    assert_match(/on_click:\s*function\s*\(task\)\s*\{\s*window\.location\.hash\s*=\s*"stage-"\s*\+\s*task\.id;\s*\}/, response.body)
+    assert_no_match(/gantt\.on\(/, response.body)
+  end
+
+  test "show's Gantt overrides the progress-bar fill for visibility against custom bar colors" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_response :success
+    assert_match(/\.gantt \.bar-progress \{\s*fill:\s*rgba\(0,\s*0,\s*0,\s*0\.25\);?\s*\}/, response.body)
   end
 
   test "tracker defaults to the first project type when none is given" do

@@ -121,6 +121,9 @@
         .gantt .bar-label {
           font-weight: bold;
         }
+        .gantt .bar-progress {
+          fill: rgba(0, 0, 0, 0.25);
+        }
         <% gantt_colors.each do |installer_id, color| %>
           .gantt .bar-wrapper.installer-color-<%= installer_id %> .bar,
           .gantt .bar-wrapper.installer-color-<%= installer_id %>:hover .bar,
@@ -151,9 +154,9 @@
               popup: false,
               today_button: false,
               container_height: 630,
-              view_mode_select: false
+              view_mode_select: false,
+              on_click: function (task) { window.location = task.edit_url; }
             });
-            gantt.on("click", function (task) { window.location = task.edit_url; });
 
             document.querySelectorAll("#view-mode-<%= slug %> .view-mode-btn").forEach(function (btn) {
               btn.addEventListener("click", function () {

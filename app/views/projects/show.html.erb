@@ -46,6 +46,9 @@
       .gantt .bar-label {
         font-weight: bold;
       }
+      .gantt .bar-progress {
+        fill: rgba(0, 0, 0, 0.25);
+      }
       <% stage_colors.each do |template_id, color| %>
         .gantt .bar-wrapper.stage-color-<%= template_id %> .bar,
         .gantt .bar-wrapper.stage-color-<%= template_id %>:hover .bar,
@@ -112,14 +115,14 @@
           popup: false,
           today_button: false,
           container_height: 630,
-          view_mode_select: false
-        });
-        gantt.on("click", function (task) { window.location.hash = "stage-" + task.id; });
-        gantt.on("date_change", function (task, start, end) {
-          saveStage(task.id, { start_date: toDateInputValue(start), end_date: toDateInputValue(end) });
-        });
-        gantt.on("progress_change", function (task, progress) {
-          saveStage(task.id, { progress_percent: Math.round(progress) });
+          view_mode_select: false,
+          on_click: function (task) { window.location.hash = "stage-" + task.id; },
+          on_date_change: function (task, start, end) {
+            saveStage(task.id, { start_date: toDateInputValue(start), end_date: toDateInputValue(end) });
+          },
+          on_progress_change: function (task, progress) {
+            saveStage(task.id, { progress_percent: Math.round(progress) });
+          }
         });
 
         document.querySelectorAll("#view-mode-show .view-mode-btn").forEach(function (btn) {
