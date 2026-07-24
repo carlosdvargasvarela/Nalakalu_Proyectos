@@ -1,4 +1,6 @@
-<%= form_with(model: project, local: true, method: :patch, style: "display:inline-block") do |f| %>
+<%= form_with(model: project, local: true, method: :patch, html: { class: "d-inline" }) do |f| %>
   <%= f.hidden_field :status, value: "archived" %>
-  <%= f.submit "Archivar", class: "btn btn-outline-danger btn-sm" %>
+  <%= f.button type: "submit", class: "btn btn-outline-danger btn-sm" do %>
+    <i class="bi bi-archive"></i> Archivar
+  <% end %>
 <% end %>

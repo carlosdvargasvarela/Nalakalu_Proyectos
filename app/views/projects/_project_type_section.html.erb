@@ -182,8 +182,12 @@
                 <%= overdue_badge if project.overdue? %>
               </td>
               <td>
-                <%= link_to "Editar", edit_project_path(project), class: "btn btn-outline-secondary btn-sm" %>
-                <%= render "archive_button", project: project %>
+                <div class="d-flex gap-2">
+                  <%= link_to edit_project_path(project), class: "btn btn-outline-secondary btn-sm" do %>
+                    <i class="bi bi-pencil"></i> Editar
+                  <% end %>
+                  <%= render "archive_button", project: project %>
+                </div>
               </td>
             </tr>
           <% end %>

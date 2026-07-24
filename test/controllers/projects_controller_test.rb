@@ -77,13 +77,34 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 1, response.body.scan("Acme S.A.").size
   end
 
+  test "index's Editar and Archivar buttons are wrapped in a flex container with icons" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path
+    assert_response :success
+    assert_select "td .d-flex.gap-2 a.btn i.bi-pencil"
+    assert_select "td .d-flex.gap-2 form button i.bi-archive"
+  end
+
+  test "show's Editar button includes the pencil icon" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_response :success
+    assert_select "a.btn i.bi-pencil"
+  end
+
+  test "layout loads Bootstrap Icons" do
+    get projects_path
+    assert_response :success
+    assert_match(/bootstrap-icons/, response.body)
+  end
+
   test "show displays a status badge and an archive button" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_path(project)
     assert_response :success
     assert_select "span.badge.bg-success", "Activo"
     assert_select "form[action=?]", project_path(project) do
-      assert_select "input[value=?]", "Archivar"
+      assert_select "button", text: /Archivar/
     end
   end
 
@@ -392,7 +413,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get projects_path
     assert_select "form[action=?]", project_path(project) do
-      assert_select "input[value=?]", "Archivar"
+      assert_select "button", text: /Archivar/
     end
   end
 
