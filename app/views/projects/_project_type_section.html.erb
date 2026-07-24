@@ -82,7 +82,7 @@
   </div>
 
   <% content_for :head do %>
-    <link href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/frappe-gantt@1.2.2/dist/frappe-gantt.css" rel="stylesheet">
   <% end %>
 
   <%
@@ -130,20 +130,37 @@
         <% end %>
       </style>
 
-      <div id="gantt-<%= slug %>" class="mb-0" style="max-height: 630px; overflow-y: auto;"></div>
+      <div class="btn-group btn-group-sm mb-2" role="group" id="view-mode-<%= slug %>">
+        <button type="button" class="btn btn-outline-secondary view-mode-btn active" data-mode="Day">Día</button>
+        <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Week">Semana</button>
+        <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Month">Mes</button>
+      </div>
+      <div id="gantt-<%= slug %>" class="mb-0"></div>
 
       <script type="application/json" id="gantt-tasks-<%= slug %>"><%== gantt_tasks.to_json %></script>
 
-      <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@1.2.2/dist/frappe-gantt.umd.js"></script>
       <script>
         document.addEventListener("DOMContentLoaded", function () {
           var tasks = JSON.parse(document.getElementById("gantt-tasks-<%= slug %>").textContent);
           if (tasks.length > 0) {
             var gantt = new Gantt("#gantt-<%= slug %>", tasks, {
               language: "es",
-              on_click: function (task) { window.location = task.edit_url; },
-              on_date_change: function () { gantt.refresh(tasks); },
-              on_progress_change: function () { gantt.refresh(tasks); }
+              readonly_dates: true,
+              readonly_progress: true,
+              popup: false,
+              today_button: false,
+              container_height: 630,
+              view_mode_select: false
+            });
+            gantt.on("click", function (task) { window.location = task.edit_url; });
+
+            document.querySelectorAll("#view-mode-<%= slug %> .view-mode-btn").forEach(function (btn) {
+              btn.addEventListener("click", function () {
+                gantt.change_view_mode(btn.dataset.mode);
+                document.querySelectorAll("#view-mode-<%= slug %> .view-mode-btn").forEach(function (b) { b.classList.remove("active"); });
+                btn.classList.add("active");
+              });
             });
           }
         });

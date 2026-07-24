@@ -196,19 +196,41 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "script#gantt-tasks-#{project_types(:instalaciones).slug}", text: /#{project.name}/
   end
 
-  test "index configures the Gantt in Spanish with a read-only snap-back on drag" do
+  test "index configures the Gantt in Spanish with native readonly options" do
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get projects_path
     assert_response :success
     assert_match(/language:\s*"es"/, response.body)
-    assert_match(/on_date_change:\s*function\s*\(\)\s*\{\s*gantt\.refresh\(tasks\);\s*\}/, response.body)
+    assert_match(/readonly_dates:\s*true/, response.body)
+    assert_match(/readonly_progress:\s*true/, response.body)
   end
 
-  test "index renders the Gantt container with a fixed max-height and vertical scroll" do
+  test "index configures the Gantt with a fixed container height instead of manual scroll CSS" do
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get projects_path
     assert_response :success
-    assert_select "#gantt-#{project_types(:instalaciones).slug}[style=?]", "max-height: 630px; overflow-y: auto;"
+    slug = project_types(:instalaciones).slug
+    assert_select "#gantt-#{slug}[style]", count: 0
+    assert_match(/container_height:\s*630/, response.body)
+  end
+
+  test "index loads frappe-gantt 1.2.2" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path
+    assert_response :success
+    assert_match(%r{frappe-gantt@1\.2\.2/dist/frappe-gantt\.css}, response.body)
+    assert_match(%r{frappe-gantt@1\.2\.2/dist/frappe-gantt\.umd\.js}, response.body)
+    assert_no_match(/frappe-gantt@0\.6\.1/, response.body)
+  end
+
+  test "index shows Día/Semana/Mes view-mode buttons for the Gantt" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get projects_path
+    assert_response :success
+    slug = project_types(:instalaciones).slug
+    assert_select "#view-mode-#{slug} button", text: "Día"
+    assert_select "#view-mode-#{slug} button", text: "Semana"
+    assert_select "#view-mode-#{slug} button", text: "Mes"
   end
 
   test "index's Gantt shows only the filtered stage's date range for each project, not the full project span" do
