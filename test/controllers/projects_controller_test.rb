@@ -548,9 +548,34 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     get project_path(project)
     assert_response :success
     assert_match(/function saveStage\(/, response.body)
-    assert_match(/on_date_change:\s*function\s*\(task,\s*start,\s*end\)/, response.body)
-    assert_match(/on_progress_change:\s*function\s*\(task,\s*progress\)/, response.body)
+    assert_match(/gantt\.on\(\s*"date_change"\s*,\s*function\s*\(task,\s*start,\s*end\)/, response.body)
+    assert_match(/gantt\.on\(\s*"progress_change"\s*,\s*function\s*\(task,\s*progress\)/, response.body)
     assert_match(/toDateInputValue/, response.body)
+  end
+
+  test "show loads frappe-gantt 1.2.2" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_response :success
+    assert_match(%r{frappe-gantt@1\.2\.2/dist/frappe-gantt\.css}, response.body)
+    assert_match(%r{frappe-gantt@1\.2\.2/dist/frappe-gantt\.umd\.js}, response.body)
+    assert_no_match(/frappe-gantt@0\.6\.1/, response.body)
+  end
+
+  test "show shows Día/Semana/Mes view-mode buttons for the Gantt" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_response :success
+    assert_select "#view-mode-show button", text: "Día"
+    assert_select "#view-mode-show button", text: "Semana"
+    assert_select "#view-mode-show button", text: "Mes"
+  end
+
+  test "show's Gantt still reverts a failed save via gantt.refresh" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_response :success
+    assert_match(/gantt\.refresh\(tasks\)/, response.body)
   end
 
   test "tracker defaults to the first project type when none is given" do

@@ -17,7 +17,7 @@
 <%= render "data_band", project: @project, fields: @project.project_type.field_definitions %>
 
 <% content_for :head do %>
-  <link href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/frappe-gantt@1.2.2/dist/frappe-gantt.css" rel="stylesheet">
 <% end %>
 
 <%
@@ -55,11 +55,16 @@
       <% end %>
     </style>
 
+    <div class="btn-group btn-group-sm mb-2" role="group" id="view-mode-show">
+      <button type="button" class="btn btn-outline-secondary view-mode-btn active" data-mode="Day">Día</button>
+      <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Week">Semana</button>
+      <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Month">Mes</button>
+    </div>
     <div id="gantt" class="mb-4"></div>
 
     <script type="application/json" id="gantt-tasks"><%== gantt_tasks.to_json %></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@1.2.2/dist/frappe-gantt.umd.js"></script>
     <script>
       function toDateInputValue(date) {
         var year = date.getFullYear();
@@ -104,13 +109,25 @@
 
         var gantt = new Gantt("#gantt", tasks, {
           language: "es",
-          on_click: function (task) { window.location.hash = "stage-" + task.id; },
-          on_date_change: function (task, start, end) {
-            saveStage(task.id, { start_date: toDateInputValue(start), end_date: toDateInputValue(end) });
-          },
-          on_progress_change: function (task, progress) {
-            saveStage(task.id, { progress_percent: Math.round(progress) });
-          }
+          popup: false,
+          today_button: false,
+          container_height: 630,
+          view_mode_select: false
+        });
+        gantt.on("click", function (task) { window.location.hash = "stage-" + task.id; });
+        gantt.on("date_change", function (task, start, end) {
+          saveStage(task.id, { start_date: toDateInputValue(start), end_date: toDateInputValue(end) });
+        });
+        gantt.on("progress_change", function (task, progress) {
+          saveStage(task.id, { progress_percent: Math.round(progress) });
+        });
+
+        document.querySelectorAll("#view-mode-show .view-mode-btn").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            gantt.change_view_mode(btn.dataset.mode);
+            document.querySelectorAll("#view-mode-show .view-mode-btn").forEach(function (b) { b.classList.remove("active"); });
+            btn.classList.add("active");
+          });
         });
       });
     </script>
