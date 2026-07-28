@@ -39,4 +39,16 @@ class Admin::LogEntryTypesControllerTest < ActionDispatch::IntegrationTest
       delete admin_project_type_log_entry_type_path(@project_type, type)
     end
   end
+
+  test "destroy with associated log_entries does not delete the type and sets a flash alert" do
+    type = log_entry_types(:cambio)
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    LogEntry.create!(project: project, user: users(:juan), log_entry_type: type, body: "Nota")
+
+    assert_no_difference("@project_type.log_entry_types.count") do
+      delete admin_project_type_log_entry_type_path(@project_type, type)
+    end
+    assert_redirected_to admin_project_type_path(@project_type)
+    assert_not_nil flash[:alert]
+  end
 end

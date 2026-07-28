@@ -1164,6 +1164,21 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "show's historial de cambios includes stage version changes, prefixed with the stage name" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.find_by(name: "Producción")
+    PaperTrail.request(whodunnit: users(:juan).id.to_s) do
+      stage.update!(progress_percent: 50)
+    end
+
+    get project_path(project)
+
+    assert_response :success
+    assert_select ".card .list-group-item", /\(Etapa: Producción\)/ do
+      assert_select "div.text-muted", /progress_percent/
+    end
+  end
+
   test "show renders well-formed historial for a project with only a create version" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
 

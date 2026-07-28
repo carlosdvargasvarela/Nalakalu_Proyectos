@@ -21,9 +21,14 @@ class ProjectsController < ApplicationController
   end
 
   def show
-    stage_version_ids = @project.project_stages.flat_map { |stage| stage.versions.ids }
-    version_ids = @project.versions.ids + stage_version_ids
-    @project_change_versions = PaperTrail::Version.where(id: version_ids).order(created_at: :desc)
+    @project_change_versions = PaperTrail::Version
+      .where(item_type: "Project", item_id: @project.id)
+      .or(PaperTrail::Version.where(item_type: "ProjectStage", item_id: @project.project_stage_ids))
+      .order(created_at: :desc)
+      .limit(50)
+
+    whodunnit_ids = @project_change_versions.map(&:whodunnit).compact
+    @version_authors = User.where(id: whodunnit_ids).index_by { |u| u.id.to_s }
   end
 
   def new

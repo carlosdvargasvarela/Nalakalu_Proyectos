@@ -27,8 +27,11 @@ class Admin::LogEntryTypesController < ApplicationController
   end
 
   def destroy
-    @log_entry_type.destroy
-    redirect_to admin_project_type_path(@project_type)
+    if @log_entry_type.destroy
+      redirect_to admin_project_type_path(@project_type)
+    else
+      redirect_to admin_project_type_path(@project_type), alert: @log_entry_type.errors.full_messages.to_sentence
+    end
   end
 
   private
