@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_07_28_160621) do
+ActiveRecord::Schema[7.2].define(version: 2026_07_28_161144) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -33,6 +33,18 @@ ActiveRecord::Schema[7.2].define(version: 2026_07_28_160621) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "color", default: "#6c757d", null: false
+  end
+
+  create_table "log_entries", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.bigint "user_id", null: false
+    t.bigint "log_entry_type_id", null: false
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["log_entry_type_id"], name: "index_log_entries_on_log_entry_type_id"
+    t.index ["project_id"], name: "index_log_entries_on_project_id"
+    t.index ["user_id"], name: "index_log_entries_on_user_id"
   end
 
   create_table "log_entry_types", force: :cascade do |t|
@@ -111,6 +123,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_07_28_160621) do
   end
 
   add_foreign_key "field_definitions", "project_types"
+  add_foreign_key "log_entries", "log_entry_types"
+  add_foreign_key "log_entries", "projects"
+  add_foreign_key "log_entries", "users"
   add_foreign_key "log_entry_types", "project_types"
   add_foreign_key "project_stages", "projects"
   add_foreign_key "project_stages", "stage_templates", on_delete: :nullify
