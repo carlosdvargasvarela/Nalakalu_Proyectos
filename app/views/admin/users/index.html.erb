@@ -1,20 +1,21 @@
-<h1>Usuarios</h1>
-<%= link_to "Nuevo usuario", new_admin_user_path, class: "btn btn-primary mb-3" %>
-<table class="table">
-  <thead>
-    <tr><th>Correo electrónico</th><th>Rol</th><th></th></tr>
-  </thead>
-  <tbody>
-    <% @users.each do |user| %>
-      <tr>
-        <td><%= user.email %></td>
-        <td><%= role_label(user.role) %></td>
-        <td>
-          <%= link_to "Editar", edit_admin_user_path(user), class: "btn btn-outline-secondary btn-sm" %>
-          <%= button_to "Eliminar", admin_user_path(user), method: :delete,
-                class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar usuario?')" } %>
-        </td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+<%= admin_card("Usuarios") do %>
+  <%= link_to "Nuevo usuario", new_admin_user_path, class: "btn btn-primary mb-3" %>
+  <table class="table align-middle">
+    <thead>
+      <tr><th>Correo electrónico</th><th>Rol</th><th></th></tr>
+    </thead>
+    <tbody>
+      <% @users.each do |user| %>
+        <tr>
+          <td><%= user.email %></td>
+          <td><span class="badge <%= role_badge_class(user.role) %>"><%= role_label(user.role) %></span></td>
+          <td>
+            <%= link_to "Editar", edit_admin_user_path(user), class: "btn btn-outline-secondary btn-sm" %>
+            <%= button_to "Eliminar", admin_user_path(user), method: :delete,
+                  class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar usuario?')" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>

@@ -1,65 +1,67 @@
-<%= form_with model: [:admin, user] do |form| %>
-  <% if user.errors.any? %>
-    <div class="alert alert-danger">
-      <ul class="mb-0">
-        <% user.errors.full_messages.each do |message| %>
-          <li><%= message %></li>
-        <% end %>
-      </ul>
+<%= admin_card(user.persisted? ? "Editar usuario" : "Nuevo usuario") do %>
+  <%= form_with model: [:admin, user] do |form| %>
+    <% if user.errors.any? %>
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          <% user.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="mb-3">
+      <%= form.label :email, "Correo electrónico", class: "form-label" %>
+      <%= form.email_field :email, class: "form-control" %>
     </div>
+
+    <div class="mb-3">
+      <%= form.label :role, "Rol", class: "form-label" %>
+      <%= form.select :role, User.roles.keys.map { |r| [role_label(r), r] }, {}, class: "form-select" %>
+    </div>
+
+    <div class="mb-3">
+      <%= form.label :password, "Contraseña", class: "form-label" %>
+      <% if user.persisted? %><div class="form-text">Dejalo en blanco si no querés cambiarla.</div><% end %>
+      <%= form.password_field :password, class: "form-control", autocomplete: "new-password" %>
+    </div>
+
+    <div class="mb-3">
+      <%= form.label :password_confirmation, "Confirmación de contraseña", class: "form-label" %>
+      <%= form.password_field :password_confirmation, class: "form-control", autocomplete: "new-password" %>
+    </div>
+
+    <%= form.submit (user.persisted? ? "Actualizar Usuario" : "Crear Usuario"), class: "btn btn-primary" %>
   <% end %>
-
-  <div class="mb-3">
-    <%= form.label :email, "Correo electrónico", class: "form-label" %>
-    <%= form.email_field :email, class: "form-control" %>
-  </div>
-
-  <div class="mb-3">
-    <%= form.label :role, "Rol", class: "form-label" %>
-    <%= form.select :role, User.roles.keys.map { |r| [role_label(r), r] }, {}, class: "form-select" %>
-  </div>
-
-  <div class="mb-3">
-    <%= form.label :password, "Contraseña", class: "form-label" %>
-    <% if user.persisted? %><div class="form-text">Dejalo en blanco si no querés cambiarla.</div><% end %>
-    <%= form.password_field :password, class: "form-control", autocomplete: "new-password" %>
-  </div>
-
-  <div class="mb-3">
-    <%= form.label :password_confirmation, "Confirmación de contraseña", class: "form-label" %>
-    <%= form.password_field :password_confirmation, class: "form-control", autocomplete: "new-password" %>
-  </div>
-
-  <%= form.submit (user.persisted? ? "Actualizar Usuario" : "Crear Usuario"), class: "btn btn-primary" %>
 <% end %>
 
 <% if user.persisted? %>
-  <hr>
-  <h2 class="h5">Accesos a proyectos</h2>
-  <p class="text-muted">
-    "Ver" alcanza para un rol Visor. "Editar" solo tiene efecto para un rol Gerente
-    (Admin siempre tiene acceso total; Gerente siempre puede ver todos los proyectos).
-  </p>
-  <% @projects.group_by(&:project_type).each do |project_type, projects| %>
-    <h3 class="h6"><%= project_type.name %></h3>
-    <table class="table table-sm">
-      <thead><tr><th>Proyecto</th><th>Ver</th><th>Editar</th></tr></thead>
-      <tbody>
-        <% projects.each do |project| %>
-          <% access = user.project_accesses.find { |a| a.project_id == project.id } %>
-          <tr>
-            <td><%= project.name %></td>
-            <td><%= check_box_tag "project_access[#{project.id}][view]", "1", access.present?, form: "user-access-form" %></td>
-            <td><%= check_box_tag "project_access[#{project.id}][edit]", "1", access&.can_edit || false, form: "user-access-form" %></td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
-  <% end %>
-  <%= form_with url: admin_user_path(user), method: :patch, id: "user-access-form" do %>
-    <%= hidden_field_tag "user[email]", user.email %>
-    <%= hidden_field_tag "user[role]", user.role %>
-    <%= hidden_field_tag "sync_project_access", "1" %>
-    <%= submit_tag "Guardar accesos", class: "btn btn-primary" %>
+  <%= admin_card("Accesos a proyectos") do %>
+    <p class="text-muted">
+      "Ver" alcanza para un rol Visor. "Editar" solo tiene efecto para un rol Gerente
+      (Admin siempre tiene acceso total; Gerente siempre puede ver todos los proyectos).
+    </p>
+    <% @projects.group_by(&:project_type).each do |project_type, projects| %>
+      <h3 class="h6"><%= project_type.name %></h3>
+      <table class="table table-sm">
+        <thead><tr><th>Proyecto</th><th>Ver</th><th>Editar</th></tr></thead>
+        <tbody>
+          <% projects.each do |project| %>
+            <% access = user.project_accesses.find { |a| a.project_id == project.id } %>
+            <tr>
+              <td><%= project.name %></td>
+              <td><%= check_box_tag "project_access[#{project.id}][view]", "1", access.present?, form: "user-access-form" %></td>
+              <td><%= check_box_tag "project_access[#{project.id}][edit]", "1", access&.can_edit || false, form: "user-access-form" %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+    <%= form_with url: admin_user_path(user), method: :patch, id: "user-access-form" do %>
+      <%= hidden_field_tag "user[email]", user.email %>
+      <%= hidden_field_tag "user[role]", user.role %>
+      <%= hidden_field_tag "sync_project_access", "1" %>
+      <%= submit_tag "Guardar accesos", class: "btn btn-primary" %>
+    <% end %>
   <% end %>
 <% end %>
