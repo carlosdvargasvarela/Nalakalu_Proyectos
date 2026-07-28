@@ -83,4 +83,24 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "body", /No se subió ningún archivo/
   end
+
+  test "new is blocked for a visor" do
+    sign_in users(:maria)
+    get new_import_path
+    assert_redirected_to root_path
+  end
+
+  test "create as a gerente grants edit access on each imported project" do
+    sign_in users(:carla)
+    project_type = project_types(:instalaciones)
+    csv = "Nombre,Cliente,Instalador\nTorre Norte,Acme S.A.,Juan Pérez\n"
+
+    post imports_path, params: {
+      project_type_id: project_type.id,
+      file: Rack::Test::UploadedFile.new(StringIO.new(csv), "text/csv", original_filename: "plantilla.csv")
+    }
+
+    project = Project.find_by(name: "Torre Norte")
+    assert users(:carla).can_edit_project?(project)
+  end
 end

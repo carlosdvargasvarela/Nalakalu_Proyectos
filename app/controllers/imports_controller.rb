@@ -1,6 +1,8 @@
 require "csv"
 
 class ImportsController < ApplicationController
+  before_action :require_admin_or_gerente!
+
   def new
     @project_types = ProjectType.all
     @project_type = ProjectType.find_by(id: params[:project_type_id])
@@ -41,6 +43,7 @@ class ImportsController < ApplicationController
       end
       project = Project.new(project_type: project_type, name: row["Nombre"], custom_fields: custom_fields)
       if project.save
+        ProjectAccess.create!(user: current_user, project: project, can_edit: true) if current_user.gerente?
         created += 1
       else
         row_errors << { row: index + 2, message: project.errors.full_messages.join(", ") }

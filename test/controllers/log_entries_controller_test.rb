@@ -37,4 +37,39 @@ class LogEntriesControllerTest < ActionDispatch::IntegrationTest
       delete project_log_entry_path(@project, entry)
     end
   end
+
+  test "create is blocked for a visor even with view access" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    ProjectAccess.create!(user: users(:maria), project: project)
+
+    sign_in users(:maria)
+    assert_no_difference("project.log_entries.count") do
+      post project_log_entries_path(project), params: {
+        log_entry: { body: "Intento de nota", log_entry_type_id: log_entry_types(:nota).id }
+      }
+    end
+  end
+
+  test "create is blocked for a gerente without edit access" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+
+    sign_in users(:carla)
+    assert_no_difference("project.log_entries.count") do
+      post project_log_entries_path(project), params: {
+        log_entry: { body: "Intento de nota", log_entry_type_id: log_entry_types(:nota).id }
+      }
+    end
+  end
+
+  test "create succeeds for a gerente with edit access" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    ProjectAccess.create!(user: users(:carla), project: project, can_edit: true)
+
+    sign_in users(:carla)
+    assert_difference("project.log_entries.count", 1) do
+      post project_log_entries_path(project), params: {
+        log_entry: { body: "Nota autorizada", log_entry_type_id: log_entry_types(:nota).id }
+      }
+    end
+  end
 end

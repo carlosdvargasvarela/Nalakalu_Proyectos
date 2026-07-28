@@ -1,5 +1,6 @@
 class LogEntriesController < ApplicationController
   before_action :set_project
+  before_action :authorize_edit!, only: [:create]
 
   def create
     @log_entry = @project.log_entries.new(log_entry_params.merge(user: current_user))
@@ -20,6 +21,11 @@ class LogEntriesController < ApplicationController
 
   def set_project
     @project = Project.find(params[:project_id])
+  end
+
+  def authorize_edit!
+    return if current_user.can_edit_project?(@project)
+    redirect_to project_path(@project), alert: "No tenés permiso para agregar notas a este proyecto."
   end
 
   def log_entry_params
