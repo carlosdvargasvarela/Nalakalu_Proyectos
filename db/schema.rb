@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_07_28_210707) do
+ActiveRecord::Schema[7.2].define(version: 2026_07_28_211256) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -93,6 +93,17 @@ ActiveRecord::Schema[7.2].define(version: 2026_07_28_210707) do
     t.index ["project_type_id"], name: "index_log_entry_types_on_project_type_id"
   end
 
+  create_table "project_accesses", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "project_id", null: false
+    t.boolean "can_edit", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["project_id"], name: "index_project_accesses_on_project_id"
+    t.index ["user_id", "project_id"], name: "index_project_accesses_on_user_id_and_project_id", unique: true
+    t.index ["user_id"], name: "index_project_accesses_on_user_id"
+  end
+
   create_table "project_stages", force: :cascade do |t|
     t.bigint "project_id", null: false
     t.bigint "stage_template_id"
@@ -168,6 +179,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_07_28_210707) do
   add_foreign_key "log_entries", "projects"
   add_foreign_key "log_entries", "users"
   add_foreign_key "log_entry_types", "project_types"
+  add_foreign_key "project_accesses", "projects"
+  add_foreign_key "project_accesses", "users"
   add_foreign_key "project_stages", "projects"
   add_foreign_key "project_stages", "stage_templates", on_delete: :nullify
   add_foreign_key "project_stages", "users"

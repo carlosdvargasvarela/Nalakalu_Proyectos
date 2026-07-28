@@ -202,4 +202,20 @@ class ProjectTest < ActiveSupport::TestCase
     assert_equal "update", version.event
     assert_equal users(:juan).id.to_s, version.whodunnit
   end
+
+  test "visible_to returns all projects for admin and gerente" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    assert_includes Project.visible_to(users(:juan)), project
+    assert_includes Project.visible_to(users(:carla)), project
+  end
+
+  test "visible_to returns only accessible projects for visor" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    other = Project.create!(project_type: project_types(:instalaciones), name: "Torre Sur", custom_fields: {})
+    ProjectAccess.create!(user: users(:maria), project: project)
+
+    visible = Project.visible_to(users(:maria))
+    assert_includes visible, project
+    assert_not_includes visible, other
+  end
 end

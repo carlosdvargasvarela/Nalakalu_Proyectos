@@ -3,11 +3,17 @@ class Project < ApplicationRecord
   belongs_to :project_type
   has_many :project_stages, dependent: :destroy
   has_many :log_entries, dependent: :destroy
+  has_many :project_accesses, dependent: :destroy
   accepts_nested_attributes_for :project_stages, update_only: true
 
   validates :name, presence: true
   validate :custom_fields_match_definitions
   after_create :build_stages_from_template
+
+  def self.visible_to(user)
+    return all if user.admin? || user.gerente?
+    joins(:project_accesses).where(project_accesses: { user_id: user.id })
+  end
 
   def start_date
     project_stages.map(&:start_date).compact.min
