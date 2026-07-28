@@ -145,12 +145,17 @@
   <div class="card-header">Bitácora</div>
   <div class="card-body">
     <%= form_with model: LogEntry.new, url: project_log_entries_path(@project), class: "mb-3" do |f| %>
+      <%= f.rich_text_area :body, id: "bitacora-trix-editor", class: "trix-content mb-2" %>
       <div class="d-flex gap-2">
         <%= f.collection_select :log_entry_type_id, @project.project_type.log_entry_types, :id, :name, {}, class: "form-select form-select-sm w-auto" %>
-        <%= f.rich_text_area :body, class: "trix-content mb-0" %>
         <%= f.submit "Agregar", class: "btn btn-primary btn-sm" %>
       </div>
     <% end %>
+    <script>
+      document.getElementById("bitacora-trix-editor").addEventListener("trix-file-accept", function (event) {
+        event.preventDefault();
+      });
+    </script>
     <ul class="list-group list-group-flush">
       <% @project.log_entries.includes(:user, :log_entry_type).order(created_at: :desc).each do |entry| %>
         <li class="list-group-item d-flex justify-content-between align-items-start">
