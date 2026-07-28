@@ -20,6 +20,8 @@ es:
       - oct
       - nov
       - dic
+    formats:
+      long: "%d %b %Y"
   time:
     formats:
       short: "%d %b %H:%M"
@@ -57,9 +59,12 @@ es:
         position: "Posición"
       project:
         name: "Nombre"
+        status: "Estado"
       project_stage:
         name: "Nombre"
         progress_percent: "Porcentaje de avance"
+        start_date: "Fecha de inicio"
+        end_date: "Fecha de fin"
       installer:
         name: "Nombre"
   errors:

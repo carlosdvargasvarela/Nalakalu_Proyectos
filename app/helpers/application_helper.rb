@@ -23,4 +23,10 @@ module ApplicationHelper
   def overdue_badge
     tag.span("Vencido", class: "badge bg-danger")
   end
+
+  def format_change_value(value)
+    return "(vacío)" if value.blank?
+    return l(value, format: :long) if value.respond_to?(:strftime)
+    value.to_s
+  end
 end

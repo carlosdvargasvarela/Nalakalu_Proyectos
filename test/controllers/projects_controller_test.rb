@@ -1158,9 +1158,9 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select ".card-header", text: "Historial de cambios"
-    assert_select ".card .list-group-item", /name/ do
-      assert_select "div.text-muted", /"Torre Norte"/
-      assert_select "div.text-muted", /"Torre Norte Renovada"/
+    assert_select ".card .list-group-item", /Nombre/ do
+      assert_select "div.text-muted", /Torre Norte →/
+      assert_select "div.text-muted", /Torre Norte Renovada/
     end
   end
 
@@ -1175,7 +1175,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select ".card .list-group-item", /\(Etapa: Producción\)/ do
-      assert_select "div.text-muted", /progress_percent/
+      assert_select "div.text-muted", /Porcentaje de avance/
     end
   end
 
