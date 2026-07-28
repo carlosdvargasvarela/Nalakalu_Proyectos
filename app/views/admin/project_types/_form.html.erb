@@ -1,21 +1,23 @@
-<%= form_with model: [:admin, project_type] do |form| %>
-  <% if project_type.errors.any? %>
-    <div class="alert alert-danger">
-      <ul class="mb-0">
-        <% project_type.errors.full_messages.each do |message| %>
-          <li><%= message %></li>
-        <% end %>
-      </ul>
-    </div>
-  <% end %>
+<%= admin_card(project_type.persisted? ? "Editar tipo de proyecto" : "Nuevo tipo de proyecto") do %>
+  <%= form_with model: [:admin, project_type] do |form| %>
+    <% if project_type.errors.any? %>
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          <% project_type.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
 
-  <div class="mb-3">
-    <%= form.label :name, class: "form-label" %>
-    <%= form.text_field :name, class: "form-control" %>
-  </div>
-  <div class="mb-3">
-    <%= form.label :slug, class: "form-label" %>
-    <%= form.text_field :slug, class: "form-control" %>
-  </div>
-  <%= form.submit class: "btn btn-primary" %>
+    <div class="mb-3">
+      <%= form.label :name, class: "form-label" %>
+      <%= form.text_field :name, class: "form-control" %>
+    </div>
+    <div class="mb-3">
+      <%= form.label :slug, class: "form-label" %>
+      <%= form.text_field :slug, class: "form-control" %>
+    </div>
+    <%= form.submit class: "btn btn-primary" %>
+  <% end %>
 <% end %>

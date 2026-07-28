@@ -1,29 +1,31 @@
-<%= form_with model: [:admin, project_type, stage_template] do |form| %>
-  <% if stage_template.errors.any? %>
-    <div class="alert alert-danger">
-      <ul class="mb-0">
-        <% stage_template.errors.full_messages.each do |message| %>
-          <li><%= message %></li>
-        <% end %>
-      </ul>
-    </div>
-  <% end %>
+<%= admin_card("#{stage_template.persisted? ? 'Editar' : 'Nuevo'} subproceso — #{project_type.name}") do %>
+  <%= form_with model: [:admin, project_type, stage_template] do |form| %>
+    <% if stage_template.errors.any? %>
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          <% stage_template.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
 
-  <div class="mb-3">
-    <%= form.label :name, class: "form-label" %>
-    <%= form.text_field :name, class: "form-control" %>
-  </div>
-  <div class="mb-3">
-    <%= form.label :position, class: "form-label" %>
-    <%= form.number_field :position, class: "form-control" %>
-  </div>
-  <div class="mb-3">
-    <%= form.label :color, class: "form-label" %>
-    <%= form.color_field :color, class: "form-control form-control-color" %>
-  </div>
-  <div class="mb-3 form-check">
-    <%= form.check_box :default_in_filter, class: "form-check-input" %>
-    <%= form.label :default_in_filter, "Etapa por defecto en el filtro", class: "form-check-label" %>
-  </div>
-  <%= form.submit class: "btn btn-primary" %>
+    <div class="mb-3">
+      <%= form.label :name, class: "form-label" %>
+      <%= form.text_field :name, class: "form-control" %>
+    </div>
+    <div class="mb-3">
+      <%= form.label :position, class: "form-label" %>
+      <%= form.number_field :position, class: "form-control" %>
+    </div>
+    <div class="mb-3">
+      <%= form.label :color, class: "form-label" %>
+      <%= form.color_field :color, class: "form-control form-control-color" %>
+    </div>
+    <div class="mb-3 form-check">
+      <%= form.check_box :default_in_filter, class: "form-check-input" %>
+      <%= form.label :default_in_filter, "Etapa por defecto en el filtro", class: "form-check-label" %>
+    </div>
+    <%= form.submit class: "btn btn-primary" %>
+  <% end %>
 <% end %>

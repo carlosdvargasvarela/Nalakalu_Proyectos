@@ -1,37 +1,39 @@
-<%= form_with model: [:admin, project_type, field_definition] do |form| %>
-  <% if field_definition.errors.any? %>
-    <div class="alert alert-danger">
-      <ul class="mb-0">
-        <% field_definition.errors.full_messages.each do |message| %>
-          <li><%= message %></li>
-        <% end %>
-      </ul>
-    </div>
-  <% end %>
+<%= admin_card("#{field_definition.persisted? ? 'Editar' : 'Nuevo'} campo — #{project_type.name}") do %>
+  <%= form_with model: [:admin, project_type, field_definition] do |form| %>
+    <% if field_definition.errors.any? %>
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          <% field_definition.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
 
-  <div class="mb-3">
-    <%= form.label :key, class: "form-label" %>
-    <%= form.text_field :key, class: "form-control" %>
-  </div>
-  <div class="mb-3">
-    <%= form.label :label, class: "form-label" %>
-    <%= form.text_field :label, class: "form-control" %>
-  </div>
-  <div class="mb-3">
-    <%= form.label :data_type, class: "form-label" %>
-    <%= form.select :data_type, FieldDefinition::DATA_TYPES.map { |dt| [FieldDefinition::DATA_TYPE_LABELS[dt], dt] }, {}, class: "form-select" %>
-  </div>
-  <div class="mb-3">
-    <%= form.label :reference_table, class: "form-label" %>
-    <%= form.text_field :reference_table, class: "form-control" %>
-  </div>
-  <div class="mb-3">
-    <%= form.label :position, class: "form-label" %>
-    <%= form.number_field :position, class: "form-control" %>
-  </div>
-  <div class="form-check mb-3">
-    <%= form.check_box :show_in_gantt, class: "form-check-input" %>
-    <%= form.label :show_in_gantt, class: "form-check-label" %>
-  </div>
-  <%= form.submit class: "btn btn-primary" %>
+    <div class="mb-3">
+      <%= form.label :key, class: "form-label" %>
+      <%= form.text_field :key, class: "form-control" %>
+    </div>
+    <div class="mb-3">
+      <%= form.label :label, class: "form-label" %>
+      <%= form.text_field :label, class: "form-control" %>
+    </div>
+    <div class="mb-3">
+      <%= form.label :data_type, class: "form-label" %>
+      <%= form.select :data_type, FieldDefinition::DATA_TYPES.map { |dt| [FieldDefinition::DATA_TYPE_LABELS[dt], dt] }, {}, class: "form-select" %>
+    </div>
+    <div class="mb-3">
+      <%= form.label :reference_table, class: "form-label" %>
+      <%= form.text_field :reference_table, class: "form-control" %>
+    </div>
+    <div class="mb-3">
+      <%= form.label :position, class: "form-label" %>
+      <%= form.number_field :position, class: "form-control" %>
+    </div>
+    <div class="form-check mb-3">
+      <%= form.check_box :show_in_gantt, class: "form-check-input" %>
+      <%= form.label :show_in_gantt, class: "form-check-label" %>
+    </div>
+    <%= form.submit class: "btn btn-primary" %>
+  <% end %>
 <% end %>
