@@ -37,6 +37,8 @@ class Admin::UsersController < Admin::BaseController
   def destroy
     @user.destroy
     redirect_to admin_users_path
+  rescue ActiveRecord::InvalidForeignKey
+    redirect_to admin_users_path, alert: "No se puede eliminar: tiene notas de bitácora o etapas asignadas."
   end
 
   private

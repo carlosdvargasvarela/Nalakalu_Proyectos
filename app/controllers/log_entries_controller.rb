@@ -1,6 +1,6 @@
 class LogEntriesController < ApplicationController
   before_action :set_project
-  before_action :authorize_edit!, only: [:create]
+  before_action :authorize_edit!, only: [:create, :destroy]
 
   def create
     @log_entry = @project.log_entries.new(log_entry_params.merge(user: current_user))

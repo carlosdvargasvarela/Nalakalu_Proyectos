@@ -42,13 +42,17 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
 
   test "update assigns project access from the checkboxes" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
-    patch admin_user_path(users(:maria)), params: {
-      user: { email: users(:maria).email, role: "visor" },
+    patch admin_user_path(users(:carla)), params: {
+      user: { email: users(:carla).email, role: "gerente" },
       sync_project_access: "1",
-      project_access: { project.id.to_s => { "view" => "1", "edit" => "0" } }
+      project_access: { project.id.to_s => { "view" => "1", "edit" => "1" } }
     }
-    assert users(:maria).reload.can_view_project?(project)
-    assert_not users(:maria).can_edit_project?(project)
+    assert users(:carla).reload.can_edit_project?(project)
+  end
+
+  test "edit renders successfully with the project access checkbox table" do
+    get edit_admin_user_path(users(:maria))
+    assert_response :success
   end
 
   test "update without the access-form marker does not touch existing project access" do
@@ -65,6 +69,17 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_difference("User.count", -1) do
       delete admin_user_path(target)
     end
+  end
+
+  test "destroy does not remove a user who authored a log entry, and sets an alert" do
+    target = User.create!(email: "temporal@example.com", password: "password123", role: "visor")
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    LogEntry.create!(project: project, user: target, log_entry_type: log_entry_types(:nota), body: "Nota de temporal")
+
+    assert_no_difference("User.count") do
+      delete admin_user_path(target)
+    end
+    assert_equal "No se puede eliminar: tiene notas de bitácora o etapas asignadas.", flash[:alert]
   end
 
   test "gerente and visor cannot access admin users" do

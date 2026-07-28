@@ -1,3 +1,10 @@
+admin_email = ENV.fetch("ADMIN_EMAIL", "admin@nalakalu.com")
+admin_password = ENV.fetch("ADMIN_PASSWORD", "changeme123")
+admin = User.find_or_initialize_by(email: admin_email)
+admin.password = admin_password if admin.new_record?
+admin.role = "admin"
+admin.save!
+
 instalaciones = ProjectType.find_or_create_by!(slug: "instalaciones") do |pt|
   pt.name = "Instalaciones"
 end

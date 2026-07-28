@@ -61,6 +61,18 @@ class LogEntriesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "destroy is blocked once the author's edit access is revoked" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    access = ProjectAccess.create!(user: users(:carla), project: project, can_edit: true)
+    entry = LogEntry.create!(project: project, user: users(:carla), log_entry_type: log_entry_types(:nota), body: "Nota de carla")
+    access.update!(can_edit: false)
+
+    sign_in users(:carla)
+    assert_no_difference("LogEntry.count") do
+      delete project_log_entry_path(project, entry)
+    end
+  end
+
   test "create succeeds for a gerente with edit access" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     ProjectAccess.create!(user: users(:carla), project: project, can_edit: true)
