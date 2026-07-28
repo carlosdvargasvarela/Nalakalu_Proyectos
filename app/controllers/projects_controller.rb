@@ -21,6 +21,9 @@ class ProjectsController < ApplicationController
   end
 
   def show
+    stage_version_ids = @project.project_stages.flat_map { |stage| stage.versions.ids }
+    version_ids = @project.versions.ids + stage_version_ids
+    @project_change_versions = PaperTrail::Version.where(id: version_ids).order(created_at: :desc)
   end
 
   def new

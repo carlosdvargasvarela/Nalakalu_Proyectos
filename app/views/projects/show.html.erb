@@ -165,3 +165,21 @@
     </ul>
   </div>
 </div>
+
+<div class="card mb-4">
+  <div class="card-header">Historial de cambios</div>
+  <div class="card-body">
+    <ul class="list-group list-group-flush">
+      <% @project_change_versions.each do |version| %>
+        <li class="list-group-item small">
+          <strong><%= version.event == "create" ? "Creado" : ((version.changeset || {}).keys - ["updated_at"]).join(", ") %></strong>
+          por <%= version.whodunnit ? User.find_by(id: version.whodunnit)&.email : "sistema" %>
+          — <%= l(version.created_at, format: :short) %>
+          <% (version.changeset || {}).except("updated_at").each do |field, change| %>
+            <div class="text-muted">· <%= field %>: <%= change[0].inspect %> → <%= change[1].inspect %></div>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  </div>
+</div>

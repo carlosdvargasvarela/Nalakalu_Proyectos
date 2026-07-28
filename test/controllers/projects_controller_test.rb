@@ -1147,4 +1147,17 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     patch project_path(project), params: { project: { name: "Torre Norte 2" } }
     assert_equal users(:juan).id.to_s, project.versions.last.whodunnit
   end
+
+  test "show renders the historial de cambios after an update" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    PaperTrail.request(whodunnit: users(:juan).id.to_s) do
+      project.update!(name: "Torre Norte Renovada")
+    end
+
+    get project_path(project)
+
+    assert_response :success
+    assert_select "body", /Historial de cambios/
+    assert_select "body", /Torre Norte Renovada/
+  end
 end
