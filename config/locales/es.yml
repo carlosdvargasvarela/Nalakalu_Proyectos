@@ -1,10 +1,25 @@
-# ponytail: covers only the generic ActiveRecord/ActiveModel error keys and
-# attribute names this app actually triggers today (confirmed by reading
-# every `validates` call in app/models/). A new model with an untranslated
-# validator will show its message in English until a key is added here —
-# that's an accepted gap, not a bug, per the design spec (no rails-i18n /
-# devise-i18n dependency added just for exhaustive coverage).
+# ponytail: covers only the ActiveRecord/ActiveModel error keys, attribute
+# names, and strftime (%b) tokens this app actually triggers today. A new
+# model with an untranslated validator, or a new l(..., format:) using an
+# untranslated strftime token, will show English/a translation-missing
+# string until a key is added here — accepted gap, not exhaustive coverage
+# (no rails-i18n / devise-i18n dependency added just for that).
 es:
+  date:
+    abbr_month_names:
+      -
+      - ene
+      - feb
+      - mar
+      - abr
+      - may
+      - jun
+      - jul
+      - ago
+      - sep
+      - oct
+      - nov
+      - dic
   time:
     formats:
       short: "%d %b %H:%M"
