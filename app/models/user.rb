@@ -3,4 +3,6 @@ class User < ApplicationRecord
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :registerable,
          :rememberable, :validatable
+
+  enum :role, { admin: "admin", gerente: "gerente", visor: "visor" }, default: "visor"
 end
