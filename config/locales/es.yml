@@ -5,6 +5,9 @@
 # that's an accepted gap, not a bug, per the design spec (no rails-i18n /
 # devise-i18n dependency added just for exhaustive coverage).
 es:
+  time:
+    formats:
+      short: "%d %b %H:%M"
   helpers:
     submit:
       create: "Crear %{model}"

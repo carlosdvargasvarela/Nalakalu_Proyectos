@@ -141,6 +141,17 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "script#gantt-tasks", text: /#{project.project_stages.first.name}/
   end
 
+  test "show renders the bitácora with existing entries and an add form" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    LogEntry.create!(project: project, user: users(:juan), log_entry_type: log_entry_types(:nota), body: "Nota visible en la bitácora")
+
+    get project_path(project)
+
+    assert_response :success
+    assert_select "body", /Nota visible en la bitácora/
+    assert_select "form[action=?]", project_log_entries_path(project)
+  end
+
   test "index shows an edit link for each project" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get projects_path
