@@ -1,4 +1,5 @@
 class ProjectStage < ApplicationRecord
+  has_paper_trail
   belongs_to :project
   belongs_to :stage_template, optional: true
   belongs_to :user, optional: true

@@ -3,4 +3,5 @@ class ApplicationController < ActionController::Base
   allow_browser versions: :modern
 
   before_action :authenticate_user!, unless: :devise_controller?
+  before_action :set_paper_trail_whodunnit
 end

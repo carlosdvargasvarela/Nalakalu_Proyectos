@@ -191,4 +191,15 @@ class ProjectTest < ActiveSupport::TestCase
     )
     assert project.valid?, project.errors.full_messages.to_s
   end
+
+  test "updating a project creates a paper_trail version with the acting user" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    PaperTrail.request(whodunnit: users(:juan).id.to_s) do
+      project.update!(name: "Torre Norte 2")
+    end
+
+    version = project.versions.last
+    assert_equal "update", version.event
+    assert_equal users(:juan).id.to_s, version.whodunnit
+  end
 end

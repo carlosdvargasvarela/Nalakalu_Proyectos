@@ -1130,4 +1130,10 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       assert_equal "", params["sections"][slug]["q"]
     end
   end
+
+  test "updating a project via the controller records the signed-in user as whodunnit" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    patch project_path(project), params: { project: { name: "Torre Norte 2" } }
+    assert_equal users(:juan).id.to_s, project.versions.last.whodunnit
+  end
 end

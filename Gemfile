@@ -57,6 +57,7 @@ group :test do
 end
 
 gem "devise"
+gem "paper_trail"
 
 # Ruby 3.4+ removed csv from default gems; needed by ImportsController for template generation.
 gem "csv"
