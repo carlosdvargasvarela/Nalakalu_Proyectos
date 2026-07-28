@@ -46,3 +46,13 @@
 .fecha-input {
   max-width: 130px;
 }
+
+.card {
+  box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.card-header {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}

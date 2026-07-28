@@ -34,4 +34,11 @@ module ApplicationHelper
     return l(value, format: :long) if value.respond_to?(:strftime)
     value.to_s
   end
+
+  def admin_card(title, &block)
+    content_tag(:div, class: "card shadow-sm mb-4") do
+      content_tag(:div, title, class: "card-header fw-semibold") +
+        content_tag(:div, capture(&block), class: "card-body")
+    end
+  end
 end
