@@ -18,6 +18,8 @@
 
 <% content_for :head do %>
   <link href="https://cdn.jsdelivr.net/npm/frappe-gantt@1.2.2/dist/frappe-gantt.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/trix@2.1.6/dist/trix.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/trix@2.1.6/dist/trix.umd.min.js"></script>
 <% end %>
 
 <%
@@ -145,7 +147,7 @@
     <%= form_with model: LogEntry.new, url: project_log_entries_path(@project), class: "mb-3" do |f| %>
       <div class="d-flex gap-2">
         <%= f.collection_select :log_entry_type_id, @project.project_type.log_entry_types, :id, :name, {}, class: "form-select form-select-sm w-auto" %>
-        <%= f.text_area :body, class: "form-control form-control-sm", rows: 1, placeholder: "Agregar nota..." %>
+        <%= f.rich_text_area :body, class: "trix-content mb-0" %>
         <%= f.submit "Agregar", class: "btn btn-primary btn-sm" %>
       </div>
     <% end %>
