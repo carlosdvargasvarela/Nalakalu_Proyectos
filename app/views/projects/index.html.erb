@@ -1,15 +1,17 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="mb-0">Proyectos</h1>
-  <div class="dropdown">
-    <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-      Nuevo proyecto
-    </button>
-    <ul class="dropdown-menu dropdown-menu-end">
-      <% ProjectType.all.each do |project_type| %>
-        <li><%= link_to project_type.name, new_project_path(project_type_id: project_type.id), class: "dropdown-item" %></li>
-      <% end %>
-    </ul>
-  </div>
+  <% if current_user.admin? || current_user.gerente? %>
+    <div class="dropdown">
+      <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        Nuevo proyecto
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <% ProjectType.all.each do |project_type| %>
+          <li><%= link_to project_type.name, new_project_path(project_type_id: project_type.id), class: "dropdown-item" %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
 </div>
 
 <div class="accordion" id="projectsAccordion">

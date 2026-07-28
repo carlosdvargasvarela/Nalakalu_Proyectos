@@ -1190,4 +1190,91 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     end
     assert_equal @response.body.scan(/<li[ >]/).count, @response.body.scan("</li>").count
   end
+
+  test "index only lists projects visible to a visor" do
+    visible = Project.create!(project_type: project_types(:instalaciones), name: "Torre Visible", custom_fields: {})
+    hidden = Project.create!(project_type: project_types(:instalaciones), name: "Torre Oculta", custom_fields: {})
+    ProjectAccess.create!(user: users(:maria), project: visible)
+
+    sign_in users(:maria)
+    get projects_path
+
+    assert_response :success
+    assert_select "body", /Torre Visible/
+    assert_select "body", text: /Torre Oculta/, count: 0
+  end
+
+  test "show redirects a visor without access to the project" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+
+    sign_in users(:maria)
+    get project_path(project)
+
+    assert_redirected_to projects_path
+  end
+
+  test "show allows a visor with access, but hides edit controls" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    ProjectAccess.create!(user: users(:maria), project: project)
+
+    sign_in users(:maria)
+    get project_path(project)
+
+    assert_response :success
+    assert_select "a[href=?]", edit_project_path(project), count: 0
+  end
+
+  test "edit redirects a gerente without edit access to the project" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+
+    sign_in users(:carla)
+    get edit_project_path(project)
+
+    assert_redirected_to projects_path
+  end
+
+  test "edit allows a gerente with edit access" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    ProjectAccess.create!(user: users(:carla), project: project, can_edit: true)
+
+    sign_in users(:carla)
+    get edit_project_path(project)
+
+    assert_response :success
+  end
+
+  test "new and create are blocked for a visor" do
+    sign_in users(:maria)
+    get new_project_path(project_type_id: project_types(:instalaciones).id)
+    assert_redirected_to root_path
+
+    assert_no_difference("Project.count") do
+      post projects_path, params: { project: { project_type_id: project_types(:instalaciones).id, name: "Torre Norte", custom_fields: {} } }
+    end
+  end
+
+  test "create as a gerente automatically grants the creator edit access" do
+    sign_in users(:carla)
+    post projects_path, params: {
+      project: { project_type_id: project_types(:instalaciones).id, name: "Torre Nueva", custom_fields: {} }
+    }
+
+    project = Project.find_by(name: "Torre Nueva")
+    assert users(:carla).can_edit_project?(project)
+  end
+
+  test "bulk_assign_installer only updates projects the gerente can edit" do
+    editable = Project.create!(project_type: project_types(:instalaciones), name: "Torre Editable", custom_fields: {})
+    not_editable = Project.create!(project_type: project_types(:instalaciones), name: "Torre No Editable", custom_fields: {})
+    ProjectAccess.create!(user: users(:carla), project: editable, can_edit: true)
+
+    sign_in users(:carla)
+    patch bulk_assign_installer_projects_path, params: {
+      project_ids: [editable.id, not_editable.id], installer_id: installers(:juan_perez).id
+    }
+
+    key = project_types(:instalaciones).field_definitions.find_by(reference_table: "installers").key
+    assert_equal installers(:juan_perez).id.to_s, editable.reload.custom_fields[key]
+    assert_nil not_editable.reload.custom_fields[key]
+  end
 end

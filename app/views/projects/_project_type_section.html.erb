@@ -171,14 +171,16 @@
     </div>
   </div>
 
-  <%= form_with url: bulk_assign_installer_projects_path(request.query_parameters), method: :patch, local: true,
-        id: "bulk-assign-form-#{slug}", class: "d-flex gap-2 align-items-end mb-3" do |f| %>
-    <div>
-      <%= f.label :installer_id, "Asignar instalador a los seleccionados", for: "bulk-assign-installer-select-#{slug}", class: "form-label" %>
-      <%= f.select :installer_id, @installers.collect { |i| [i.name, i.id] },
-            { include_blank: "Elegí un instalador" }, class: "form-select", id: "bulk-assign-installer-select-#{slug}" %>
-    </div>
-    <%= f.submit "Asignar", class: "btn btn-primary" %>
+  <% if current_user.admin? || current_user.gerente? %>
+    <%= form_with url: bulk_assign_installer_projects_path(request.query_parameters), method: :patch, local: true,
+          id: "bulk-assign-form-#{slug}", class: "d-flex gap-2 align-items-end mb-3" do |f| %>
+      <div>
+        <%= f.label :installer_id, "Asignar instalador a los seleccionados", for: "bulk-assign-installer-select-#{slug}", class: "form-label" %>
+        <%= f.select :installer_id, @installers.collect { |i| [i.name, i.id] },
+              { include_blank: "Elegí un instalador" }, class: "form-select", id: "bulk-assign-installer-select-#{slug}" %>
+      </div>
+      <%= f.submit "Asignar", class: "btn btn-primary" %>
+    <% end %>
   <% end %>
 
   <div class="card mb-4">
@@ -187,14 +189,14 @@
       <table class="table table-striped mb-0">
         <thead>
           <tr>
-            <th><input type="checkbox" id="select-all-projects-<%= slug %>"></th>
+            <% if current_user.admin? || current_user.gerente? %><th><input type="checkbox" id="select-all-projects-<%= slug %>"></th><% end %>
             <th>Nombre</th><th>Estado</th><th>Avance</th><th></th>
           </tr>
         </thead>
         <tbody>
           <% page_projects.each do |project| %>
             <tr>
-              <td><%= check_box_tag "project_ids[]", project.id, false, id: nil, form: "bulk-assign-form-#{slug}" %></td>
+              <% if current_user.admin? || current_user.gerente? %><td><%= check_box_tag "project_ids[]", project.id, false, id: nil, form: "bulk-assign-form-#{slug}" %></td><% end %>
               <td><%= link_to project.name, project_path(project) %></td>
               <td><%= status_badge(project.status) %></td>
               <td>
@@ -202,12 +204,14 @@
                 <%= overdue_badge if project.overdue? %>
               </td>
               <td>
-                <div class="d-flex gap-2">
-                  <%= link_to edit_project_path(project), class: "btn btn-outline-secondary btn-sm" do %>
-                    <i class="bi bi-pencil"></i> Editar
-                  <% end %>
-                  <%= render "archive_button", project: project %>
-                </div>
+                <% if current_user.can_edit_project?(project) %>
+                  <div class="d-flex gap-2">
+                    <%= link_to edit_project_path(project), class: "btn btn-outline-secondary btn-sm" do %>
+                      <i class="bi bi-pencil"></i> Editar
+                    <% end %>
+                    <%= render "archive_button", project: project %>
+                  </div>
+                <% end %>
               </td>
             </tr>
           <% end %>

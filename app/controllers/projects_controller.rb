@@ -1,5 +1,8 @@
 class ProjectsController < ApplicationController
   before_action :set_project, only: [:show, :edit, :update]
+  before_action :require_admin_or_gerente!, only: [:new, :create, :bulk_assign_installer]
+  before_action :authorize_view!, only: [:show]
+  before_action :authorize_edit!, only: [:edit, :update]
 
   def index
     @statuses = Project.distinct.pluck(:status).compact
@@ -12,7 +15,7 @@ class ProjectsController < ApplicationController
     @installers = Installer.all
     @project_type = ProjectType.find_by(id: params[:project_type_id]) || ProjectType.first
     @projects = if @project_type
-      scope = Project.where(project_type: @project_type).where.not(status: "archived")
+      scope = Project.visible_to(current_user).where(project_type: @project_type).where.not(status: "archived")
                      .includes(project_stages: :stage_template).order(:name)
       params[:installer_id].present? ? filter_by_installer(scope, params[:installer_id]) : scope
     else
@@ -40,6 +43,7 @@ class ProjectsController < ApplicationController
     @project = Project.new(project_params)
     @project_type = @project.project_type
     if @project.save
+      ProjectAccess.create!(user: current_user, project: @project, can_edit: true) if current_user.gerente?
       redirect_to project_path(@project)
     else
       render :new, status: :unprocessable_entity
@@ -71,8 +75,9 @@ class ProjectsController < ApplicationController
       redirect_to projects_path(request.query_parameters), alert: "Elegí un instalador y al menos un proyecto." and return
     end
 
+    editable_projects = Project.visible_to(current_user).where(id: project_ids).select { |project| current_user.can_edit_project?(project) }
     count = 0
-    Project.where(id: project_ids).find_each do |project|
+    editable_projects.each do |project|
       key = project.project_type.field_definitions.find_by(reference_table: "installers")&.key
       next unless key
 
@@ -87,6 +92,16 @@ class ProjectsController < ApplicationController
 
   def set_project
     @project = Project.find(params[:id])
+  end
+
+  def authorize_view!
+    return if current_user.can_view_project?(@project)
+    redirect_to projects_path, alert: "No tenés acceso a ese proyecto."
+  end
+
+  def authorize_edit!
+    return if current_user.can_edit_project?(@project)
+    redirect_to projects_path, alert: "No tenés permiso para editar ese proyecto."
   end
 
   def project_params
@@ -137,7 +152,7 @@ class ProjectsController < ApplicationController
     section_submitted = params.dig(:sections, project_type.slug)
     section_params = section_submitted || {}
 
-    projects = Project.where(project_type: project_type).includes(:project_type, project_stages: :stage_template).order(:name)
+    projects = Project.visible_to(current_user).where(project_type: project_type).includes(:project_type, project_stages: :stage_template).order(:name)
     projects = section_params[:status].present? ? projects.where(status: section_params[:status]) : projects.where.not(status: "archived")
     if section_params[:installer_id] == "none"
       projects = filter_by_no_installer(projects)
