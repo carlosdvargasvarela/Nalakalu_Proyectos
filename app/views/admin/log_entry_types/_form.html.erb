@@ -1,11 +1,13 @@
-<%= form_with model: [@project_type, @log_entry_type], url: @log_entry_type.persisted? ? admin_project_type_log_entry_type_path(@project_type, @log_entry_type) : admin_project_type_log_entry_types_path(@project_type) do |f| %>
-  <div class="mb-3">
-    <%= f.label :name, "Nombre" %>
-    <%= f.text_field :name, class: "form-control" %>
-  </div>
-  <div class="mb-3">
-    <%= f.label :color, "Color" %>
-    <%= f.color_field :color, class: "form-control form-control-color" %>
-  </div>
-  <%= f.submit (@log_entry_type.persisted? ? "Actualizar Tipo de Bitácora" : "Crear Tipo de Bitácora"), class: "btn btn-primary" %>
+<%= admin_card(@log_entry_type.persisted? ? "Editar Tipo de Bitácora" : "Nuevo Tipo de Bitácora") do %>
+  <%= form_with model: [@project_type, @log_entry_type], url: @log_entry_type.persisted? ? admin_project_type_log_entry_type_path(@project_type, @log_entry_type) : admin_project_type_log_entry_types_path(@project_type) do |f| %>
+    <div class="mb-3">
+      <%= f.label :name, "Nombre" %>
+      <%= f.text_field :name, class: "form-control" %>
+    </div>
+    <div class="mb-3">
+      <%= f.label :color, "Color" %>
+      <%= f.color_field :color, class: "form-control form-control-color" %>
+    </div>
+    <%= f.submit (@log_entry_type.persisted? ? "Actualizar Tipo de Bitácora" : "Crear Tipo de Bitácora"), class: "btn btn-primary" %>
+  <% end %>
 <% end %>
