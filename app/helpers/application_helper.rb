@@ -41,7 +41,7 @@ module ApplicationHelper
   end
 
   def admin_card(title, &block)
-    content_tag(:div, class: "card shadow-sm mb-4") do
+    content_tag(:div, class: "card mb-4") do
       content_tag(:div, title, class: "card-header fw-semibold") +
         content_tag(:div, capture(&block), class: "card-body")
     end
