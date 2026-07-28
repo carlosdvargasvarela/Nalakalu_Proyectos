@@ -237,9 +237,11 @@
     </div>
   </div>
 
-  <script>
-    document.getElementById("select-all-projects-<%= slug %>").addEventListener("change", function (e) {
-      document.querySelectorAll('input[form="bulk-assign-form-<%= slug %>"]').forEach(function (cb) { cb.checked = e.target.checked; });
-    });
-  </script>
+  <% if current_user.admin? || current_user.gerente? %>
+    <script>
+      document.getElementById("select-all-projects-<%= slug %>").addEventListener("change", function (e) {
+        document.querySelectorAll('input[form="bulk-assign-form-<%= slug %>"]').forEach(function (cb) { cb.checked = e.target.checked; });
+      });
+    </script>
+  <% end %>
 <% end %>
