@@ -1157,7 +1157,10 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     get project_path(project)
 
     assert_response :success
-    assert_select "body", /Historial de cambios/
-    assert_select "body", /Torre Norte Renovada/
+    assert_select ".card-header", text: "Historial de cambios"
+    assert_select ".card .list-group-item", /name/ do
+      assert_select "div.text-muted", /"Torre Norte"/
+      assert_select "div.text-muted", /"Torre Norte Renovada"/
+    end
   end
 end

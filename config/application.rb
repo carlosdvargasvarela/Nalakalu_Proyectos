@@ -25,5 +25,14 @@ module FeatureProjectTypesDinamicos
     # config.eager_load_paths << Rails.root.join("extras")
 
     config.i18n.default_locale = :es
+
+    # PaperTrail serializes `versions.object_changes` as YAML. Changes to
+    # timestamp attributes (e.g. `updated_at`) include `ActiveSupport::
+    # TimeWithZone` values, which Psych's safe loader refuses to load unless
+    # explicitly permitted — without this, `Version#changeset` silently
+    # returns {} for every version instead of the real diff.
+    config.active_record.yaml_column_permitted_classes = [
+      Symbol, Date, Time, ActiveSupport::TimeWithZone, ActiveSupport::TimeZone
+    ]
   end
 end
