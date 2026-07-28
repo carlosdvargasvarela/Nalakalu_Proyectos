@@ -21,4 +21,16 @@ class LogEntryTest < ActiveSupport::TestCase
     )
     assert_not entry.valid?
   end
+
+  test "body persists rich text formatting" do
+    entry = LogEntry.create!(
+      project: @project,
+      user: users(:juan),
+      log_entry_type: log_entry_types(:nota),
+      body: "<strong>Urgente</strong>: revisar instalación"
+    )
+
+    entry.reload
+    assert_includes entry.body.to_s, "<strong>Urgente</strong>"
+  end
 end
