@@ -175,9 +175,10 @@
           <strong><%= version.event == "create" ? "Creado" : (version.changeset.keys - ["updated_at"]).join(", ") %></strong>
           por <%= version.whodunnit ? User.find_by(id: version.whodunnit)&.email : "sistema" %>
           — <%= l(version.created_at, format: :short) %>
-          <% next if version.event == "create" %>
-          <% version.changeset.except("updated_at").each do |field, change| %>
-            <div class="text-muted">· <%= field %>: <%= change[0].inspect %> → <%= change[1].inspect %></div>
+          <% unless version.event == "create" %>
+            <% version.changeset.except("updated_at").each do |field, change| %>
+              <div class="text-muted">· <%= field %>: <%= change[0].inspect %> → <%= change[1].inspect %></div>
+            <% end %>
           <% end %>
         </li>
       <% end %>

@@ -1163,4 +1163,16 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       assert_select "div.text-muted", /"Torre Norte Renovada"/
     end
   end
+
+  test "show renders well-formed historial for a project with only a create version" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+
+    get project_path(project)
+
+    assert_response :success
+    assert_select ".list-group-item.small", minimum: 1 do |elements|
+      elements.each { |element| assert_match(/Creado/, element.text) }
+    end
+    assert_equal @response.body.scan(/<li[ >]/).count, @response.body.scan("</li>").count
+  end
 end
