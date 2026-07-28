@@ -82,4 +82,16 @@ class ProjectStageTest < ActiveSupport::TestCase
     stage.update!(end_date: Date.current + 1.day, progress_percent: 50)
     assert_not stage.overdue?
   end
+
+  test "updating a project_stage creates a paper_trail version with the acting user" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.order(:id).first
+    PaperTrail.request(whodunnit: users(:juan).id.to_s) do
+      stage.update!(progress_percent: 50)
+    end
+
+    version = stage.versions.last
+    assert_equal "update", version.event
+    assert_equal users(:juan).id.to_s, version.whodunnit
+  end
 end
