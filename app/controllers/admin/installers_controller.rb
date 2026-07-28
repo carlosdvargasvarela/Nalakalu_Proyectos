@@ -1,4 +1,4 @@
-class Admin::InstallersController < ApplicationController
+class Admin::InstallersController < Admin::BaseController
   before_action :set_installer, only: [:edit, :update, :destroy]
 
   def index

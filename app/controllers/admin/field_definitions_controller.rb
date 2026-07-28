@@ -1,4 +1,4 @@
-class Admin::FieldDefinitionsController < ApplicationController
+class Admin::FieldDefinitionsController < Admin::BaseController
   before_action :set_project_type
   before_action :set_field_definition, only: [:edit, :update, :destroy]
 

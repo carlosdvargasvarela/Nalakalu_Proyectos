@@ -1,4 +1,4 @@
-class Admin::LogEntryTypesController < ApplicationController
+class Admin::LogEntryTypesController < Admin::BaseController
   before_action :set_project_type
   before_action :set_log_entry_type, only: [:edit, :update, :destroy]
 

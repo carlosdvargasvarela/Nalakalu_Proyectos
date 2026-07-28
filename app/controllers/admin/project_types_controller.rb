@@ -1,4 +1,4 @@
-class Admin::ProjectTypesController < ApplicationController
+class Admin::ProjectTypesController < Admin::BaseController
   before_action :set_project_type, only: [:show, :edit, :update, :destroy]
 
   def index

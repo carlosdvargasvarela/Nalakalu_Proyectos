@@ -1,4 +1,4 @@
-class Admin::StageTemplatesController < ApplicationController
+class Admin::StageTemplatesController < Admin::BaseController
   before_action :set_project_type
   before_action :set_stage_template, only: [:edit, :update, :destroy]
 
