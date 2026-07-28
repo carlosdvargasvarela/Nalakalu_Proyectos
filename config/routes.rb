@@ -1,10 +1,11 @@
 Rails.application.routes.draw do
-  devise_for :users
+  devise_for :users, skip: [:registerable]
   get "up" => "rails/health#show", as: :rails_health_check
   get "manifest.json" => "rails/pwa#manifest", as: :pwa_manifest
   get "service-worker.js" => "rails/pwa#service_worker", as: :pwa_service_worker
 
   namespace :admin do
+    resources :users
     resources :project_types do
       resources :field_definitions, except: [:index, :show] do
         patch :reorder, on: :collection

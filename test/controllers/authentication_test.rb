@@ -24,18 +24,4 @@ class AuthenticationTest < ActionDispatch::IntegrationTest
     assert_select "input[value=?]", "Iniciar sesión"
   end
 
-  test "sign-up page is in Spanish" do
-    get new_user_registration_path
-    assert_response :success
-    assert_select "h2", "Registrarse"
-    assert_select "input[value=?]", "Registrarse"
-  end
-
-  test "account edit page asks for confirmation before cancelling the account" do
-    sign_in users(:juan)
-    get edit_user_registration_path
-    assert_response :success
-    assert_select "form[action=?][onsubmit=?]",
-      user_registration_path, "return confirm('¿Estás seguro?')"
-  end
 end
