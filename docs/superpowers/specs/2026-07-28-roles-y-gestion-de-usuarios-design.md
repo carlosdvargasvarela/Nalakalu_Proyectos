@@ -1,52 +1,110 @@
-# Roles y gestión de usuarios (admin-only) — design
+# Roles y permisos por proyecto — design
 
 ## Contexto
 
-Hoy cualquier usuario autenticado puede entrar a `/admin/*` (no hay distinción de rol), y `User` incluye `:registerable`, así que cualquier visitante puede autoregistrarse en `/users/sign_up`. No existe `:recoverable` — no hay flujo de "olvidé mi contraseña".
+Hoy cualquier usuario autenticado puede entrar a `/admin/*` y editar cualquier `Project` (no hay ninguna distinción de rol ni de acceso). `User` incluye `:registerable`, así que cualquier visitante puede autoregistrarse en `/users/sign_up`. No existe `:recoverable` — no hay flujo de "olvidé mi contraseña".
 
-El pedido: solo administradores pueden crear usuarios, restablecer contraseñas, y (en un trabajo futuro separado) habilitar qué `ProjectType` puede ver cada usuario. Este spec cubre roles + gestión de usuarios únicamente; la visibilidad por tipo de proyecto queda para un spec posterior, una vez que el concepto de rol ya exista.
+El pedido final (reemplaza el borrador anterior de este mismo documento, que solo contemplaba admin/usuario binario): tres roles con permisos bien distintos:
+
+- **admin**: crea tipos de proyecto (y toda la configuración bajo `/admin/*`: subprocesos, campos, instaladores, tipos de bitácora, usuarios) y tiene acceso total a todo.
+- **gerente**: no puede tocar `/admin/*` (nada de tipos de proyecto ni configuración). Puede **ver todos los proyectos**, pero solo **editar** aquellos donde un admin le dio permiso explícito. Si el gerente crea un proyecto nuevo, queda con permiso de edición sobre ese proyecto automáticamente.
+- **visor**: solo puede **ver** los proyectos puntuales a los que un admin lo agregó (ni siquiera ve el resto del listado). Nunca edita nada.
+
+**Supuesto a confirmar**: `/admin/*` completo (no solo "crear tipos de proyecto") queda exclusivo de `admin` — el gerente no entra a ninguna pantalla de configuración, ni siquiera en modo lectura. Si el gerente debía poder, por ejemplo, ver (sin editar) los subprocesos o instaladores, avisar antes de implementar.
 
 ## Alcance
 
-- **Rol**: `User.role`, un enum Rails (`admin` / `usuario`, default `"usuario"`), pensado para crecer con más roles en el futuro sin cambiar de tipo de columna.
-- **Backfill**: `admin@nalakalu.com` (usuario existente) pasa a `admin`; cualquier otro usuario existente (`verify@example.com`) queda en `usuario` (el default).
-- **`Admin::UsersController`**: CRUD (`index`, `new`, `create`, `edit`, `update`, `destroy`) en `/admin/users`, mismo patrón que `Admin::InstallersController`. `update` permite cambiar `role` y, opcionalmente, la contraseña (el admin la escribe directamente y se la comunica al usuario por fuera — sin mailer).
-- **Autorización**: un `Admin::BaseController` (`ApplicationController` como padre) agrega `before_action :require_admin!`; todos los controladores bajo `app/controllers/admin/` heredan de él en vez de `ApplicationController` directamente. Un usuario `usuario` que intenta acceder a `/admin/*` es redirigido a `root_path` con un alert.
-- **Sin auto-registro**: se quita `:registerable` de `User`; `devise_for :users, skip: [:registerable]` en las rutas; se borran las vistas `app/views/devise/registrations/{new,edit}.html.erb` (quedan sin controlador que las sirva); se saca el link "Registrarse" de la navbar.
-- **Fixtures**: `juan` (ya usado en los 5 tests de `admin/*`) pasa a `role: admin`. Nuevo fixture `maria` (`role: usuario`) para los tests negativos de autorización.
+- **Rol**: `User.role`, enum Rails (`admin` / `gerente` / `visor`, default `"visor"` — el más restrictivo, para que un usuario nuevo sin rol asignado explícitamente nunca vea de más).
+- **Backfill**: `admin@nalakalu.com` (usuario existente) pasa a `admin`; `verify@example.com` queda en `visor` (el default) — se puede reasignar a mano después desde `/admin/users`.
+- **Permisos por proyecto**: tabla `project_accesses` (`user_id`, `project_id`, `can_edit:boolean`). Su significado depende del rol del usuario dueño de la fila:
+  - **gerente**: ya ve todos los proyectos por rol (no necesita fila para ver); una fila con `can_edit: true` es lo único que habilita edición sobre ESE proyecto puntual.
+  - **visor**: la sola existencia de una fila (sin importar `can_edit`) habilita ver ESE proyecto; nunca puede editar, la columna `can_edit` se ignora para este rol si llegara a estar en `true`.
+  - **admin**: no usa esta tabla — acceso total siempre, sin filas.
+- **`Admin::UsersController`**: CRUD (`index`, `new`, `create`, `edit`, `update`, `destroy`) en `/admin/users`, mismo patrón que `Admin::InstallersController`. `update` permite cambiar `role`, la contraseña (opcional, el admin la escribe directamente — sin mailer) y los accesos por proyecto (ver más abajo).
+- **Autorización**: `Admin::BaseController` (todos los controladores de `admin/` heredan de él) exige `admin?`. `ProjectsController` filtra el índice/seguimiento por lo que el usuario puede ver, y bloquea `show`/`edit`/`update` según `can_view_project?`/`can_edit_project?`. `LogEntriesController#create` exige `can_edit_project?`. `ImportsController` (crea proyectos en lote) exige admin o gerente.
+- **Sin auto-registro**: se quita `:registerable` de `User`; `devise_for :users, skip: [:registerable]`; se borran las vistas `app/views/devise/registrations/{new,edit}.html.erb`; se saca el link "Registrarse" de la navbar.
+- **Fixtures**: `juan` pasa a `role: admin` (ya usado en los 5 tests de `admin/*`, así siguen pasando sin tocar esos archivos). Nuevos fixtures `carla` (`role: gerente`) y `maria` (`role: visor`) para los tests de autorización por rol.
 
-Fuera de alcance (hoy): visibilidad por `ProjectType` (spec futuro), auto-servicio de cambio de contraseña para el propio usuario, envío de emails, un tercer rol.
+Fuera de alcance: auto-servicio de cambio de contraseña, envío de emails, un cuarto rol, UI para asignar accesos desde la ficha del proyecto (se hace únicamente desde la ficha del usuario, según lo elegido), validar que siempre quede al menos un admin en el sistema.
 
 ## Diseño
 
-### Migración
+### Migraciones
 
 ```ruby
 class AddRoleToUsers < ActiveRecord::Migration[7.2]
   def change
-    add_column :users, :role, :string, default: "usuario", null: false
+    add_column :users, :role, :string, default: "visor", null: false
 
     reversible do |dir|
-      dir.up do
-        execute "UPDATE users SET role = 'admin' WHERE email = 'admin@nalakalu.com'"
-      end
+      dir.up { execute "UPDATE users SET role = 'admin' WHERE email = 'admin@nalakalu.com'" }
     end
   end
 end
 ```
 
-### Modelo
+```ruby
+class CreateProjectAccesses < ActiveRecord::Migration[7.2]
+  def change
+    create_table :project_accesses do |t|
+      t.references :user, null: false, foreign_key: true
+      t.references :project, null: false, foreign_key: true
+      t.boolean :can_edit, null: false, default: false
+
+      t.timestamps
+
+      t.index [:user_id, :project_id], unique: true
+    end
+  end
+end
+```
+
+### Modelos
 
 ```ruby
 # app/models/user.rb
 class User < ApplicationRecord
   devise :database_authenticatable, :rememberable, :validatable
 
-  enum :role, { usuario: "usuario", admin: "admin" }, default: "usuario"
+  enum :role, { admin: "admin", gerente: "gerente", visor: "visor" }, default: "visor"
+
+  has_many :project_accesses, dependent: :destroy
+  has_many :accessible_projects, through: :project_accesses, source: :project
+
+  def can_view_project?(project)
+    return true if admin? || gerente?
+    project_accesses.exists?(project_id: project.id)
+  end
+
+  def can_edit_project?(project)
+    return true if admin?
+    return false if visor?
+    project_accesses.exists?(project_id: project.id, can_edit: true)
+  end
 end
 ```
 
-### Autorización
+```ruby
+# app/models/project_access.rb
+class ProjectAccess < ApplicationRecord
+  belongs_to :user
+  belongs_to :project
+
+  validates :user_id, uniqueness: { scope: :project_id }
+end
+```
+
+```ruby
+# app/models/project.rb — agregar
+has_many :project_accesses, dependent: :destroy
+
+def self.visible_to(user)
+  return all if user.admin? || user.gerente?
+  joins(:project_accesses).where(project_accesses: { user_id: user.id })
+end
+```
+
+### Autorización en controladores
 
 ```ruby
 # app/controllers/admin/base_controller.rb
@@ -57,29 +115,29 @@ class Admin::BaseController < ApplicationController
 
   def require_admin!
     return if current_user&.admin?
-
     redirect_to root_path, alert: "No tenés permiso para acceder a esa sección."
   end
 end
 ```
 
-Cada controlador existente bajo `admin/` (`ProjectTypesController`, `FieldDefinitionsController`, `StageTemplatesController`, `LogEntryTypesController`, `InstallersController`) cambia `class Admin::XController < ApplicationController` por `class Admin::XController < Admin::BaseController`. `Admin::UsersController` (nuevo) hereda de `Admin::BaseController` directamente.
+Todos los controladores bajo `app/controllers/admin/` (incluido el nuevo `UsersController`) heredan de `Admin::BaseController` en vez de `ApplicationController`.
 
-### Rutas
+`ProjectsController`:
+- `index`/`build_section` y `tracker`: la query base pasa de `Project.where(...)` a `Project.visible_to(current_user).where(...)`.
+- `show`: `before_action` que hace `redirect_to projects_path, alert: "..."` si `!current_user.can_view_project?(@project)`.
+- `edit`/`update`: mismo chequeo con `can_edit_project?`.
+- `new`/`create`: `before_action :require_admin_or_gerente!` (visor nunca crea proyectos). Tras `@project.save` exitoso, si `current_user.gerente?`, se crea `ProjectAccess.create!(user: current_user, project: @project, can_edit: true)`.
+- `bulk_assign_installer`: mismo `require_admin_or_gerente!`, y el `Project.where(id: project_ids)` se cruza con `Project.visible_to(current_user)` filtrando además por editable (`can_edit_project?`) antes de tocar cada uno — un gerente no puede reasignar instalador en un proyecto que no puede editar.
 
-```ruby
-devise_for :users, skip: [:registerable]
+`show.html.erb`: los botones "Editar" y archivar, el formulario de la tabla de subprocesos, y el formulario para agregar bitácora se ocultan (`if current_user.can_edit_project?(@project)`); el historial de cambios y el listado de bitácora quedan visibles en modo lectura para cualquiera que pueda ver el proyecto.
 
-namespace :admin do
-  resources :users
-  resources :project_types do
-    # ... (sin cambios)
-  end
-  resources :installers
-end
-```
+`LogEntriesController#create`: `before_action` exige `can_edit_project?(@project)` (visor y gerente sin permiso no pueden agregar notas). `destroy` no cambia (ya exige ser el autor).
 
-### `Admin::UsersController`
+`ImportsController`: gana el mismo `before_action :require_admin_or_gerente!`. Tras crear cada `Project` exitosamente en el loop, si `current_user.gerente?`, se le otorga `ProjectAccess` igual que en `ProjectsController#create`.
+
+`require_admin_or_gerente!` se define una sola vez, en `ApplicationController`, para reusarlo desde `ProjectsController` e `ImportsController`.
+
+### `Admin::UsersController` y asignación de accesos
 
 ```ruby
 class Admin::UsersController < Admin::BaseController
@@ -103,14 +161,17 @@ class Admin::UsersController < Admin::BaseController
   end
 
   def edit
+    @projects = Project.all.includes(:project_type)
   end
 
   def update
     attrs = user_params
     attrs = attrs.except(:password, :password_confirmation) if attrs[:password].blank?
     if @user.update(attrs)
+      sync_project_accesses!
       redirect_to admin_users_path
     else
+      @projects = Project.all.includes(:project_type)
       render :edit, status: :unprocessable_entity
     end
   end
@@ -129,30 +190,50 @@ class Admin::UsersController < Admin::BaseController
   def user_params
     params.require(:user).permit(:email, :role, :password, :password_confirmation)
   end
+
+  # ponytail: reemplaza todos los accesos del usuario en cada guardado — O(proyectos
+  # totales), aceptable a la escala de este piloto. Si la cantidad de proyectos crece
+  # mucho, upgrade a un diff (solo crear/borrar lo que cambió) en vez de destroy_all+create.
+  def sync_project_accesses!
+    submitted = params.fetch(:project_access, {})
+    @user.project_accesses.destroy_all
+    submitted.each do |project_id, flags|
+      next unless flags["view"] == "1"
+      @user.project_accesses.create!(project_id: project_id, can_edit: flags["edit"] == "1")
+    end
+  end
 end
 ```
 
-`password`/`password_confirmation` en `create` son obligatorios en la práctica (Devise valida presencia en un registro nuevo); en `update`, si el admin los deja en blanco, no se tocan (mismo patrón que la propia pantalla de Devise "editar cuenta" que se está borrando, pero aplicado del lado admin).
+`edit.html.erb` agrega, debajo del formulario de email/rol/contraseña, una tabla con una fila por `Project` (agrupado por `project_type.name` para que sea navegable) con dos checkboxes por fila: "Ver" (`project_access[<id>][view]`) y "Editar" (`project_access[<id>][edit]`), pre-marcados según `@user.project_accesses`. El checkbox "Editar" no tiene efecto si el usuario es `visor` (ver Diseño de modelos) — se muestra igual para simplicidad, sin JS condicional por rol.
 
-### Vistas
+### Rutas
 
-`app/views/admin/users/index.html.erb`, `new.html.erb`, `edit.html.erb`, `_form.html.erb` — mismo patrón Bootstrap que `admin/installers`. La tabla de `index` muestra email + rol + acciones (Editar/Eliminar). El formulario tiene: email, rol (`select` con las dos opciones), contraseña, confirmación de contraseña (estas dos con el hint "dejalo en blanco si no querés cambiarla" en `edit`).
+```ruby
+devise_for :users, skip: [:registerable]
 
-Navbar (`app/views/layouts/_navbar.html.erb`): se saca el link "Registrarse"; se agrega un link "Usuarios" a `admin_users_path`, visible solo si `current_user&.admin?` (igual que "Administración", que ya asume implícitamente que todos son admin hoy — con este cambio ese link también se condiciona a `current_user&.admin?`).
+namespace :admin do
+  resources :users
+  # ... (project_types, installers sin cambios)
+end
+```
 
-Se borran `app/views/devise/registrations/new.html.erb` y `edit.html.erb` (sin controlador que los sirva una vez que `:registerable` se quita).
+### Navbar
+
+Se saca "Registrarse". Se agrega "Usuarios" a `admin_users_path`, visible solo si `current_user&.admin?` (mismo criterio que "Administración").
 
 ## Testing
 
-- Modelo: `User` válido con `role: "usuario"` (default) y `role: "admin"`; enum expone `#admin?`/`#usuario?`.
-- Modelo/migración: backfill deja a `admin@nalakalu.com` en `admin` (test de integración vía `bin/rails runner`, no automatizado — sin precedente de tests de migración en este repo, igual que las migraciones anteriores).
-- `Admin::BaseController` (vía cualquier controlador admin existente, p. ej. `Admin::InstallersController`): un usuario `usuario` (fixture `maria`) que intenta `GET /admin/installers` es redirigido a `root_path` con el alert; un usuario `admin` (fixture `juan`) accede normalmente. Los 5 test files de `admin/*` ya usan `sign_in users(:juan)` — pasan sin cambios una vez que `juan` es `admin`.
-- `Admin::UsersController`: create/update/destroy, incluyendo que `update` sin contraseña no la modifica, y que un `usuario` no-admin recibe 302 redirect en cualquier acción.
-- Rutas: `GET /users/sign_up` ya no existe (404 o rutas no generadas — `devise_for skip: [:registerable]` no define esa ruta en absoluto, así que un test de "la ruta no existe" es más apropiado que un test de respuesta HTTP).
-- Vista: navbar no muestra "Registrarse"; muestra "Usuarios" solo para `current_user.admin?`.
+- Modelo: `User#can_view_project?`/`#can_edit_project?` para cada combinación de rol × (sin fila / fila view / fila can_edit) × dueño-vs-no-dueño.
+- Modelo: `Project.visible_to(user)` devuelve todos para admin/gerente, solo los asignados para visor.
+- `Admin::BaseController`: `carla` (gerente) y `maria` (visor) reciben redirect en cualquier ruta `/admin/*`; `juan` (admin) accede.
+- `ProjectsController`: `maria` (visor) sin acceso a un proyecto recibe redirect en `show`; con `ProjectAccess` (sin `can_edit`) puede ver pero `edit`/`update` la redirigen; `carla` (gerente) ve cualquier proyecto en `index`/`show`, pero solo edita los que tienen `ProjectAccess(can_edit: true)`; crear un proyecto como `carla` genera automáticamente su propio `ProjectAccess(can_edit: true)`.
+- `LogEntriesController#create`: `maria` (visor) no puede crear una nota aunque tenga acceso de vista; `carla` sin `can_edit` en ese proyecto tampoco puede.
+- `Admin::UsersController`: `update` con `project_access` params crea/reemplaza las filas correctamente; un `visor` con acceso a 2 proyectos ve exactamente esos 2 en `index`.
+- Rutas: `/users/sign_up` no existe.
 
 ## Edge cases
 
-- Un admin no puede quedar sin ningún admin en el sistema por accidente (ej. el único admin se cambia a sí mismo a `usuario`, o se borra a sí mismo) — **fuera de alcance**: no se agrega esa validación hoy (el piloto tiene un solo admin conocido y esto es un caso de uso de administración manual, no una garantía que el sistema deba imponer todavía).
-- Un usuario `usuario` que ya tenía una sesión activa antes de este cambio y trata de ir a `/admin/algo`: el `before_action :require_admin!` corta en el próximo request, no requiere invalidar sesiones existentes.
-- `verify@example.com` (el segundo usuario existente en el piloto) queda en `usuario` tras el backfill — si en realidad debía ser admin, se corrige a mano desde el nuevo panel `/admin/users` una vez desplegado.
+- Un admin puede quedar sin ningún otro admin en el sistema (se autodegrada o se borra) — fuera de alcance, sin validación hoy.
+- Cambiar el rol de un usuario de `gerente` a `visor` no borra sus `ProjectAccess` existentes — las filas quedan igual, solo cambia cómo se interpretan (de "edición puntual" pasan a "solo ver esos mismos proyectos"). Es el comportamiento esperado dado el diseño, no un caso a manejar aparte.
+- Bulk-import (`ImportsController`) ejecutado por un `gerente`: cada fila creada le otorga acceso de edición individualmente (un `ProjectAccess` por proyecto creado), igual que crear uno por uno a mano.
