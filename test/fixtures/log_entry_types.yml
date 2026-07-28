@@ -1,0 +1,14 @@
+nota:
+  project_type_id: <%= ActiveRecord::FixtureSet.identify(:instalaciones) %>
+  name: Nota
+  color: "#6c757d"
+
+incidencia:
+  project_type_id: <%= ActiveRecord::FixtureSet.identify(:instalaciones) %>
+  name: Incidencia
+  color: "#dc3545"
+
+cambio:
+  project_type_id: <%= ActiveRecord::FixtureSet.identify(:instalaciones) %>
+  name: Cambio
+  color: "#0d6efd"

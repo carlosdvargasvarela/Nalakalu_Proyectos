@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_07_28_155939) do
+ActiveRecord::Schema[7.2].define(version: 2026_07_28_160621) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -33,6 +33,15 @@ ActiveRecord::Schema[7.2].define(version: 2026_07_28_155939) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "color", default: "#6c757d", null: false
+  end
+
+  create_table "log_entry_types", force: :cascade do |t|
+    t.bigint "project_type_id", null: false
+    t.string "name", null: false
+    t.string "color", default: "#6c757d", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["project_type_id"], name: "index_log_entry_types_on_project_type_id"
   end
 
   create_table "project_stages", force: :cascade do |t|
@@ -102,6 +111,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_07_28_155939) do
   end
 
   add_foreign_key "field_definitions", "project_types"
+  add_foreign_key "log_entry_types", "project_types"
   add_foreign_key "project_stages", "projects"
   add_foreign_key "project_stages", "stage_templates", on_delete: :nullify
   add_foreign_key "project_stages", "users"

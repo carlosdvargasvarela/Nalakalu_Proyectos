@@ -16,4 +16,9 @@ class ProjectTypeTest < ActiveSupport::TestCase
     dup = ProjectType.new(name: "Otro", slug: "reparaciones")
     assert_not dup.valid?
   end
+
+  test "creating a project_type seeds three default log_entry_types" do
+    project_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    assert_equal ["Nota", "Incidencia", "Cambio"], project_type.log_entry_types.order(:id).pluck(:name)
+  end
 end
