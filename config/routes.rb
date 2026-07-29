@@ -24,6 +24,7 @@ Rails.application.routes.draw do
   patch "projects/bulk_assign_installer", to: "projects#bulk_assign_installer", as: :bulk_assign_installer_projects
   resources :projects do
     resources :log_entries, only: [:create, :destroy]
+    resources :project_responsibles, only: [:create, :destroy]
   end
 
   resources :imports, only: [:new, :create]
