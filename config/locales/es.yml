@@ -39,6 +39,8 @@ es:
       responsible_type: "Tipo de responsable"
       responsible: "Responsable"
       project_responsible: "Responsable de proyecto"
+      project_type_association: "Tipo de asociación"
+      project_association: "Asociación de proyecto"
       project: "Proyecto"
     attributes:
       user:
@@ -72,6 +74,8 @@ es:
       responsible:
         name: "Nombre"
         color: "Color"
+      project_type_association:
+        label: "Etiqueta"
   errors:
     messages:
       blank: "no puede estar en blanco"
