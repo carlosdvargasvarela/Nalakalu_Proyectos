@@ -16,7 +16,6 @@ Rails.application.routes.draw do
       resources :log_entry_types, except: [:index, :show]
       resources :responsible_types, except: [:index, :show]
     end
-    resources :installers
     resources :responsibles
   end
 

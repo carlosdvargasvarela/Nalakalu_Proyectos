@@ -41,14 +41,14 @@ class Admin::FieldDefinitionsControllerTest < ActionDispatch::IntegrationTest
 
   test "reorder updates position according to the submitted id order" do
     cliente = field_definitions(:cliente)
-    instalador = field_definitions(:instalador)
+    direccion = field_definitions(:direccion)
 
-    patch reorder_admin_project_type_field_definitions_path(@project_type), params: { ids: [instalador.id, cliente.id] }, as: :json
+    patch reorder_admin_project_type_field_definitions_path(@project_type), params: { ids: [direccion.id, cliente.id] }, as: :json
     assert_response :success
 
-    assert_equal 0, instalador.reload.position
+    assert_equal 0, direccion.reload.position
     assert_equal 1, cliente.reload.position
-    assert_equal [instalador, cliente], @project_type.field_definitions.order(:position).to_a
+    assert_equal [direccion, cliente], @project_type.field_definitions.order(:position).to_a
   end
 
   test "reorder ignores an id that doesn't belong to this project_type" do

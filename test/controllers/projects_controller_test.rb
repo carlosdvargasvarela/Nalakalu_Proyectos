@@ -14,7 +14,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     get new_project_path(project_type_id: project_types(:instalaciones).id)
     assert_response :success
     assert_select "input[name=?]", "project[custom_fields][cliente]"
-    assert_select "select[name=?]", "project[custom_fields][instalador]"
+    assert_select "input[name=?]", "project[custom_fields][direccion]"
   end
 
   test "new and edit show the submit button in Spanish" do
@@ -34,7 +34,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
         project: {
           project_type_id: project_types(:instalaciones).id,
           name: "Torre Sur",
-          custom_fields: { cliente: "Acme S.A.", instalador: installers(:juan_perez).id }
+          custom_fields: { cliente: "Acme S.A.", direccion: "Av. Siempre Viva 123" }
         }
       }
     end
@@ -43,13 +43,13 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 5, project.project_stages.count
   end
 
-  test "create with invalid custom_fields re-renders form with error" do
+  test "create with invalid data re-renders form with error" do
     assert_no_difference("Project.count") do
       post projects_path, params: {
         project: {
           project_type_id: project_types(:instalaciones).id,
-          name: "Torre Sur",
-          custom_fields: { cliente: "Acme S.A.", instalador: 999_999 }
+          name: "",
+          custom_fields: { cliente: "Acme S.A." }
         }
       }
     end
@@ -120,10 +120,9 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "tracker renders each project's data as a graphite band without a bordered card" do
-    installer = installers(:juan_perez)
     project = Project.create!(
       project_type: project_types(:instalaciones), name: "Torre Norte",
-      custom_fields: { cliente: "Acme S.A.", instalador: installer.id }
+      custom_fields: { cliente: "Acme S.A.", direccion: "Av. Siempre Viva 123" }
     )
     get tracker_projects_path
     assert_response :success

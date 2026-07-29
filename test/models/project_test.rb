@@ -9,19 +9,9 @@ class ProjectTest < ActiveSupport::TestCase
     project = Project.new(
       project_type: @project_type,
       name: "Instalación Torre Norte",
-      custom_fields: { "cliente" => "Acme S.A.", "instalador" => installers(:juan_perez).id }
+      custom_fields: { "cliente" => "Acme S.A." }
     )
     assert project.valid?, project.errors.full_messages.to_s
-  end
-
-  test "invalid when reference field points to a nonexistent installer" do
-    project = Project.new(
-      project_type: @project_type,
-      name: "Instalación Torre Norte",
-      custom_fields: { "cliente" => "Acme S.A.", "instalador" => 999_999 }
-    )
-    assert_not project.valid?
-    assert_includes project.errors[:custom_fields].join, "Instalador"
   end
 
   test "invalid when text field is not a string" do
@@ -89,28 +79,6 @@ class ProjectTest < ActiveSupport::TestCase
     end
 
     assert_equal 75, stage.reload.progress_percent
-  end
-
-  test "installer resolves the assigned Installer through the dynamic reference field" do
-    project = Project.create!(
-      project_type: @project_type, name: "Torre Norte",
-      custom_fields: { "instalador" => installers(:juan_perez).id }
-    )
-    assert_equal installers(:juan_perez), project.installer
-  end
-
-  test "installer is nil when no installer has been assigned yet" do
-    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
-    assert_nil project.installer
-  end
-
-  test "installer is nil when the assigned id no longer exists" do
-    project = Project.new(
-      project_type: @project_type, name: "Torre Norte",
-      custom_fields: { "instalador" => 999_999 }
-    )
-    project.save!(validate: false)
-    assert_nil project.installer
   end
 
   test "progress_status is sin_iniciar when every stage is at 0%" do

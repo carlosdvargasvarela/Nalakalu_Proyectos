@@ -37,12 +37,6 @@ class Admin::ProjectTypesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "index links to installers admin" do
-    get admin_project_types_path
-    assert_response :success
-    assert_select "a[href=?]", admin_installers_path, text: "Instaladores"
-  end
-
   test "show renders Eliminar as a real delete form for each field definition" do
     project_type = project_types(:instalaciones)
     field = field_definitions(:cliente)

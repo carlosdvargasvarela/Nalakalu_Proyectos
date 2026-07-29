@@ -36,7 +36,6 @@ es:
       project_type: "Tipo de proyecto"
       field_definition: "Campo"
       stage_template: "Subproceso"
-      installer: "Instalador"
       responsible_type: "Tipo de responsable"
       responsible: "Responsable"
       project_responsible: "Responsable de proyecto"
@@ -68,8 +67,6 @@ es:
         progress_percent: "Porcentaje de avance"
         start_date: "Fecha de inicio"
         end_date: "Fecha de fin"
-      installer:
-        name: "Nombre"
       responsible_type:
         name: "Nombre"
       responsible:
