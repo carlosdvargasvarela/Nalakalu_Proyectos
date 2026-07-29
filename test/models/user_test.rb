@@ -38,4 +38,21 @@ class UserTest < ActiveSupport::TestCase
     assert visor.can_view_project?(project)
     assert_not visor.can_edit_project?(project)
   end
+
+  test "gerente with a ProjectTypeAccess can edit any project of that type, including new ones" do
+    gerente = users(:carla)
+    ProjectTypeAccess.create!(user: gerente, project_type: project_types(:instalaciones), can_edit: true)
+
+    existing = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    assert gerente.can_edit_project?(existing)
+
+    later = Project.create!(project_type: project_types(:instalaciones), name: "Torre Sur", custom_fields: {})
+    assert gerente.can_edit_project?(later)
+  end
+
+  test "gerente without a ProjectTypeAccess or ProjectAccess cannot edit" do
+    gerente = users(:carla)
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    assert_not gerente.can_edit_project?(project)
+  end
 end
