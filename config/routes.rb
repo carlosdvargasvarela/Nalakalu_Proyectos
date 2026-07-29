@@ -14,6 +14,7 @@ Rails.application.routes.draw do
         patch :reorder, on: :collection
       end
       resources :log_entry_types, except: [:index, :show]
+      resources :responsible_types, except: [:index, :show]
     end
     resources :installers
     resources :responsibles

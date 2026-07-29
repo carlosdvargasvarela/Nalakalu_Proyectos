@@ -64,6 +64,25 @@
   </div>
 </div>
 
+<div class="card mb-4">
+  <div class="card-header">Tipos de responsable</div>
+  <div class="card-body">
+    <%= link_to "Nuevo tipo", new_admin_project_type_responsible_type_path(@project_type), class: "btn btn-primary btn-sm mb-2" %>
+    <ul class="list-group list-group-flush">
+      <% @project_type.responsible_types.order(:name).each do |type| %>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span><%= type.name %></span>
+          <span>
+            <%= link_to "Editar", edit_admin_project_type_responsible_type_path(@project_type, type), class: "btn btn-outline-secondary btn-sm" %>
+            <%= button_to "Eliminar", admin_project_type_responsible_type_path(@project_type, type), method: :delete,
+                  class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar tipo de responsable?')" } %>
+          </span>
+        </li>
+      <% end %>
+    </ul>
+  </div>
+</div>
+
 <script>
   function initDragReorder(listId, url) {
     var list = document.getElementById(listId);
