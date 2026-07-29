@@ -3,15 +3,18 @@ class User < ApplicationRecord
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :rememberable, :validatable
 
-  enum :role, { admin: "admin", gerente: "gerente", visor: "visor" }, default: "visor"
+  enum :role, { admin: "admin", gerente: "gerente", visor: "visor", responsable: "responsable" }, default: "visor"
 
   has_many :project_accesses, dependent: :destroy
   has_many :project_type_accesses, dependent: :destroy
   has_many :accessible_projects, through: :project_accesses, source: :project
+  has_one :responsible, dependent: :nullify
 
   def can_view_project?(project)
     return true if admin? || gerente?
-    project_accesses.exists?(project_id: project.id)
+    return project_accesses.exists?(project_id: project.id) if visor?
+    return false if responsible.nil?
+    ProjectResponsible.where(project_id: project.id, responsible_id: responsible.id).exists?
   end
 
   def can_edit_project?(project)
@@ -19,5 +22,14 @@ class User < ApplicationRecord
     return false if visor?
     project_accesses.exists?(project_id: project.id, can_edit: true) ||
       project_type_accesses.exists?(project_type_id: project.project_type_id, can_edit: true)
+  end
+
+  def editable_project_stage_ids(project)
+    return project.project_stage_ids if admin? || can_edit_project?(project)
+    return [] if responsible.nil?
+
+    assignments = ProjectResponsible.where(project_id: project.id, responsible_id: responsible.id)
+    return project.project_stage_ids if assignments.any?(&:project_wide?)
+    assignments.filter_map(&:project_stage_id)
   end
 end

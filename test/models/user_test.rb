@@ -55,4 +55,64 @@ class UserTest < ActiveSupport::TestCase
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     assert_not gerente.can_edit_project?(project)
   end
+
+  test "role accepts responsable" do
+    assert User.new(role: "responsable").responsable?
+  end
+
+  test "responsable with a project-wide assignment can view the project and edit every stage" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    responsable = users(:pedro)
+    ProjectResponsible.create!(
+      project: project, responsible: responsable.responsible,
+      responsible_type: responsible_types(:instalador)
+    )
+
+    assert responsable.can_view_project?(project)
+    assert_not responsable.can_edit_project?(project)
+    assert_equal project.project_stage_ids.sort, responsable.editable_project_stage_ids(project).sort
+  end
+
+  test "responsable assigned to a single stage can only edit that stage" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.first
+    responsable = users(:pedro)
+    ProjectResponsible.create!(
+      project: project, responsible: responsable.responsible,
+      responsible_type: responsible_types(:instalador), project_stage: stage
+    )
+
+    assert responsable.can_view_project?(project)
+    assert_equal [stage.id], responsable.editable_project_stage_ids(project)
+  end
+
+  test "responsable without any assignment cannot view the project and has nothing editable" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    responsable = users(:pedro)
+
+    assert_not responsable.can_view_project?(project)
+    assert_equal [], responsable.editable_project_stage_ids(project)
+  end
+
+  test "responsable role with no linked Responsible record sees and can edit nothing" do
+    unlinked = User.create!(email: "sin-vinculo@example.com", password: "password123", role: "responsable")
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+
+    assert_not unlinked.can_view_project?(project)
+    assert_equal [], unlinked.editable_project_stage_ids(project)
+  end
+
+  test "admin and gerente-with-access editable_project_stage_ids covers every stage" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    assert_equal project.project_stage_ids.sort, users(:juan).editable_project_stage_ids(project).sort
+
+    gerente = users(:carla)
+    ProjectAccess.create!(user: gerente, project: project, can_edit: true)
+    assert_equal project.project_stage_ids.sort, gerente.editable_project_stage_ids(project).sort
+  end
+
+  test "gerente without edit access has nothing editable" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    assert_equal [], users(:carla).editable_project_stage_ids(project)
+  end
 end

@@ -3,8 +3,8 @@ module ApplicationHelper
   STATUS_BADGE_CLASSES = { "active" => "bg-success", "archived" => "bg-secondary" }.freeze
   PROGRESS_STATUS_LABELS = { "sin_iniciar" => "Sin iniciar", "iniciado" => "Iniciado", "finalizado" => "Finalizado" }.freeze
   PROGRESS_STATUS_BADGE_CLASSES = { "sin_iniciar" => "bg-secondary", "iniciado" => "bg-info text-dark", "finalizado" => "bg-success" }.freeze
-  ROLE_LABELS = { "admin" => "Administrador", "gerente" => "Gerente", "visor" => "Visor" }.freeze
-  ROLE_BADGE_CLASSES = { "admin" => "bg-primary", "gerente" => "bg-info text-dark", "visor" => "bg-secondary" }.freeze
+  ROLE_LABELS = { "admin" => "Administrador", "gerente" => "Gerente", "visor" => "Visor", "responsable" => "Responsable" }.freeze
+  ROLE_BADGE_CLASSES = { "admin" => "bg-primary", "gerente" => "bg-info text-dark", "visor" => "bg-secondary", "responsable" => "bg-warning text-dark" }.freeze
 
   def status_label(status)
     STATUS_LABELS.fetch(status, status)

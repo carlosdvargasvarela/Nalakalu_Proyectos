@@ -13,7 +13,9 @@ class Project < ApplicationRecord
 
   def self.visible_to(user)
     return all if user.admin? || user.gerente?
-    joins(:project_accesses).where(project_accesses: { user_id: user.id })
+    return joins(:project_accesses).where(project_accesses: { user_id: user.id }) if user.visor?
+    return none if user.responsible.nil?
+    joins(:project_responsibles).where(project_responsibles: { responsible_id: user.responsible.id }).distinct
   end
 
   def start_date

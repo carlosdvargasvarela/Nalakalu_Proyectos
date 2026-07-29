@@ -218,4 +218,22 @@ class ProjectTest < ActiveSupport::TestCase
     assert_includes visible, project
     assert_not_includes visible, other
   end
+
+  test "visible_to a responsable only returns projects with an assignment" do
+    assigned = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    Project.create!(project_type: @project_type, name: "Torre Sur", custom_fields: {})
+    responsable = users(:pedro)
+    ProjectResponsible.create!(
+      project: assigned, responsible: responsable.responsible, responsible_type: responsible_types(:instalador)
+    )
+
+    assert_equal [assigned], Project.visible_to(responsable).to_a
+  end
+
+  test "visible_to a responsable with no linked Responsible returns none" do
+    unlinked = User.create!(email: "sin-vinculo@example.com", password: "password123", role: "responsable")
+    Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+
+    assert_equal [], Project.visible_to(unlinked).to_a
+  end
 end
