@@ -31,6 +31,12 @@ class ProjectAssociationTest < ActiveSupport::TestCase
     assert_not pa.valid?
   end
 
+  test "missing to_project shows a translated Spanish error, not a translation-missing string" do
+    pa = ProjectAssociation.new(from_project: @caso, project_type_association: @association)
+    assert_not pa.valid?
+    assert_includes pa.errors.full_messages, "Proyecto de destino debe existir"
+  end
+
   test "project exposes its outgoing and incoming associations" do
     pa = ProjectAssociation.create!(from_project: @caso, to_project: @instalacion, project_type_association: @association)
     assert_equal [pa], @caso.outgoing_project_associations.to_a
