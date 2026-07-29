@@ -1394,4 +1394,11 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "select.js-tomselect#project_responsible_responsible_id"
   end
+
+  test "show's Asociaciones Proyecto select is marked for TomSelect" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_response :success
+    assert_select "select.js-tomselect#project_association_other_project_id"
+  end
 end

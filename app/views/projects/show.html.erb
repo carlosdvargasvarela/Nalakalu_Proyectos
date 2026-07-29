@@ -226,7 +226,7 @@
               project_options = Project.where.not(id: @project.id).order(:name).map { |p| [p.name, p.id, { data: { project_type_id: p.project_type_id } }] }
             %>
             <%= f.select :other_project_id, options_for_select(project_options),
-                  { include_blank: "Proyecto" }, class: "form-select", id: "project_association_other_project_id" %>
+                  { include_blank: "Proyecto" }, class: "form-select js-tomselect", id: "project_association_other_project_id" %>
           </div>
           <div class="col-auto">
             <%= f.submit "Vincular", class: "btn btn-primary" %>
@@ -238,21 +238,28 @@
             var typeSelect = document.getElementById("project_association_project_type_association_id");
             var otherSelect = document.getElementById("project_association_other_project_id");
             if (!typeSelect || !otherSelect) return;
+            if (!otherSelect.tomselect) new TomSelect(otherSelect, { create: false, allowEmptyOption: true });
 
-            function filterOptions() {
-              var selected = typeSelect.options[typeSelect.selectedIndex];
-              var otherProjectTypeId = selected ? selected.dataset.otherProjectTypeId : null;
-              Array.from(otherSelect.options).forEach(function (option) {
-                if (!option.value) return;
-                option.hidden = !!otherProjectTypeId && option.dataset.projectTypeId !== otherProjectTypeId;
-              });
-              if (otherSelect.selectedOptions[0] && otherSelect.selectedOptions[0].hidden) {
-                otherSelect.value = "";
-              }
+            var allProjectOptions = Array.from(otherSelect.options)
+              .filter(function (o) { return o.value; })
+              .map(function (o) { return { value: o.value, text: o.text, projectTypeId: o.dataset.projectTypeId }; });
+
+            function filterProjects() {
+              var selectedValue = typeSelect.value;
+              var selectedOption = selectedValue ? typeSelect.querySelector('option[value="' + selectedValue + '"]') : null;
+              var otherProjectTypeId = selectedOption ? selectedOption.dataset.otherProjectTypeId : null;
+
+              var ts = otherSelect.tomselect;
+              ts.clear();
+              ts.clearOptions();
+              allProjectOptions
+                .filter(function (o) { return !otherProjectTypeId || o.projectTypeId === otherProjectTypeId; })
+                .forEach(function (o) { ts.addOption(o); });
+              ts.refreshOptions(false);
             }
 
-            typeSelect.addEventListener("change", filterOptions);
-            filterOptions();
+            typeSelect.addEventListener("change", filterProjects);
+            filterProjects();
           });
         </script>
       <% end %>
