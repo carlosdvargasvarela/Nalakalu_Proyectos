@@ -185,6 +185,59 @@
   </div>
 <% end %>
 
+<% if current_user.can_edit_project?(@project) || ProjectTypeAssociation.where(to_project_type: @project.project_type, responsables_can_create: true).any? { |a| current_user.can_create_associated_project?(a, @project) } %>
+  <div class="card mb-4">
+    <div class="card-header">Asociaciones</div>
+    <div class="card-body">
+      <ul class="list-group list-group-flush mb-3">
+        <% @project.outgoing_project_associations.includes(:to_project, :project_type_association).each do |pa| %>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>Este proyecto es <strong><%= pa.project_type_association.label %></strong> de <%= link_to pa.to_project.name, project_path(pa.to_project) %></span>
+            <% if current_user.can_edit_project?(@project) %>
+              <%= button_to "Quitar", project_project_association_path(@project, pa), method: :delete, class: "btn btn-outline-danger btn-sm" %>
+            <% end %>
+          </li>
+        <% end %>
+        <% @project.incoming_project_associations.includes(:from_project, :project_type_association).each do |pa| %>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span><%= link_to pa.from_project.name, project_path(pa.from_project) %> es <strong><%= pa.project_type_association.label %></strong> de este proyecto</span>
+            <% if current_user.can_edit_project?(@project) %>
+              <%= button_to "Quitar", project_project_association_path(@project, pa), method: :delete, class: "btn btn-outline-danger btn-sm" %>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+
+      <% if current_user.can_edit_project?(@project) %>
+        <%# ponytail: "Proyecto" lista todos los proyectos sin acotar por tipo vía JS —
+            se valida del lado del servidor. Upgrade a selector dependiente con JS si la
+            lista de proyectos crece mucho. %>
+        <%= form_with url: project_project_associations_path(@project), method: :post, scope: :project_association, class: "row g-2 mb-3" do |f| %>
+          <div class="col-auto">
+            <%= f.collection_select :project_type_association_id,
+                  ProjectTypeAssociation.where(from_project_type: @project.project_type).or(ProjectTypeAssociation.where(to_project_type: @project.project_type)),
+                  :id, :label, { include_blank: "Tipo de asociación" }, class: "form-select" %>
+          </div>
+          <div class="col-auto">
+            <%= f.collection_select :other_project_id, Project.where.not(id: @project.id).order(:name), :id, :name, { include_blank: "Proyecto" }, class: "form-select" %>
+          </div>
+          <div class="col-auto">
+            <%= f.submit "Vincular", class: "btn btn-primary" %>
+          </div>
+        <% end %>
+      <% end %>
+
+      <% ProjectTypeAssociation.where(to_project_type: @project.project_type).each do |association| %>
+        <% if current_user.can_create_associated_project?(association, @project) %>
+          <%= link_to "+ Nuevo #{association.label}",
+                new_project_path(project_type_id: association.from_project_type_id, project_type_association_id: association.id, associate_with_project_id: @project.id),
+                class: "btn btn-outline-primary btn-sm" %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
 <div class="card mb-4">
   <div class="card-header">Bitácora</div>
   <div class="card-body">

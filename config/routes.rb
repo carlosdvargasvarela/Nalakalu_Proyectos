@@ -26,6 +26,7 @@ Rails.application.routes.draw do
   resources :projects do
     resources :log_entries, only: [:create, :destroy]
     resources :project_responsibles, only: [:create, :destroy]
+    resources :project_associations, only: [:create, :destroy]
   end
 
   resources :imports, only: [:new, :create]
