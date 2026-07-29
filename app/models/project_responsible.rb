@@ -7,6 +7,7 @@ class ProjectResponsible < ApplicationRecord
   validates :responsible_id, uniqueness: { scope: [:project_id, :responsible_type_id, :project_stage_id] }
   validate :project_stage_belongs_to_project
   validate :responsible_type_belongs_to_project_type
+  validate :responsible_enabled_for_project_type
 
   def project_wide?
     project_stage_id.nil?
@@ -22,5 +23,10 @@ class ProjectResponsible < ApplicationRecord
   def responsible_type_belongs_to_project_type
     return if responsible_type.nil? || project.nil?
     errors.add(:responsible_type, "debe pertenecer al tipo de este proyecto") unless responsible_type.project_type_id == project.project_type_id
+  end
+
+  def responsible_enabled_for_project_type
+    return if responsible.nil? || project.nil?
+    errors.add(:responsible, "no está habilitado para este tipo de proyecto") unless responsible.project_types.include?(project.project_type)
   end
 end

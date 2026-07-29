@@ -380,6 +380,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     con_ana = Project.create!(project_type: project_types(:instalaciones), name: "Con Ana", custom_fields: {})
     ProjectResponsible.create!(project: con_ana, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
     otro_responsable = Responsible.create!(name: "Otro")
+    ResponsibleProjectType.create!(responsible: otro_responsable, project_type: project_types(:instalaciones))
     con_otro = Project.create!(project_type: project_types(:instalaciones), name: "Con Otro", custom_fields: {})
     ProjectResponsible.create!(project: con_otro, responsible: otro_responsable, responsible_type: responsible_types(:instalador))
 
@@ -614,6 +615,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     con_ana = Project.create!(project_type: project_types(:instalaciones), name: "Con Ana", custom_fields: {})
     ProjectResponsible.create!(project: con_ana, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
     otro_responsable = Responsible.create!(name: "Otro")
+    ResponsibleProjectType.create!(responsible: otro_responsable, project_type: project_types(:instalaciones))
     con_otro = Project.create!(project_type: project_types(:instalaciones), name: "Con Otro", custom_fields: {})
     ProjectResponsible.create!(project: con_otro, responsible: otro_responsable, responsible_type: responsible_types(:instalador))
 
@@ -808,6 +810,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     project = Project.create!(project_type: project_types(:instalaciones), name: "Proyecto A", custom_fields: {})
     ProjectResponsible.create!(project: project, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
     otro_responsable = Responsible.create!(name: "Otro")
+    ResponsibleProjectType.create!(responsible: otro_responsable, project_type: project_types(:instalaciones))
 
     patch bulk_assign_responsible_projects_path, params: {
       responsible_type_id: responsible_types(:instalador).id, responsible_id: otro_responsable.id, project_ids: [project.id]

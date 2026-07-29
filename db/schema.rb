@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_07_29_183057) do
+ActiveRecord::Schema[7.2].define(version: 2026_07_29_202015) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -155,6 +155,16 @@ ActiveRecord::Schema[7.2].define(version: 2026_07_29_183057) do
     t.index ["project_type_id"], name: "index_projects_on_project_type_id"
   end
 
+  create_table "responsible_project_types", force: :cascade do |t|
+    t.bigint "responsible_id", null: false
+    t.bigint "project_type_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["project_type_id"], name: "index_responsible_project_types_on_project_type_id"
+    t.index ["responsible_id", "project_type_id"], name: "index_responsible_project_types_on_pair", unique: true
+    t.index ["responsible_id"], name: "index_responsible_project_types_on_responsible_id"
+  end
+
   create_table "responsible_types", force: :cascade do |t|
     t.bigint "project_type_id", null: false
     t.string "name", null: false
@@ -227,6 +237,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_07_29_183057) do
   add_foreign_key "project_type_accesses", "project_types"
   add_foreign_key "project_type_accesses", "users"
   add_foreign_key "projects", "project_types"
+  add_foreign_key "responsible_project_types", "project_types"
+  add_foreign_key "responsible_project_types", "responsibles"
   add_foreign_key "responsible_types", "project_types"
   add_foreign_key "responsibles", "users"
   add_foreign_key "stage_templates", "project_types"

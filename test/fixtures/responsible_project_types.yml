@@ -1,0 +1,11 @@
+ana_gomez_instalaciones:
+  responsible_id: <%= ActiveRecord::FixtureSet.identify(:ana_gomez) %>
+  project_type_id: <%= ActiveRecord::FixtureSet.identify(:instalaciones) %>
+  created_at: <%= Time.current %>
+  updated_at: <%= Time.current %>
+
+pedro_responsable_instalaciones:
+  responsible_id: <%= ActiveRecord::FixtureSet.identify(:pedro_responsable) %>
+  project_type_id: <%= ActiveRecord::FixtureSet.identify(:instalaciones) %>
+  created_at: <%= Time.current %>
+  updated_at: <%= Time.current %>

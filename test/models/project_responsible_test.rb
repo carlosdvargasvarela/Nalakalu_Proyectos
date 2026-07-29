@@ -5,7 +5,20 @@ class ProjectResponsibleTest < ActiveSupport::TestCase
     @project_type = project_types(:instalaciones)
     @responsible_type = ResponsibleType.create!(project_type: @project_type, name: "Instalador")
     @responsible = Responsible.create!(name: "Ana Gómez")
+    ResponsibleProjectType.create!(responsible: @responsible, project_type: @project_type)
     @project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+  end
+
+  test "invalid when the responsible is not enabled for the project's type" do
+    ResponsibleProjectType.delete_all
+    pr = ProjectResponsible.new(project: @project, responsible: @responsible, responsible_type: @responsible_type)
+    assert_not pr.valid?
+    assert_includes pr.errors[:responsible].join, "habilitado"
+  end
+
+  test "valid when the responsible is enabled for the project's type" do
+    pr = ProjectResponsible.new(project: @project, responsible: @responsible, responsible_type: @responsible_type)
+    assert pr.valid?
   end
 
   test "valid at project level (no stage)" do
