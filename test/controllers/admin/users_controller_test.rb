@@ -64,6 +64,37 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert users(:maria).reload.can_view_project?(project)
   end
 
+  test "update assigns project type access from the checkboxes" do
+    patch admin_user_path(users(:carla)), params: {
+      user: { email: users(:carla).email, role: "gerente" },
+      sync_project_access: "1",
+      project_type_access: { project_types(:instalaciones).id.to_s => { "edit" => "1" } }
+    }
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    assert users(:carla).reload.can_edit_project?(project)
+  end
+
+  test "update without the access-form marker does not touch existing project type access" do
+    ProjectTypeAccess.create!(user: users(:carla), project_type: project_types(:instalaciones), can_edit: true)
+
+    patch admin_user_path(users(:carla)), params: { user: { email: users(:carla).email, role: "gerente" } }
+
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    assert users(:carla).reload.can_edit_project?(project)
+  end
+
+  test "edit exposes project types for the type-grants table" do
+    get edit_admin_user_path(users(:maria))
+    assert_response :success
+  end
+
+  test "edit renders the project type grants table and the project search box" do
+    get edit_admin_user_path(users(:maria))
+    assert_select "table#project-access-table"
+    assert_select "input#project-access-search"
+    assert_select "table", text: /Editar/, count: 2 # type-grants table + project table both have an "Editar" column
+  end
+
   test "destroy removes a user" do
     target = User.create!(email: "temporal@example.com", password: "password123", role: "visor")
     assert_difference("User.count", -1) do
