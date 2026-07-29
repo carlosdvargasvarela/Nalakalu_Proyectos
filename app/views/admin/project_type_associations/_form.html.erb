@@ -1,0 +1,35 @@
+<%= panel_card(project_type_association.persisted? ? "Editar tipo de asociación" : "Nuevo tipo de asociación") do %>
+  <%= form_with model: [:admin, project_type_association] do |form| %>
+    <% if project_type_association.errors.any? %>
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          <% project_type_association.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="mb-3">
+      <%= form.label :from_project_type_id, "Tipo de origen", class: "form-label" %>
+      <%= form.collection_select :from_project_type_id, ProjectType.order(:name), :id, :name, {}, class: "form-select" %>
+    </div>
+
+    <div class="mb-3">
+      <%= form.label :to_project_type_id, "Tipo de destino", class: "form-label" %>
+      <%= form.collection_select :to_project_type_id, ProjectType.order(:name), :id, :name, {}, class: "form-select" %>
+    </div>
+
+    <div class="mb-3">
+      <%= form.label :label, "Etiqueta", class: "form-label" %>
+      <%= form.text_field :label, class: "form-control" %>
+    </div>
+
+    <div class="form-check mb-3">
+      <%= form.check_box :responsables_can_create, class: "form-check-input" %>
+      <%= form.label :responsables_can_create, "Responsables pueden crear", class: "form-check-label" %>
+    </div>
+
+    <%= form.submit class: "btn btn-primary" %>
+  <% end %>
+<% end %>

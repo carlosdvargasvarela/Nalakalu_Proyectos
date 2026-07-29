@@ -17,6 +17,7 @@ Rails.application.routes.draw do
       resources :responsible_types, except: [:index, :show]
     end
     resources :responsibles
+    resources :project_type_associations
   end
 
   get "projects/seguimiento", to: "projects#tracker", as: :tracker_projects
