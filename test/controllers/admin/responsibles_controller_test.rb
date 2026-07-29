@@ -54,4 +54,15 @@ class Admin::ResponsiblesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "input[value=?]", "Actualizar Responsable"
   end
+
+  test "edit's user select offers unlinked users plus the currently linked one" do
+    linked_elsewhere = User.create!(email: "otro-vinculado@example.com", password: "password123", role: "responsable")
+    Responsible.create!(name: "Ya Vinculado", user: linked_elsewhere)
+    unlinked = User.create!(email: "libre@example.com", password: "password123", role: "responsable")
+
+    get edit_admin_responsible_path(responsibles(:ana_gomez))
+    assert_response :success
+    assert_select "select#responsible_user_id option[value=?]", unlinked.id.to_s
+    assert_select "select#responsible_user_id option[value=?]", linked_elsewhere.id.to_s, count: 0
+  end
 end

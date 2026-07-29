@@ -41,7 +41,7 @@ class Admin::ResponsiblesController < Admin::BaseController
   end
 
   def unlinked_users
-    User.where(responsible: nil).or(User.where(id: @responsible&.user_id))
+    User.where.missing(:responsible).or(User.where(id: @responsible&.user_id))
   end
   helper_method :unlinked_users
 
