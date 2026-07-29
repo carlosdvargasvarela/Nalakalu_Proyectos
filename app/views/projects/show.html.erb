@@ -168,7 +168,7 @@
       <%= form_with model: ProjectResponsible.new, url: project_project_responsibles_path(@project) do |form| %>
         <div class="row g-2">
           <div class="col-auto">
-            <%= form.collection_select :responsible_id, Responsible.order(:name), :id, :name, { include_blank: "Responsable" }, class: "form-select" %>
+            <%= form.collection_select :responsible_id, @project.project_type.responsibles.order(:name), :id, :name, { include_blank: "Responsable" }, class: "form-select" %>
           </div>
           <div class="col-auto">
             <%= form.collection_select :responsible_type_id, @project.project_type.responsible_types.order(:name), :id, :name, { include_blank: "Tipo" }, class: "form-select" %>

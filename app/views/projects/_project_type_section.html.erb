@@ -188,7 +188,7 @@
       </div>
       <div>
         <%= f.label :responsible_id, "Asignar a los seleccionados", for: "bulk-assign-responsible-select-#{slug}", class: "form-label" %>
-        <%= f.select :responsible_id, Responsible.order(:name).collect { |r| [r.name, r.id] },
+        <%= f.select :responsible_id, project_type.responsibles.order(:name).collect { |r| [r.name, r.id] },
               { include_blank: "Elegí un responsable" }, class: "form-select", id: "bulk-assign-responsible-select-#{slug}" %>
       </div>
       <%= f.submit "Asignar", class: "btn btn-primary" %>

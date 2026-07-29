@@ -114,12 +114,18 @@ class Admin::ProjectTypesControllerTest < ActionDispatch::IntegrationTest
     assert_match(/initDragReorder\("stage-templates-list",\s*"#{Regexp.escape(reorder_admin_project_type_stage_templates_path(project_type))}"\)/, response.body)
   end
 
-  test "show lists the Responsible catalog with a link to manage it" do
-    Responsible.create!(name: "Ana Gómez", color: "#ff0000")
+  test "show lists only the Responsible catalog entries enabled for this project type" do
+    enabled = Responsible.create!(name: "Ana Gómez", color: "#ff0000")
+    ResponsibleProjectType.create!(responsible: enabled, project_type: project_types(:instalaciones))
+    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    not_enabled = Responsible.create!(name: "No Habilitado")
+    ResponsibleProjectType.create!(responsible: not_enabled, project_type: other_type)
+
     get admin_project_type_path(project_types(:instalaciones))
     assert_response :success
     assert_select ".card-header", "Responsables"
     assert_select "body", /Ana Gómez/
+    assert_no_match(/No Habilitado/, response.body)
     assert_select "a[href=?]", admin_responsibles_path, text: "Administrar responsables"
   end
 end

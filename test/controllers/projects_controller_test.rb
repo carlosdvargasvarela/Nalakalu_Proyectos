@@ -193,6 +193,18 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".gantt-legend span", text: /Sin subproceso/
   end
 
+  test "show's Responsables assignment form only offers responsibles enabled for this project's type" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    not_enabled = Responsible.create!(name: "No Habilitado")
+    ResponsibleProjectType.create!(responsible: not_enabled, project_type: other_type)
+
+    get project_path(project)
+    assert_response :success
+    assert_select "select[name=?] option", "project_responsible[responsible_id]", text: "Ana Gómez"
+    assert_select "select[name=?] option", "project_responsible[responsible_id]", text: "No Habilitado", count: 0
+  end
+
   test "index's Gantt legend appears only when a responsible type is selected" do
     slug = project_types(:instalaciones).slug
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
@@ -846,6 +858,18 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     doc = Nokogiri::HTML5(response.body)
     bulk_form = doc.at_css("#bulk-assign-form-#{slug}")
     assert_nil bulk_form.at_css("form"), "the archive button's form must not be nested inside the bulk-assign form"
+  end
+
+  test "index's bulk-assign selector only offers responsibles enabled for this project type" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    not_enabled = Responsible.create!(name: "No Habilitado")
+    ResponsibleProjectType.create!(responsible: not_enabled, project_type: other_type)
+
+    get project_type_projects_path(project_types(:instalaciones).slug)
+    assert_response :success
+    assert_select "select#bulk-assign-responsible-select-#{project_types(:instalaciones).slug} option", text: "Ana Gómez"
+    assert_select "select#bulk-assign-responsible-select-#{project_types(:instalaciones).slug} option", text: "No Habilitado", count: 0
   end
 
   test "index's select-all checkbox toggles every project checkbox via JS" do
