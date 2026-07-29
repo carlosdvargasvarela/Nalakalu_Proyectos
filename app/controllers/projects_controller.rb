@@ -1,6 +1,7 @@
 class ProjectsController < ApplicationController
   before_action :set_project, only: [:show, :edit, :update]
-  before_action :require_admin_or_gerente!, only: [:new, :create, :bulk_assign_responsible]
+  before_action :require_admin_or_gerente!, only: [:bulk_assign_responsible]
+  before_action :authorize_new!, only: [:new, :create]
   before_action :authorize_view!, only: [:show]
   before_action :authorize_edit!, only: [:edit]
   before_action :authorize_update!, only: [:update]
@@ -42,6 +43,8 @@ class ProjectsController < ApplicationController
   def new
     @project_type = ProjectType.find(params[:project_type_id]) if params[:project_type_id]
     @project = Project.new(project_type: @project_type)
+    @project_type_association_id = params[:project_type_association_id]
+    @associate_with_project_id = params[:associate_with_project_id]
   end
 
   def create
@@ -49,8 +52,18 @@ class ProjectsController < ApplicationController
     @project_type = @project.project_type
     if @project.save
       ProjectAccess.create!(user: current_user, project: @project, can_edit: true) if current_user.gerente?
-      redirect_to project_path(@project)
+      if params[:project_type_association_id].present? && params[:associate_with_project_id].present?
+        ProjectAssociation.create!(
+          from_project: @project, to_project_id: params[:associate_with_project_id],
+          project_type_association_id: params[:project_type_association_id]
+        )
+        redirect_to project_path(params[:associate_with_project_id])
+      else
+        redirect_to project_path(@project)
+      end
     else
+      @project_type_association_id = params[:project_type_association_id]
+      @associate_with_project_id = params[:associate_with_project_id]
       render :new, status: :unprocessable_entity
     end
   end
@@ -128,6 +141,14 @@ class ProjectsController < ApplicationController
   def authorize_update!
     return if current_user.can_edit_project?(@project) || current_user.editable_project_stage_ids(@project).any?
     redirect_to projects_path, alert: "No tenés permiso para editar ese proyecto."
+  end
+
+  def authorize_new!
+    return if current_user.admin? || current_user.gerente?
+    association = ProjectTypeAssociation.find_by(id: params[:project_type_association_id])
+    target_project = Project.find_by(id: params[:associate_with_project_id])
+    return if association && target_project && current_user.can_create_associated_project?(association, target_project)
+    redirect_to projects_path, alert: "No tenés permiso para crear proyectos."
   end
 
   def project_params

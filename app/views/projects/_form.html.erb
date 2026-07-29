@@ -10,6 +10,8 @@
   <% end %>
 
   <%= form.hidden_field :project_type_id, value: project_type.id %>
+  <%= hidden_field_tag :project_type_association_id, @project_type_association_id if @project_type_association_id.present? %>
+  <%= hidden_field_tag :associate_with_project_id, @associate_with_project_id if @associate_with_project_id.present? %>
 
   <div class="mb-3">
     <%= form.label :name, class: "form-label" %>

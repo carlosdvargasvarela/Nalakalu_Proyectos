@@ -115,4 +115,34 @@ class UserTest < ActiveSupport::TestCase
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     assert_equal [], users(:carla).editable_project_stage_ids(project)
   end
+
+  test "can_create_associated_project? is always true for admin and gerente" do
+    other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
+    association = ProjectTypeAssociation.create!(from_project_type: other_type, to_project_type: project_types(:instalaciones), label: "Caso de servicio")
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+
+    assert users(:juan).can_create_associated_project?(association, project)
+    assert users(:carla).can_create_associated_project?(association, project)
+  end
+
+  test "can_create_associated_project? is true for an assigned responsable only when the association allows it" do
+    other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    responsable = users(:pedro)
+    ProjectResponsible.create!(project: project, responsible: responsable.responsible, responsible_type: responsible_types(:instalador))
+
+    allowed = ProjectTypeAssociation.create!(from_project_type: other_type, to_project_type: project_types(:instalaciones), label: "Caso de servicio", responsables_can_create: true)
+    assert responsable.can_create_associated_project?(allowed, project)
+
+    not_allowed = ProjectTypeAssociation.create!(from_project_type: other_type, to_project_type: project_types(:instalaciones), label: "Fase de", responsables_can_create: false)
+    assert_not responsable.can_create_associated_project?(not_allowed, project)
+  end
+
+  test "can_create_associated_project? is false for a responsable not assigned to the target project" do
+    other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    association = ProjectTypeAssociation.create!(from_project_type: other_type, to_project_type: project_types(:instalaciones), label: "Caso de servicio", responsables_can_create: true)
+
+    assert_not users(:pedro).can_create_associated_project?(association, project)
+  end
 end

@@ -1202,7 +1202,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
   test "new and create are blocked for a visor" do
     sign_in users(:maria)
     get new_project_path(project_type_id: project_types(:instalaciones).id)
-    assert_redirected_to root_path
+    assert_redirected_to projects_path
 
     assert_no_difference("Project.count") do
       post projects_path, params: { project: { project_type_id: project_types(:instalaciones).id, name: "Torre Norte", custom_fields: {} } }
@@ -1299,5 +1299,50 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     project.project_stages.each do |stage|
       assert_select "input[name=?]", "project[project_stages_attributes][#{stage.id}][progress_percent]"
     end
+  end
+
+  test "new/create is reachable by an assigned responsable when the association allows it, and links to the target project" do
+    other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
+    target = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    responsable = users(:pedro)
+    ProjectResponsible.create!(project: target, responsible: responsable.responsible, responsible_type: responsible_types(:instalador))
+    association = ProjectTypeAssociation.create!(from_project_type: other_type, to_project_type: project_types(:instalaciones), label: "Caso de servicio", responsables_can_create: true)
+    sign_in responsable
+
+    get new_project_path(project_type_id: other_type.id, project_type_association_id: association.id, associate_with_project_id: target.id)
+    assert_response :success
+
+    assert_difference("Project.count", 1) do
+      post projects_path, params: {
+        project: { project_type_id: other_type.id, name: "Ticket 1", custom_fields: {} },
+        project_type_association_id: association.id, associate_with_project_id: target.id
+      }
+    end
+
+    created = Project.order(:id).last
+    assert_redirected_to project_path(target)
+    assert ProjectAssociation.exists?(from_project: created, to_project: target, project_type_association: association)
+  end
+
+  test "new/create rejects a responsable when the association doesn't allow responsables to create" do
+    other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
+    target = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    responsable = users(:pedro)
+    ProjectResponsible.create!(project: target, responsible: responsable.responsible, responsible_type: responsible_types(:instalador))
+    association = ProjectTypeAssociation.create!(from_project_type: other_type, to_project_type: project_types(:instalaciones), label: "Caso de servicio")
+    sign_in responsable
+
+    get new_project_path(project_type_id: other_type.id, project_type_association_id: association.id, associate_with_project_id: target.id)
+    assert_redirected_to projects_path
+  end
+
+  test "create as admin without association context still creates a standalone project" do
+    assert_difference("Project.count", 1) do
+      post projects_path, params: {
+        project: { project_type_id: project_types(:instalaciones).id, name: "Torre Sur", custom_fields: {} }
+      }
+    end
+    created = Project.order(:id).last
+    assert_redirected_to project_path(created)
   end
 end

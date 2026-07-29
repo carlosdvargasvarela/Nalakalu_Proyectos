@@ -32,4 +32,9 @@ class User < ApplicationRecord
     return project.project_stage_ids if assignments.any?(&:project_wide?)
     assignments.filter_map(&:project_stage_id)
   end
+
+  def can_create_associated_project?(association, target_project)
+    return true if admin? || gerente?
+    association.responsables_can_create? && responsable? && can_view_project?(target_project)
+  end
 end
