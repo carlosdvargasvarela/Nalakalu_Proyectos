@@ -65,4 +65,29 @@ class Admin::ResponsiblesControllerTest < ActionDispatch::IntegrationTest
     assert_select "select#responsible_user_id option[value=?]", unlinked.id.to_s
     assert_select "select#responsible_user_id option[value=?]", linked_elsewhere.id.to_s, count: 0
   end
+
+  test "create with project_type_ids enables the responsible for those types" do
+    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    post admin_responsibles_path, params: {
+      responsible: { name: "Nuevo", project_type_ids: [project_types(:instalaciones).id, other_type.id] }
+    }
+    created = Responsible.order(:id).last
+    assert_equal [project_types(:instalaciones), other_type].sort_by(&:id), created.project_types.sort_by(&:id)
+  end
+
+  test "update can unenable every project type, leaving none" do
+    responsible = responsibles(:ana_gomez)
+
+    patch admin_responsible_path(responsible), params: {
+      responsible: { name: responsible.name, project_type_ids: [""] }
+    }
+
+    assert_equal [], responsible.reload.project_types
+  end
+
+  test "edit shows a checkbox per project type, checked for the ones already enabled" do
+    get edit_admin_responsible_path(responsibles(:ana_gomez))
+    assert_response :success
+    assert_select "input[type=checkbox][name='responsible[project_type_ids][]'][value=?][checked=checked]", project_types(:instalaciones).id.to_s
+  end
 end

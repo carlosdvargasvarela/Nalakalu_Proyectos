@@ -25,6 +25,18 @@
       <%= form.collection_select :user_id, unlinked_users, :id, :email, { include_blank: "Ninguno" }, class: "form-select" %>
     </div>
 
+    <div class="mb-3">
+      <%= form.label :project_type_ids, "Tipos de proyecto habilitados", class: "form-label d-block" %>
+      <%= hidden_field_tag "responsible[project_type_ids][]", "" %>
+      <% ProjectType.order(:name).each do |project_type| %>
+        <div class="form-check">
+          <%= check_box_tag "responsible[project_type_ids][]", project_type.id,
+                responsible.project_type_ids.include?(project_type.id), class: "form-check-input", id: "project_type_ids_#{project_type.id}" %>
+          <%= label_tag "project_type_ids_#{project_type.id}", project_type.name, class: "form-check-label" %>
+        </div>
+      <% end %>
+    </div>
+
     <%= form.submit class: "btn btn-primary" %>
   <% end %>
 <% end %>

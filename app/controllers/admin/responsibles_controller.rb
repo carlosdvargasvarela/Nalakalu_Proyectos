@@ -46,6 +46,6 @@ class Admin::ResponsiblesController < Admin::BaseController
   helper_method :unlinked_users
 
   def responsible_params
-    params.require(:responsible).permit(:name, :color, :user_id)
+    params.require(:responsible).permit(:name, :color, :user_id, project_type_ids: [])
   end
 end
