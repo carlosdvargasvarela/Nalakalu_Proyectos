@@ -1,4 +1,4 @@
-<%= admin_card("Tipos de proyecto") do %>
+<%= panel_card("Tipos de proyecto") do %>
   <%= link_to "Nuevo tipo de proyecto", new_admin_project_type_path, class: "btn btn-primary mb-3" %>
   <ul class="list-group">
     <% @project_types.each do |project_type| %>

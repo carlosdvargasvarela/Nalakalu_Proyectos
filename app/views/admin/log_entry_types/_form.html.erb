@@ -1,4 +1,4 @@
-<%= admin_card(@log_entry_type.persisted? ? "Editar tipo de bitácora" : "Nuevo tipo de bitácora") do %>
+<%= panel_card(@log_entry_type.persisted? ? "Editar tipo de bitácora" : "Nuevo tipo de bitácora") do %>
   <%= form_with model: [@project_type, @log_entry_type], url: @log_entry_type.persisted? ? admin_project_type_log_entry_type_path(@project_type, @log_entry_type) : admin_project_type_log_entry_types_path(@project_type) do |f| %>
     <div class="mb-3">
       <%= f.label :name, "Nombre" %>

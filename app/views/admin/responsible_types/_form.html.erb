@@ -1,4 +1,4 @@
-<%= admin_card(@responsible_type.persisted? ? "Editar tipo de responsable" : "Nuevo tipo de responsable") do %>
+<%= panel_card(@responsible_type.persisted? ? "Editar tipo de responsable" : "Nuevo tipo de responsable") do %>
   <%= form_with model: [@project_type, @responsible_type], url: @responsible_type.persisted? ? admin_project_type_responsible_type_path(@project_type, @responsible_type) : admin_project_type_responsible_types_path(@project_type) do |f| %>
     <div class="mb-3">
       <%= f.label :name, "Nombre" %>

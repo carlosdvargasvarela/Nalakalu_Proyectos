@@ -1,4 +1,4 @@
-<%= admin_card(project_type.persisted? ? "Editar tipo de proyecto" : "Nuevo tipo de proyecto") do %>
+<%= panel_card(project_type.persisted? ? "Editar tipo de proyecto" : "Nuevo tipo de proyecto") do %>
   <%= form_with model: [:admin, project_type] do |form| %>
     <% if project_type.errors.any? %>
       <div class="alert alert-danger">

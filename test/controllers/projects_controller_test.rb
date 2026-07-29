@@ -639,7 +639,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
   test "new shows the project type in the title, wraps the form in a card, and links Cancelar to the list" do
     get new_project_path(project_type_id: project_types(:instalaciones).id)
     assert_response :success
-    assert_select "h1", /Instalaciones/
+    assert_select ".card-header", /Instalaciones/
     assert_select ".card form"
     assert_select "a[href=?]", projects_path, text: "Cancelar"
   end
@@ -648,9 +648,15 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get edit_project_path(project)
     assert_response :success
-    assert_select "h1", /Torre Norte/
+    assert_select ".card-header", /Torre Norte/
     assert_select ".card form"
     assert_select "a[href=?]", project_path(project), text: "Cancelar"
+  end
+
+  test "index's filter card has a Filtros title" do
+    get project_type_projects_path(project_types(:instalaciones).slug)
+    assert_response :success
+    assert_select ".card-header", "Filtros"
   end
 
   test "show displays the project's progress status and overdue badges" do

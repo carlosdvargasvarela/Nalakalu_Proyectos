@@ -1,4 +1,4 @@
-<%= admin_card("#{stage_template.persisted? ? 'Editar' : 'Nuevo'} subproceso — #{project_type.name}") do %>
+<%= panel_card("#{stage_template.persisted? ? 'Editar' : 'Nuevo'} subproceso — #{project_type.name}") do %>
   <%= form_with model: [:admin, project_type, stage_template] do |form| %>
     <% if stage_template.errors.any? %>
       <div class="alert alert-danger">

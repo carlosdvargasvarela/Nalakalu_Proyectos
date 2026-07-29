@@ -56,3 +56,9 @@
   background-color: #f8f9fa;
   font-weight: 600;
 }
+
+.nav-tabs .nav-link.active {
+  color: var(--bs-primary);
+  border-color: rgba(0, 0, 0, 0.06) rgba(0, 0, 0, 0.06) #fff;
+  font-weight: 600;
+}

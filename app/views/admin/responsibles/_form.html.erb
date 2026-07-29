@@ -1,4 +1,4 @@
-<%= admin_card(responsible.persisted? ? "Editar responsable" : "Nuevo responsable") do %>
+<%= panel_card(responsible.persisted? ? "Editar responsable" : "Nuevo responsable") do %>
   <%= form_with model: [:admin, responsible] do |form| %>
     <% if responsible.errors.any? %>
       <div class="alert alert-danger">

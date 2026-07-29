@@ -4,49 +4,47 @@
   section_params = section[:params]
 %>
 
-<div class="card mb-4">
-  <div class="card-body">
-    <%= form_with url: project_type_projects_path(slug), method: :get, local: true, class: "row g-2" do |form| %>
-      <div class="col-auto">
-        <%= form.label :status, "Estado", class: "form-label" %>
-        <%= form.select :status, @statuses.map { |s| [status_label(s), s] },
-              { include_blank: "Todos", selected: section_params[:status] }, class: "form-select" %>
-      </div>
-      <div class="col-auto">
-        <%= form.label :responsible_type_id, "Tipo de responsable", class: "form-label" %>
-        <%= form.select :responsible_type_id, project_type.responsible_types.order(:name).collect { |t| [t.name, t.id] },
-              { include_blank: "Todos", selected: section_params[:responsible_type_id] }, class: "form-select" %>
-      </div>
-      <div class="col-auto">
-        <%= form.label :responsible_id, "Responsable", class: "form-label" %>
-        <%= form.select :responsible_id,
-              [["Sin asignar", "none"]] + Responsible.joins(:project_responsibles).where(project_responsibles: { responsible_type_id: section_params[:responsible_type_id] }).distinct.order(:name).collect { |r| [r.name, r.id] },
-              { include_blank: "Todos", selected: section_params[:responsible_id] }, class: "form-select" %>
-      </div>
-      <div class="col-auto">
-        <%= form.label :from_date, "Desde", class: "form-label" %>
-        <%= form.date_field :from_date, value: section_params[:from_date], class: "form-control" %>
-      </div>
-      <div class="col-auto">
-        <%= form.label :to_date, "Hasta", class: "form-label" %>
-        <%= form.date_field :to_date, value: section_params[:to_date], class: "form-control" %>
-      </div>
-      <div class="col-auto">
-        <%= form.label :stage_name, "Etapa", class: "form-label" %>
-        <%= form.select :stage_name, section[:stage_names],
-              { include_blank: "Todas", selected: section[:stage_name] }, class: "form-select" %>
-      </div>
-      <div class="col-auto">
-        <%= form.label :q, "Buscar", class: "form-label" %>
-        <%= form.text_field :q, value: section_params[:q], class: "form-control", placeholder: "Nombre, cliente, dirección..." %>
-      </div>
-      <div class="col-auto align-self-end">
-        <%= form.submit "Filtrar", class: "btn btn-primary" %>
-        <%= link_to "Quitar filtros", project_type_projects_path(slug), class: "btn btn-outline-secondary" %>
-      </div>
-    <% end %>
-  </div>
-</div>
+<%= panel_card("Filtros") do %>
+  <%= form_with url: project_type_projects_path(slug), method: :get, local: true, class: "row g-2" do |form| %>
+    <div class="col-auto">
+      <%= form.label :status, "Estado", class: "form-label" %>
+      <%= form.select :status, @statuses.map { |s| [status_label(s), s] },
+            { include_blank: "Todos", selected: section_params[:status] }, class: "form-select" %>
+    </div>
+    <div class="col-auto">
+      <%= form.label :responsible_type_id, "Tipo de responsable", class: "form-label" %>
+      <%= form.select :responsible_type_id, project_type.responsible_types.order(:name).collect { |t| [t.name, t.id] },
+            { include_blank: "Todos", selected: section_params[:responsible_type_id] }, class: "form-select" %>
+    </div>
+    <div class="col-auto">
+      <%= form.label :responsible_id, "Responsable", class: "form-label" %>
+      <%= form.select :responsible_id,
+            [["Sin asignar", "none"]] + Responsible.joins(:project_responsibles).where(project_responsibles: { responsible_type_id: section_params[:responsible_type_id] }).distinct.order(:name).collect { |r| [r.name, r.id] },
+            { include_blank: "Todos", selected: section_params[:responsible_id] }, class: "form-select" %>
+    </div>
+    <div class="col-auto">
+      <%= form.label :from_date, "Desde", class: "form-label" %>
+      <%= form.date_field :from_date, value: section_params[:from_date], class: "form-control" %>
+    </div>
+    <div class="col-auto">
+      <%= form.label :to_date, "Hasta", class: "form-label" %>
+      <%= form.date_field :to_date, value: section_params[:to_date], class: "form-control" %>
+    </div>
+    <div class="col-auto">
+      <%= form.label :stage_name, "Etapa", class: "form-label" %>
+      <%= form.select :stage_name, section[:stage_names],
+            { include_blank: "Todas", selected: section[:stage_name] }, class: "form-select" %>
+    </div>
+    <div class="col-auto">
+      <%= form.label :q, "Buscar", class: "form-label" %>
+      <%= form.text_field :q, value: section_params[:q], class: "form-control", placeholder: "Nombre, cliente, dirección..." %>
+    </div>
+    <div class="col-auto align-self-end">
+      <%= form.submit "Filtrar", class: "btn btn-primary" %>
+      <%= link_to "Quitar filtros", project_type_projects_path(slug), class: "btn btn-outline-secondary" %>
+    </div>
+  <% end %>
+<% end %>
 
 <% if section[:projects_list].empty? %>
   <p>No hay proyectos con estos filtros.</p>

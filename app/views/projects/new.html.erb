@@ -1,6 +1,3 @@
-<h1>Nuevo proyecto — <%= @project_type.name %></h1>
-<div class="card">
-  <div class="card-body">
-    <%= render "form", project: @project, project_type: @project_type %>
-  </div>
-</div>
+<%= panel_card("Nuevo proyecto — #{@project_type.name}") do %>
+  <%= render "form", project: @project, project_type: @project_type %>
+<% end %>

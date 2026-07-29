@@ -1,4 +1,4 @@
-<%= admin_card("Responsables") do %>
+<%= panel_card("Responsables") do %>
   <%= link_to "Nuevo responsable", new_admin_responsible_path, class: "btn btn-primary mb-3" %>
   <ul class="list-group">
     <% @responsibles.each do |responsible| %>

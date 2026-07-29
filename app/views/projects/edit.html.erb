@@ -1,6 +1,3 @@
-<h1>Editar proyecto — <%= @project.name %></h1>
-<div class="card">
-  <div class="card-body">
-    <%= render "form", project: @project, project_type: @project_type %>
-  </div>
-</div>
+<%= panel_card("Editar proyecto — #{@project.name}") do %>
+  <%= render "form", project: @project, project_type: @project_type %>
+<% end %>

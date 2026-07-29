@@ -1,4 +1,4 @@
-<%= admin_card("#{field_definition.persisted? ? 'Editar' : 'Nuevo'} campo — #{project_type.name}") do %>
+<%= panel_card("#{field_definition.persisted? ? 'Editar' : 'Nuevo'} campo — #{project_type.name}") do %>
   <%= form_with model: [:admin, project_type, field_definition] do |form| %>
     <% if field_definition.errors.any? %>
       <div class="alert alert-danger">

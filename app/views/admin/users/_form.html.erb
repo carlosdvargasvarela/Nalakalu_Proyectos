@@ -1,4 +1,4 @@
-<%= admin_card(user.persisted? ? "Editar usuario" : "Nuevo usuario") do %>
+<%= panel_card(user.persisted? ? "Editar usuario" : "Nuevo usuario") do %>
   <%= form_with model: [:admin, user] do |form| %>
     <% if user.errors.any? %>
       <div class="alert alert-danger">
@@ -36,7 +36,7 @@
 <% end %>
 
 <% if user.persisted? %>
-  <%= admin_card("Accesos a proyectos") do %>
+  <%= panel_card("Accesos a proyectos") do %>
     <h3 class="h6">Tipos de proyecto</h3>
     <p class="text-muted small">Da acceso de edición a todos los proyectos de ese tipo, incluidos los que se creen después.</p>
     <table class="table table-sm">
