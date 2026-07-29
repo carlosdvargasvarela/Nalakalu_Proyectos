@@ -1,0 +1,11 @@
+instalador:
+  project_type_id: <%= ActiveRecord::FixtureSet.identify(:instalaciones) %>
+  name: Instalador Fixture
+  created_at: <%= Time.current %>
+  updated_at: <%= Time.current %>
+
+disenador:
+  project_type_id: <%= ActiveRecord::FixtureSet.identify(:instalaciones) %>
+  name: Diseñador Fixture
+  created_at: <%= Time.current %>
+  updated_at: <%= Time.current %>

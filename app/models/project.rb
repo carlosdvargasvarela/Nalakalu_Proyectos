@@ -4,6 +4,7 @@ class Project < ApplicationRecord
   has_many :project_stages, dependent: :destroy
   has_many :log_entries, dependent: :destroy
   has_many :project_accesses, dependent: :destroy
+  has_many :project_responsibles, dependent: :destroy
   accepts_nested_attributes_for :project_stages, update_only: true
 
   validates :name, presence: true
@@ -41,6 +42,10 @@ class Project < ApplicationRecord
     return nil if installer_id.blank?
 
     Installer.find_by(id: installer_id)
+  end
+
+  def responsible_for(responsible_type)
+    project_responsibles.find { |pr| pr.responsible_type_id == responsible_type.id && pr.project_wide? }&.responsible
   end
 
   def progress_status

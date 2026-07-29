@@ -1,0 +1,5 @@
+ana_gomez:
+  name: Ana Gómez
+  color: "#6c757d"
+  created_at: <%= Time.current %>
+  updated_at: <%= Time.current %>

@@ -37,6 +37,9 @@ es:
       field_definition: "Campo"
       stage_template: "Subproceso"
       installer: "Instalador"
+      responsible_type: "Tipo de responsable"
+      responsible: "Responsable"
+      project_responsible: "Responsable de proyecto"
       project: "Proyecto"
     attributes:
       user:
@@ -67,6 +70,11 @@ es:
         end_date: "Fecha de fin"
       installer:
         name: "Nombre"
+      responsible_type:
+        name: "Nombre"
+      responsible:
+        name: "Nombre"
+        color: "Color"
   errors:
     messages:
       blank: "no puede estar en blanco"
