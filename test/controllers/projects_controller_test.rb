@@ -1359,4 +1359,39 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "select#project_association_other_project_id option[value=?][data-project-type-id=?]",
       caso.id.to_s, other_type.id.to_s
   end
+
+  test "index's Responsable filter select is marked for TomSelect" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_type_projects_path(project_types(:instalaciones).slug)
+    assert_response :success
+    assert_select "select.js-tomselect[name=?]", "responsible_id"
+  end
+
+  test "index's bulk-assign Responsable select is marked for TomSelect" do
+    slug = project_types(:instalaciones).slug
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_type_projects_path(slug)
+    assert_response :success
+    assert_select "select#bulk-assign-responsible-select-#{slug}.js-tomselect"
+  end
+
+  test "show's Asociaciones Tipo de asociación select stays a plain native select" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_response :success
+    assert_select "select#project_association_project_type_association_id.js-tomselect", count: 0
+  end
+
+  test "tracker's Responsable filter select is marked for TomSelect" do
+    get tracker_projects_path
+    assert_response :success
+    assert_select "select.js-tomselect[name=?]", "responsible_id"
+  end
+
+  test "show's Responsables assignment select is marked for TomSelect" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_response :success
+    assert_select "select.js-tomselect#project_responsible_responsible_id"
+  end
 end

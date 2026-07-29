@@ -90,4 +90,10 @@ class Admin::ResponsiblesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "input[type=checkbox][name='responsible[project_type_ids][]'][value=?][checked=checked]", project_types(:instalaciones).id.to_s
   end
+
+  test "new shows the Usuario vinculado select marked for TomSelect" do
+    get new_admin_responsible_path
+    assert_response :success
+    assert_select "select.js-tomselect#responsible_user_id"
+  end
 end

@@ -20,7 +20,7 @@
       <%= form.label :responsible_id, "Responsable", class: "form-label" %>
       <%= form.select :responsible_id,
             [["Sin asignar", "none"]] + Responsible.joins(:project_responsibles).where(project_responsibles: { responsible_type_id: section_params[:responsible_type_id] }).distinct.order(:name).collect { |r| [r.name, r.id] },
-            { include_blank: "Todos", selected: section_params[:responsible_id] }, class: "form-select" %>
+            { include_blank: "Todos", selected: section_params[:responsible_id] }, class: "form-select js-tomselect" %>
     </div>
     <div class="col-auto">
       <%= form.label :from_date, "Desde", class: "form-label" %>
@@ -189,7 +189,7 @@
       <div>
         <%= f.label :responsible_id, "Asignar a los seleccionados", for: "bulk-assign-responsible-select-#{slug}", class: "form-label" %>
         <%= f.select :responsible_id, project_type.responsibles.order(:name).collect { |r| [r.name, r.id] },
-              { include_blank: "Elegí un responsable" }, class: "form-select", id: "bulk-assign-responsible-select-#{slug}" %>
+              { include_blank: "Elegí un responsable" }, class: "form-select js-tomselect", id: "bulk-assign-responsible-select-#{slug}" %>
       </div>
       <%= f.submit "Asignar", class: "btn btn-primary" %>
     <% end %>
