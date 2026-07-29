@@ -6,8 +6,13 @@ class ProjectsController < ApplicationController
   before_action :authorize_update!, only: [:update]
 
   def index
+    @project_type = ProjectType.find_by(slug: params[:slug]) || ProjectType.first
+    return render(:index) if @project_type.nil?
+    return redirect_to(project_type_projects_path(@project_type.slug)) if params[:slug].blank? || params[:slug] != @project_type.slug
+
+    @project_types = ProjectType.all
     @statuses = Project.distinct.pluck(:status).compact
-    @sections = ProjectType.all.map { |project_type| build_section(project_type) }
+    @section = build_section(@project_type)
   end
 
   def tracker
@@ -176,31 +181,30 @@ class ProjectsController < ApplicationController
   end
 
   def build_section(project_type)
-    section_submitted = params.dig(:sections, project_type.slug)
-    section_params = section_submitted || {}
+    filtered = params.key?(:status)
 
     projects = Project.visible_to(current_user).where(project_type: project_type).includes(:project_type, project_stages: :stage_template).order(:name)
-    projects = section_params[:status].present? ? projects.where(status: section_params[:status]) : projects.where.not(status: "archived")
-    projects = filter_by_responsible(projects, section_params[:responsible_type_id], section_params[:responsible_id])
-    projects = filter_by_date_range(projects, section_params[:from_date], section_params[:to_date])
-    projects = filter_by_query(projects, section_params[:q])
+    projects = params[:status].present? ? projects.where(status: params[:status]) : projects.where.not(status: "archived")
+    projects = filter_by_responsible(projects, params[:responsible_type_id], params[:responsible_id])
+    projects = filter_by_date_range(projects, params[:from_date], params[:to_date])
+    projects = filter_by_query(projects, params[:q])
 
     projects_list = projects.to_a
     per_page = 20
-    page = [section_params[:page].to_i, 1].max
+    page = [params[:page].to_i, 1].max
     total_pages = (projects_list.size / per_page.to_f).ceil
     page_projects = projects_list.drop((page - 1) * per_page).first(per_page)
     stage_names = StageTemplate.where(project_type: project_type).order(:name).pluck(:name)
 
-    stage_name = if section_submitted.nil?
-      project_type.stage_templates.find_by(default_in_filter: true)&.name
+    stage_name = if filtered
+      params[:stage_name]
     else
-      section_params[:stage_name]
+      project_type.stage_templates.find_by(default_in_filter: true)&.name
     end
 
     {
       project_type: project_type,
-      params: section_params,
+      params: params.slice(:status, :responsible_type_id, :responsible_id, :from_date, :to_date, :stage_name, :q, :page),
       stage_name: stage_name,
       projects_list: projects_list,
       page_projects: page_projects,

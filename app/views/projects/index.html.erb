@@ -1,35 +1,21 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="mb-0">Proyectos</h1>
-  <% if current_user.admin? || current_user.gerente? %>
-    <div class="dropdown">
-      <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-        Nuevo proyecto
-      </button>
-      <ul class="dropdown-menu dropdown-menu-end">
-        <% ProjectType.all.each do |project_type| %>
-          <li><%= link_to project_type.name, new_project_path(project_type_id: project_type.id), class: "dropdown-item" %></li>
-        <% end %>
-      </ul>
-    </div>
+  <% if @project_type && (current_user.admin? || current_user.gerente?) %>
+    <%= link_to "Nuevo proyecto", new_project_path(project_type_id: @project_type.id), class: "btn btn-primary" %>
   <% end %>
 </div>
 
-<div class="accordion" id="projectsAccordion">
-  <% @sections.each_with_index do |section, index| %>
-    <% slug = section[:project_type].slug %>
-    <div class="accordion-item">
-      <h2 class="accordion-header">
-        <button class="accordion-button <%= "collapsed" unless index == 0 %>" type="button"
-                data-bs-toggle="collapse" data-bs-target="#collapse-<%= slug %>">
-          <%= section[:project_type].name %> (<%= section[:projects_list].size %>)
-        </button>
-      </h2>
-      <div id="collapse-<%= slug %>" class="accordion-collapse collapse <%= "show" if index == 0 %>"
-           data-bs-parent="#projectsAccordion">
-        <div class="accordion-body">
-          <%= render "project_type_section", section: section %>
-        </div>
-      </div>
-    </div>
-  <% end %>
-</div>
+<% if @project_type.nil? %>
+  <p>No hay tipos de proyecto configurados todavía.</p>
+<% else %>
+  <ul class="nav nav-tabs mb-4">
+    <% @project_types.each do |project_type| %>
+      <li class="nav-item">
+        <%= link_to project_type.name, project_type_projects_path(project_type.slug),
+              class: "nav-link #{"active" if project_type == @project_type}" %>
+      </li>
+    <% end %>
+  </ul>
+
+  <%= render "project_type_section", section: @section %>
+<% end %>

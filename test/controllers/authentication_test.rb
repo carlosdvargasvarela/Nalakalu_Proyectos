@@ -14,6 +14,7 @@ class AuthenticationTest < ActionDispatch::IntegrationTest
   test "signed in user can reach the projects index" do
     sign_in users(:juan)
     get root_path
+    follow_redirect!
     assert_response :success
   end
 
