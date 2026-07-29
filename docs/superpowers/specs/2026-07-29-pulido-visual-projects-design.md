@@ -13,6 +13,10 @@ Un hallazgo importante: `/projects/seguimiento` (tracker) **no tiene tarjetas a 
 3. **`_project_type_section.html.erb`**: la tarjeta de filtros (hoy un `card` con `card-body` sin header) gana un título "Filtros" vía `panel_card`.
 4. **Pestañas de tipo de proyecto** (`projects/index.html.erb`): CSS para que la pestaña activa (`.nav-tabs .nav-link.active`) tome el color del tema en vez del gris/azul por defecto de Bootstrap.
 5. **Tracker**: sin tarjetas nuevas (ver hallazgo arriba). Único ajuste: el filtro de tracker gana la misma jerarquía visual que el de `/projects` (ya comparten estructura de `form_with ... class: "row g-2"`, no hace falta tocarlo) — en la práctica, este punto no requiere cambios de código, se deja documentado como decisión explícita de **no** tocar el tracker más allá de lo ya heredado.
+6. **Referencia de colores del Gantt (pedido explícito del usuario)**: cada Gantt que colorea sus barras por algo (etapa o responsable) gana una leyenda chica debajo, con un círculo de color + el nombre de a quién/qué pertenece — para no tener que adivinar qué representa cada color. Aplica a los dos Gantt que hoy colorean barras:
+   - `projects/show.html.erb` (Gantt de un solo proyecto, colorea por `stage_template` de cada etapa): leyenda con una entrada por etapa, siempre visible (no depende de ningún filtro).
+   - `projects/_project_type_section.html.erb` (Gantt del listado de `/projects`, colorea por responsable del tipo elegido en el filtro): leyenda con una entrada por responsable, **solo cuando hay un tipo de responsable elegido en el filtro** (si no hay tipo elegido, no hay color que explicar, tal como ya pasa hoy).
+   - El tracker no tiene Gantt (usa `_data_band` + `_stage_table`), así que no aplica ahí.
 
 Fuera de alcance (decidido en brainstorming): tarjetas en el tracker (respeta el look "planilla" existente); rehacer login/`/admin/*` de nuevo (ya cubiertos); nueva paleta de colores o tipografía externa; cambios de datos, lógica o tests de comportamiento más allá de los que el rename de helper y el nuevo `panel_card` en `new`/`edit` tocan mecánicamente.
 
@@ -99,6 +103,54 @@ pasa a usar `panel_card("Filtros")` envolviendo el mismo `form_with` (sin tocar 
 <% end %>
 ```
 
+### Leyenda de colores del Gantt
+
+Un partial chico y reutilizable, `app/views/projects/_gantt_legend.html.erb`, recibe una lista de `[nombre, color]`:
+
+```erb
+<%# locals: (entries:) %>
+<div class="d-flex flex-wrap gap-3 mb-3">
+  <% entries.each do |name, color| %>
+    <span class="d-inline-flex align-items-center gap-1">
+      <span class="rounded-circle d-inline-block" style="width: 0.75rem; height: 0.75rem; background-color: <%= color %>;"></span>
+      <small><%= name %></small>
+    </span>
+  <% end %>
+</div>
+```
+
+**`projects/show.html.erb`**: `stage_colors` pasa de `[template_id, color]` a incluir el nombre:
+
+```ruby
+stage_colors = stages.map { |stage| [stage.stage_template_id || "none", stage.stage_template&.name || "Sin subproceso", stage.stage_template&.color || "#6c757d"] }.uniq
+```
+
+y, justo antes del `<div id="gantt">`, se agrega:
+
+```erb
+<%= render "gantt_legend", entries: stage_colors.map { |_, name, color| [name, color] } %>
+```
+
+(El `<% stage_colors.each do |template_id, color| %>` que arma el bloque `<style>` con las reglas CSS por `template_id` pasa a `<% stage_colors.each do |template_id, _name, color| %>` — mismo bucle, ahora ignora el nombre en ese punto ya que ahí solo hace falta `template_id`/`color`.)
+
+**`_project_type_section.html.erb`**: `gantt_colors` pasa de `[r.id, r.color]` a `[r.id, r.name, r.color]`, y justo antes del `<div id="gantt-<%= slug %>">` se agrega la leyenda, solo cuando hay un tipo seleccionado y hay colores que mostrar:
+
+```ruby
+gantt_colors = if selected_type
+  projects_list.map { |project| project.responsible_for(selected_type) }.compact.uniq.map { |r| [r.id, r.name, r.color] }
+else
+  []
+end
+```
+
+```erb
+<% if selected_type && gantt_colors.any? %>
+  <%= render "gantt_legend", entries: gantt_colors.map { |_, name, color| [name, color] } %>
+<% end %>
+```
+
+(El bucle que arma el `<style>` de `.responsible-color-*` pasa igual de `|responsible_id, color|` a `|responsible_id, _name, color|`.)
+
 ### Pestañas activas con el color del tema
 
 En `app/assets/stylesheets/application.css`, agregar junto a las demás reglas:
@@ -117,7 +169,9 @@ En `app/assets/stylesheets/application.css`, agregar junto a las demás reglas:
 - `projects/new`/`edit`: los tests `"new shows the project type in the title, wraps the form in a card, and links Cancelar to the list"` y `"edit shows the project name in the title, wraps the form in a card, and links Cancelar to the project"` hoy hacen `assert_select "h1", /Instalaciones/` (resp. `/Torre Norte/`) — como el título pasa a vivir en `.card-header` en vez de un `<h1>` suelto, ambos cambian a `assert_select ".card-header", /Instalaciones/` (resp. `/Torre Norte/`). El resto de cada test (`assert_select ".card form"`, el link "Cancelar") no cambia.
 - `_project_type_section.html.erb`: se agrega una aserción de que la tarjeta de filtros ahora tiene un `.card-header` con texto "Filtros".
 - Tracker: **ningún cambio** — el test `"tracker renders each project's data as a graphite band without a bordered card"` (`assert_select ".card", count: 0`) se mantiene intacto y debe seguir pasando exactamente igual.
+- Leyenda del Gantt: en `show.html.erb`, un test crea un proyecto con dos etapas de distinto `stage_template` (colores distintos) y verifica que la leyenda muestra ambos nombres con su color. En `_project_type_section.html.erb`, un test verifica que la leyenda aparece cuando hay `responsible_type_id` en el filtro y hay responsables asignados, y que **no** aparece sin tipo elegido (mismo criterio que ya rige el coloreado).
 
 ## Edge cases
 
-- Ninguno nuevo — es un pulido puramente visual sobre vistas ya existentes y probadas; el único riesgo real es el del hallazgo ya resuelto arriba (tracker sin tarjetas, respetado).
+- Un `ProjectStage` sin `stage_template` (`stage_template_id` nulo): ya hoy cae en la entrada `"none"`/gris por defecto — la leyenda le pone el nombre "Sin subproceso" a esa entrada, en vez de dejarla sin explicar.
+- El listado de `/projects` con un tipo de responsable elegido pero sin ningún proyecto que tenga asignado a alguien de ese tipo: `gantt_colors` queda vacío, la leyenda no se muestra (ya cubierto por el `if ... gantt_colors.any?`), consistente con que tampoco hay barras coloreadas para explicar.
