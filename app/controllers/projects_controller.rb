@@ -1,24 +1,23 @@
 class ProjectsController < ApplicationController
   before_action :set_project, only: [:show, :edit, :update]
-  before_action :require_admin_or_gerente!, only: [:new, :create, :bulk_assign_installer]
+  before_action :require_admin_or_gerente!, only: [:new, :create, :bulk_assign_responsible]
   before_action :authorize_view!, only: [:show]
   before_action :authorize_edit!, only: [:edit]
   before_action :authorize_update!, only: [:update]
 
   def index
     @statuses = Project.distinct.pluck(:status).compact
-    @installers = Installer.all
     @sections = ProjectType.all.map { |project_type| build_section(project_type) }
   end
 
   def tracker
     @project_types = ProjectType.all
-    @installers = Installer.all
     @project_type = ProjectType.find_by(id: params[:project_type_id]) || ProjectType.first
+    @responsible_types = @project_type ? @project_type.responsible_types : ResponsibleType.none
     @projects = if @project_type
       scope = Project.visible_to(current_user).where(project_type: @project_type).where.not(status: "archived")
                      .includes(project_stages: :stage_template).order(:name)
-      params[:installer_id].present? ? filter_by_installer(scope, params[:installer_id]) : scope
+      filter_by_responsible(scope, params[:responsible_type_id], params[:responsible_id])
     else
       Project.none
     end
@@ -82,23 +81,22 @@ class ProjectsController < ApplicationController
     end
   end
 
-  def bulk_assign_installer
+  def bulk_assign_responsible
     project_ids = Array(params[:project_ids]).reject(&:blank?)
-    if params[:installer_id].blank? || project_ids.empty?
-      redirect_to projects_path(request.query_parameters), alert: "Elegí un instalador y al menos un proyecto." and return
+    if params[:responsible_type_id].blank? || params[:responsible_id].blank? || project_ids.empty?
+      redirect_to projects_path(request.query_parameters), alert: "Elegí un tipo, un responsable y al menos un proyecto." and return
     end
 
     editable_projects = Project.visible_to(current_user).where(id: project_ids).select { |project| current_user.can_edit_project?(project) }
     count = 0
     editable_projects.each do |project|
-      key = project.project_type.field_definitions.find_by(reference_table: "installers")&.key
-      next unless key
-
-      project.custom_fields = project.custom_fields.merge(key => params[:installer_id])
-      count += 1 if project.save
+      existing = project.project_responsibles.find_by(responsible_type_id: params[:responsible_type_id], project_stage_id: nil)
+      existing&.destroy
+      project.project_responsibles.create!(responsible_type_id: params[:responsible_type_id], responsible_id: params[:responsible_id])
+      count += 1
     end
 
-    redirect_to projects_path(request.query_parameters), notice: "Instalador asignado a #{count} proyecto(s)."
+    redirect_to projects_path(request.query_parameters), notice: "Responsable asignado a #{count} proyecto(s)."
   end
 
   private
@@ -146,16 +144,16 @@ class ProjectsController < ApplicationController
     true
   end
 
-  def filter_by_installer(scope, installer_id)
-    keys = FieldDefinition.where(reference_table: "installers").distinct.pluck(:key)
-    return scope.none if keys.empty?
-    keys.map { |key| scope.where("custom_fields ->> ? = ?", key, installer_id.to_s) }.reduce(:or)
-  end
-
-  def filter_by_no_installer(scope)
-    keys = FieldDefinition.where(reference_table: "installers").distinct.pluck(:key)
-    return scope if keys.empty?
-    keys.reduce(scope) { |s, key| s.where("custom_fields ->> ? IS NULL OR custom_fields ->> ? = ''", key, key) }
+  def filter_by_responsible(scope, responsible_type_id, responsible_id)
+    return scope if responsible_type_id.blank?
+    matching = ProjectResponsible.where(responsible_type_id: responsible_type_id)
+    if responsible_id.blank?
+      scope
+    elsif responsible_id == "none"
+      scope.where.not(id: matching.select(:project_id))
+    else
+      scope.where(id: matching.where(responsible_id: responsible_id).select(:project_id))
+    end
   end
 
   def filter_by_date_range(scope, from_date, to_date)
@@ -183,11 +181,7 @@ class ProjectsController < ApplicationController
 
     projects = Project.visible_to(current_user).where(project_type: project_type).includes(:project_type, project_stages: :stage_template).order(:name)
     projects = section_params[:status].present? ? projects.where(status: section_params[:status]) : projects.where.not(status: "archived")
-    if section_params[:installer_id] == "none"
-      projects = filter_by_no_installer(projects)
-    elsif section_params[:installer_id].present?
-      projects = filter_by_installer(projects, section_params[:installer_id])
-    end
+    projects = filter_by_responsible(projects, section_params[:responsible_type_id], section_params[:responsible_id])
     projects = filter_by_date_range(projects, section_params[:from_date], section_params[:to_date])
     projects = filter_by_query(projects, section_params[:q])
 

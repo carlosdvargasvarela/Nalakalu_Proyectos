@@ -176,30 +176,6 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/\.gantt \.bar-wrapper\.stage-color-#{id}\.active \.bar \{\s*fill:\s*#ff0000;?\s*\}/, response.body)
   end
 
-  test "index colors a project's Gantt bar by its assigned installer" do
-    installer = installers(:juan_perez)
-    installer.update!(color: "#00ff00")
-    Project.create!(
-      project_type: project_types(:instalaciones), name: "Torre Norte",
-      custom_fields: { instalador: installer.id }
-    )
-
-    get projects_path
-    assert_response :success
-    assert_match(/\.gantt \.bar-wrapper\.installer-color-#{installer.id} \.bar,/, response.body)
-    assert_match(/\.gantt \.bar-wrapper\.installer-color-#{installer.id}:hover \.bar,/, response.body)
-    assert_match(/\.gantt \.bar-wrapper\.installer-color-#{installer.id}\.active \.bar \{\s*fill:\s*#00ff00;?\s*\}/, response.body)
-  end
-
-  test "index colors a project with no installer assigned yet using the default gray" do
-    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
-
-    get projects_path
-    assert_response :success
-    assert_match(/\.gantt \.bar-wrapper\.installer-color-none \.bar,/, response.body)
-    assert_match(/\.gantt \.bar-wrapper\.installer-color-none\.active \.bar \{\s*fill:\s*#6c757d;?\s*\}/, response.body)
-  end
-
   test "index shows one Gantt task per project by default" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get projects_path
@@ -399,43 +375,42 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/#{torre.name}/, response.body)
   end
 
-  test "index filters by installer" do
+  test "index filters by responsible" do
     slug = project_types(:instalaciones).slug
-    otro_instalador = Installer.create!(name: "Otro Instalador")
-    con_juan = Project.create!(
-      project_type: project_types(:instalaciones), name: "Con Juan", custom_fields: { instalador: installers(:juan_perez).id }
-    )
-    con_otro = Project.create!(
-      project_type: project_types(:instalaciones), name: "Con Otro", custom_fields: { instalador: otro_instalador.id }
-    )
+    con_ana = Project.create!(project_type: project_types(:instalaciones), name: "Con Ana", custom_fields: {})
+    ProjectResponsible.create!(project: con_ana, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
+    otro_responsable = Responsible.create!(name: "Otro")
+    con_otro = Project.create!(project_type: project_types(:instalaciones), name: "Con Otro", custom_fields: {})
+    ProjectResponsible.create!(project: con_otro, responsible: otro_responsable, responsible_type: responsible_types(:instalador))
 
-    get projects_path, params: { sections: { slug => { installer_id: installers(:juan_perez).id } } }
+    get projects_path, params: {
+      sections: { slug => { responsible_type_id: responsible_types(:instalador).id, responsible_id: responsibles(:ana_gomez).id } }
+    }
     assert_response :success
-    assert_match(/#{con_juan.name}/, response.body)
+    assert_match(/#{con_ana.name}/, response.body)
     assert_no_match(/#{con_otro.name}/, response.body)
   end
 
-  test "index filters by Sin instalador" do
+  test "index filters by Sin asignar for a chosen type" do
     slug = project_types(:instalaciones).slug
-    sin_instalador = Project.create!(
-      project_type: project_types(:instalaciones), name: "Sin Instalador", custom_fields: {}
-    )
-    con_instalador = Project.create!(
-      project_type: project_types(:instalaciones), name: "Con Instalador",
-      custom_fields: { instalador: installers(:juan_perez).id }
-    )
+    sin_asignar = Project.create!(project_type: project_types(:instalaciones), name: "Sin Asignar", custom_fields: {})
+    con_asignacion = Project.create!(project_type: project_types(:instalaciones), name: "Con Asignación", custom_fields: {})
+    ProjectResponsible.create!(project: con_asignacion, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
 
-    get projects_path, params: { sections: { slug => { installer_id: "none" } } }
+    get projects_path, params: {
+      sections: { slug => { responsible_type_id: responsible_types(:instalador).id, responsible_id: "none" } }
+    }
     assert_response :success
-    assert_match(/#{sin_instalador.name}/, response.body)
-    assert_no_match(/#{con_instalador.name}/, response.body)
+    assert_match(/#{sin_asignar.name}/, response.body)
+    assert_no_match(/#{con_asignacion.name}/, response.body)
   end
 
-  test "index shows a Sin instalador option in the Instalador filter" do
+  test "index shows a Tipo de responsable and Responsable filter" do
     get projects_path
     assert_response :success
     slug = project_types(:instalaciones).slug
-    assert_select "select#sections_#{slug}_installer_id option[value=?]", "none", text: "Sin instalador"
+    assert_select "select#sections_#{slug}_responsible_type_id"
+    assert_select "select#sections_#{slug}_responsible_id"
   end
 
   test "index shows a message and no Gantt when no projects match the filters" do
@@ -637,20 +612,16 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/#{torre.name}/, response.body)
   end
 
-  test "tracker filters by installer" do
-    otro_instalador = Installer.create!(name: "Otro Instalador")
-    con_juan = Project.create!(
-      project_type: project_types(:instalaciones), name: "Con Juan",
-      custom_fields: { instalador: installers(:juan_perez).id }
-    )
-    con_otro = Project.create!(
-      project_type: project_types(:instalaciones), name: "Con Otro",
-      custom_fields: { instalador: otro_instalador.id }
-    )
+  test "tracker filters by responsible" do
+    con_ana = Project.create!(project_type: project_types(:instalaciones), name: "Con Ana", custom_fields: {})
+    ProjectResponsible.create!(project: con_ana, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
+    otro_responsable = Responsible.create!(name: "Otro")
+    con_otro = Project.create!(project_type: project_types(:instalaciones), name: "Con Otro", custom_fields: {})
+    ProjectResponsible.create!(project: con_otro, responsible: otro_responsable, responsible_type: responsible_types(:instalador))
 
-    get tracker_projects_path, params: { installer_id: installers(:juan_perez).id }
+    get tracker_projects_path, params: { responsible_type_id: responsible_types(:instalador).id, responsible_id: responsibles(:ana_gomez).id }
     assert_response :success
-    assert_match(/#{con_juan.name}/, response.body)
+    assert_match(/#{con_ana.name}/, response.body)
     assert_no_match(/#{con_otro.name}/, response.body)
   end
 
@@ -814,78 +785,43 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "5", Project.order(:id).last.custom_fields["cantidad"]
   end
 
-  test "bulk_assign_installer assigns the installer to every selected project" do
-    otro_instalador = Installer.create!(name: "Otro Instalador")
+  test "bulk_assign_responsible assigns the responsible to every selected project at the project level" do
     proyecto_a = Project.create!(project_type: project_types(:instalaciones), name: "Proyecto A", custom_fields: {})
     proyecto_b = Project.create!(project_type: project_types(:instalaciones), name: "Proyecto B", custom_fields: {})
 
-    patch bulk_assign_installer_projects_path, params: {
-      installer_id: otro_instalador.id, project_ids: [proyecto_a.id, proyecto_b.id]
+    patch bulk_assign_responsible_projects_path, params: {
+      responsible_type_id: responsible_types(:instalador).id, responsible_id: responsibles(:ana_gomez).id,
+      project_ids: [proyecto_a.id, proyecto_b.id]
     }
 
     assert_redirected_to projects_path
-    assert_equal otro_instalador.id.to_s, proyecto_a.reload.custom_fields["instalador"]
-    assert_equal otro_instalador.id.to_s, proyecto_b.reload.custom_fields["instalador"]
+    assert proyecto_a.reload.project_responsibles.exists?(responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
+    assert proyecto_b.reload.project_responsibles.exists?(responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
     follow_redirect!
-    assert_match(/Instalador asignado a 2 proyecto\(s\)/, response.body)
+    assert_match(/Responsable asignado a 2 proyecto\(s\)/, response.body)
   end
 
-  test "bulk_assign_installer preserves existing query params on redirect" do
-    installer = installers(:juan_perez)
+  test "bulk_assign_responsible replaces an existing project-wide assignment of the same type" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Proyecto A", custom_fields: {})
-    slug = project_types(:instalaciones).slug
+    ProjectResponsible.create!(project: project, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
+    otro_responsable = Responsible.create!(name: "Otro")
 
-    patch bulk_assign_installer_projects_path(sections: { slug => { status: "archived" } }), params: {
-      installer_id: installer.id, project_ids: [project.id]
+    patch bulk_assign_responsible_projects_path, params: {
+      responsible_type_id: responsible_types(:instalador).id, responsible_id: otro_responsable.id, project_ids: [project.id]
     }
 
-    assert_redirected_to projects_path(sections: { slug => { status: "archived" } })
+    assert_equal [otro_responsable], project.reload.project_responsibles.where(responsible_type: responsible_types(:instalador), project_stage: nil).map(&:responsible)
   end
 
-  test "index's bulk-assign form action preserves the current installer filter" do
-    slug = project_types(:instalaciones).slug
-    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
-    get projects_path, params: { sections: { slug => { installer_id: "none" } } }
-    assert_response :success
-    assert_select "form#bulk-assign-form-#{slug}[action=?]",
-      bulk_assign_installer_projects_path(sections: { slug => { installer_id: "none" } })
-  end
-
-  test "bulk_assign_installer without an installer chosen does nothing and redirects with an alert" do
+  test "bulk_assign_responsible without a type or responsible chosen does nothing and redirects with an alert" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Proyecto A", custom_fields: {})
 
-    patch bulk_assign_installer_projects_path, params: { installer_id: "", project_ids: [project.id] }
+    patch bulk_assign_responsible_projects_path, params: { responsible_type_id: "", responsible_id: "", project_ids: [project.id] }
 
     assert_redirected_to projects_path
-    assert_nil project.reload.custom_fields["instalador"]
+    assert_equal [], project.reload.project_responsibles.to_a
     follow_redirect!
-    assert_match(/Elegí un instalador y al menos un proyecto/, response.body)
-  end
-
-  test "bulk_assign_installer without any project selected does nothing and redirects with an alert" do
-    installer = installers(:juan_perez)
-
-    patch bulk_assign_installer_projects_path, params: { installer_id: installer.id, project_ids: [] }
-
-    assert_redirected_to projects_path
-    follow_redirect!
-    assert_match(/Elegí un instalador y al menos un proyecto/, response.body)
-  end
-
-  test "bulk_assign_installer skips a project whose type has no installer-reference field" do
-    other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
-    installer = installers(:juan_perez)
-    con_campo = Project.create!(project_type: project_types(:instalaciones), name: "Con Campo", custom_fields: {})
-    sin_campo = Project.create!(project_type: other_type, name: "Sin Campo", custom_fields: {})
-
-    patch bulk_assign_installer_projects_path, params: {
-      installer_id: installer.id, project_ids: [con_campo.id, sin_campo.id]
-    }
-
-    assert_equal installer.id.to_s, con_campo.reload.custom_fields["instalador"]
-    assert_equal({}, sin_campo.reload.custom_fields)
-    follow_redirect!
-    assert_match(/Instalador asignado a 1 proyecto\(s\)/, response.body)
+    assert_match(/Elegí un tipo, un responsable y al menos un proyecto/, response.body)
   end
 
   test "index renders a bulk-assign form with a checkbox per project, not nested inside another form" do
@@ -894,8 +830,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     get projects_path
     assert_response :success
 
-    assert_select "form#bulk-assign-form-#{slug}[action=?]", bulk_assign_installer_projects_path
-    assert_select "form#bulk-assign-form-#{slug} select[name=?]", "installer_id"
+    assert_select "form#bulk-assign-form-#{slug}[action=?]", bulk_assign_responsible_projects_path
+    assert_select "form#bulk-assign-form-#{slug} select[name=?]", "responsible_type_id"
     assert_select "form#bulk-assign-form-#{slug} input[type=submit][value=?]", "Asignar"
     assert_select "input[type=checkbox][name=?][form=bulk-assign-form-#{slug}]", "project_ids[]", value: project.id.to_s
 
@@ -1134,7 +1070,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       uri = URI.parse(href)
       params = Rack::Utils.parse_nested_query(uri.query)
       assert_equal "", params["sections"][slug]["status"]
-      assert_equal "", params["sections"][slug]["installer_id"]
+      assert_equal "", params["sections"][slug]["responsible_type_id"]
+      assert_equal "", params["sections"][slug]["responsible_id"]
       assert_equal "", params["sections"][slug]["stage_name"]
       assert_equal "", params["sections"][slug]["from_date"]
       assert_equal "", params["sections"][slug]["to_date"]
@@ -1263,19 +1200,19 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert users(:carla).can_edit_project?(project)
   end
 
-  test "bulk_assign_installer only updates projects the gerente can edit" do
+  test "bulk_assign_responsible only updates projects the gerente can edit" do
     editable = Project.create!(project_type: project_types(:instalaciones), name: "Torre Editable", custom_fields: {})
     not_editable = Project.create!(project_type: project_types(:instalaciones), name: "Torre No Editable", custom_fields: {})
     ProjectAccess.create!(user: users(:carla), project: editable, can_edit: true)
 
     sign_in users(:carla)
-    patch bulk_assign_installer_projects_path, params: {
-      project_ids: [editable.id, not_editable.id], installer_id: installers(:juan_perez).id
+    patch bulk_assign_responsible_projects_path, params: {
+      project_ids: [editable.id, not_editable.id],
+      responsible_type_id: responsible_types(:instalador).id, responsible_id: responsibles(:ana_gomez).id
     }
 
-    key = project_types(:instalaciones).field_definitions.find_by(reference_table: "installers").key
-    assert_equal installers(:juan_perez).id.to_s, editable.reload.custom_fields[key]
-    assert_nil not_editable.reload.custom_fields[key]
+    assert editable.reload.project_responsibles.exists?(responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
+    assert_not not_editable.reload.project_responsibles.exists?(responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
   end
 
   test "responsable can update progress_percent on an assigned stage via the project PATCH" do

@@ -13,10 +13,15 @@
               { include_blank: "Todos", selected: section_params[:status] }, class: "form-select" %>
       </div>
       <div class="col-auto">
-        <%= form.label :installer_id, "Instalador", class: "form-label" %>
-        <%= form.select :installer_id,
-              [["Sin instalador", "none"]] + @installers.collect { |i| [i.name, i.id] },
-              { include_blank: "Todos", selected: section_params[:installer_id] }, class: "form-select" %>
+        <%= form.label :responsible_type_id, "Tipo de responsable", class: "form-label" %>
+        <%= form.select :responsible_type_id, project_type.responsible_types.order(:name).collect { |t| [t.name, t.id] },
+              { include_blank: "Todos", selected: section_params[:responsible_type_id] }, class: "form-select" %>
+      </div>
+      <div class="col-auto">
+        <%= form.label :responsible_id, "Responsable", class: "form-label" %>
+        <%= form.select :responsible_id,
+              [["Sin asignar", "none"]] + Responsible.joins(:project_responsibles).where(project_responsibles: { responsible_type_id: section_params[:responsible_type_id] }).distinct.order(:name).collect { |r| [r.name, r.id] },
+              { include_blank: "Todos", selected: section_params[:responsible_id] }, class: "form-select" %>
       </div>
       <div class="col-auto">
         <%= form.label :from_date, "Desde", class: "form-label" %>
@@ -39,7 +44,7 @@
         <%= form.submit "Filtrar", class: "btn btn-primary" %>
         <%= link_to "Quitar filtros",
               projects_path(request.query_parameters.deep_merge(
-                "sections" => { slug => { "status" => "", "installer_id" => "", "from_date" => "", "to_date" => "", "stage_name" => "", "q" => "", "page" => "" } }
+                "sections" => { slug => { "status" => "", "responsible_type_id" => "", "responsible_id" => "", "from_date" => "", "to_date" => "", "stage_name" => "", "q" => "", "page" => "" } }
               )),
               class: "btn btn-outline-secondary" %>
       </div>
@@ -98,6 +103,8 @@
       end
       progress_values = project.project_stages.map(&:progress_percent)
       average_progress = progress_values.any? ? (progress_values.sum / progress_values.size.to_f).round : 0
+      selected_type = ResponsibleType.find_by(id: section_params[:responsible_type_id])
+      responsible = selected_type ? project.responsible_for(selected_type) : nil
       {
         id: project.id.to_s,
         name: project.name,
@@ -105,13 +112,15 @@
         end: last.to_s,
         progress: average_progress,
         edit_url: project_path(project),
-        custom_class: "installer-color-#{project.installer&.id || 'none'}"
+        custom_class: "responsible-color-#{responsible&.id || 'none'}"
       }
     end
-    gantt_colors = projects_list.map do |project|
-      installer = project.installer
-      [installer&.id || "none", installer&.color || "#6c757d"]
-    end.uniq
+    selected_type = ResponsibleType.find_by(id: section_params[:responsible_type_id])
+    gantt_colors = if selected_type
+      projects_list.map { |project| project.responsible_for(selected_type) }.compact.uniq.map { |r| [r.id, r.color] }
+    else
+      []
+    end
   %>
 
   <div class="card mb-4">
@@ -124,10 +133,10 @@
         .gantt .bar-progress {
           fill: rgba(0, 0, 0, 0.25);
         }
-        <% gantt_colors.each do |installer_id, color| %>
-          .gantt .bar-wrapper.installer-color-<%= installer_id %> .bar,
-          .gantt .bar-wrapper.installer-color-<%= installer_id %>:hover .bar,
-          .gantt .bar-wrapper.installer-color-<%= installer_id %>.active .bar {
+        <% gantt_colors.each do |responsible_id, color| %>
+          .gantt .bar-wrapper.responsible-color-<%= responsible_id %> .bar,
+          .gantt .bar-wrapper.responsible-color-<%= responsible_id %>:hover .bar,
+          .gantt .bar-wrapper.responsible-color-<%= responsible_id %>.active .bar {
             fill: <%= color %>;
           }
         <% end %>
@@ -172,12 +181,17 @@
   </div>
 
   <% if current_user.admin? || current_user.gerente? %>
-    <%= form_with url: bulk_assign_installer_projects_path(request.query_parameters), method: :patch, local: true,
+    <%= form_with url: bulk_assign_responsible_projects_path(request.query_parameters), method: :patch, local: true,
           id: "bulk-assign-form-#{slug}", class: "d-flex gap-2 align-items-end mb-3" do |f| %>
       <div>
-        <%= f.label :installer_id, "Asignar instalador a los seleccionados", for: "bulk-assign-installer-select-#{slug}", class: "form-label" %>
-        <%= f.select :installer_id, @installers.collect { |i| [i.name, i.id] },
-              { include_blank: "Elegí un instalador" }, class: "form-select", id: "bulk-assign-installer-select-#{slug}" %>
+        <%= f.label :responsible_type_id, "Tipo", for: "bulk-assign-type-select-#{slug}", class: "form-label" %>
+        <%= f.select :responsible_type_id, project_type.responsible_types.order(:name).collect { |t| [t.name, t.id] },
+              { include_blank: "Elegí un tipo", selected: section_params[:responsible_type_id] }, class: "form-select", id: "bulk-assign-type-select-#{slug}" %>
+      </div>
+      <div>
+        <%= f.label :responsible_id, "Asignar a los seleccionados", for: "bulk-assign-responsible-select-#{slug}", class: "form-label" %>
+        <%= f.select :responsible_id, Responsible.order(:name).collect { |r| [r.name, r.id] },
+              { include_blank: "Elegí un responsable" }, class: "form-select", id: "bulk-assign-responsible-select-#{slug}" %>
       </div>
       <%= f.submit "Asignar", class: "btn btn-primary" %>
     <% end %>

@@ -7,9 +7,15 @@
           { selected: @project_type&.id }, class: "form-select" %>
   </div>
   <div class="col-auto">
-    <%= form.label :installer_id, "Instalador", class: "form-label" %>
-    <%= form.select :installer_id, @installers.collect { |i| [i.name, i.id] },
-          { include_blank: "Todos", selected: params[:installer_id] }, class: "form-select" %>
+    <%= form.label :responsible_type_id, "Tipo de responsable", class: "form-label" %>
+    <%= form.select :responsible_type_id, @responsible_types.collect { |t| [t.name, t.id] },
+          { include_blank: "Todos", selected: params[:responsible_type_id] }, class: "form-select" %>
+  </div>
+  <div class="col-auto">
+    <%= form.label :responsible_id, "Responsable", class: "form-label" %>
+    <%= form.select :responsible_id,
+          [["Sin asignar", "none"]] + Responsible.joins(:project_responsibles).where(project_responsibles: { responsible_type_id: params[:responsible_type_id] }).distinct.collect { |r| [r.name, r.id] },
+          { include_blank: "Todos", selected: params[:responsible_id] }, class: "form-select" %>
   </div>
   <div class="col-auto align-self-end">
     <%= form.submit "Ver", class: "btn btn-primary" %>
