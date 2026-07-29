@@ -1345,4 +1345,18 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     created = Project.order(:id).last
     assert_redirected_to project_path(created)
   end
+
+  test "show's link-existing-project form tags each option with its project type, for JS filtering" do
+    other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
+    association = ProjectTypeAssociation.create!(from_project_type: other_type, to_project_type: project_types(:instalaciones), label: "Caso de servicio")
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    caso = Project.create!(project_type: other_type, name: "Ticket 1", custom_fields: {})
+
+    get project_path(project)
+    assert_response :success
+    assert_select "select#project_association_project_type_association_id option[value=?][data-other-project-type-id=?]",
+      association.id.to_s, other_type.id.to_s
+    assert_select "select#project_association_other_project_id option[value=?][data-project-type-id=?]",
+      caso.id.to_s, other_type.id.to_s
+  end
 end

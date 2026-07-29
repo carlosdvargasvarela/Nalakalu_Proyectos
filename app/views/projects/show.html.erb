@@ -209,22 +209,52 @@
       </ul>
 
       <% if current_user.can_edit_project?(@project) %>
-        <%# ponytail: "Proyecto" lista todos los proyectos sin acotar por tipo vía JS —
-            se valida del lado del servidor. Upgrade a selector dependiente con JS si la
-            lista de proyectos crece mucho. %>
         <%= form_with url: project_project_associations_path(@project), method: :post, scope: :project_association, class: "row g-2 mb-3" do |f| %>
           <div class="col-auto">
-            <%= f.collection_select :project_type_association_id,
-                  ProjectTypeAssociation.where(from_project_type: @project.project_type).or(ProjectTypeAssociation.where(to_project_type: @project.project_type)),
-                  :id, :label, { include_blank: "Tipo de asociación" }, class: "form-select" %>
+            <%
+              applicable_associations = ProjectTypeAssociation.where(from_project_type: @project.project_type).or(ProjectTypeAssociation.where(to_project_type: @project.project_type))
+              association_options = applicable_associations.map do |a|
+                other_type_id = a.from_project_type_id == @project.project_type_id ? a.to_project_type_id : a.from_project_type_id
+                [a.label, a.id, { data: { other_project_type_id: other_type_id } }]
+              end
+            %>
+            <%= f.select :project_type_association_id, options_for_select(association_options),
+                  { include_blank: "Tipo de asociación" }, class: "form-select", id: "project_association_project_type_association_id" %>
           </div>
           <div class="col-auto">
-            <%= f.collection_select :other_project_id, Project.where.not(id: @project.id).order(:name), :id, :name, { include_blank: "Proyecto" }, class: "form-select" %>
+            <%
+              project_options = Project.where.not(id: @project.id).order(:name).map { |p| [p.name, p.id, { data: { project_type_id: p.project_type_id } }] }
+            %>
+            <%= f.select :other_project_id, options_for_select(project_options),
+                  { include_blank: "Proyecto" }, class: "form-select", id: "project_association_other_project_id" %>
           </div>
           <div class="col-auto">
             <%= f.submit "Vincular", class: "btn btn-primary" %>
           </div>
         <% end %>
+
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            var typeSelect = document.getElementById("project_association_project_type_association_id");
+            var otherSelect = document.getElementById("project_association_other_project_id");
+            if (!typeSelect || !otherSelect) return;
+
+            function filterOptions() {
+              var selected = typeSelect.options[typeSelect.selectedIndex];
+              var otherProjectTypeId = selected ? selected.dataset.otherProjectTypeId : null;
+              Array.from(otherSelect.options).forEach(function (option) {
+                if (!option.value) return;
+                option.hidden = !!otherProjectTypeId && option.dataset.projectTypeId !== otherProjectTypeId;
+              });
+              if (otherSelect.selectedOptions[0] && otherSelect.selectedOptions[0].hidden) {
+                otherSelect.value = "";
+              }
+            }
+
+            typeSelect.addEventListener("change", filterOptions);
+            filterOptions();
+          });
+        </script>
       <% end %>
 
       <% ProjectTypeAssociation.where(to_project_type: @project.project_type).each do |association| %>
