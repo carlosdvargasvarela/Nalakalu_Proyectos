@@ -141,6 +141,8 @@
 
     <% if current_user.can_edit_project?(@project) %>
       <%= render "stage_table", project: @project %>
+    <% elsif current_user.editable_project_stage_ids(@project).any? %>
+      <%= render "stage_table_restricted", project: @project, editable_stage_ids: current_user.editable_project_stage_ids(@project) %>
     <% end %>
   </div>
 </div>

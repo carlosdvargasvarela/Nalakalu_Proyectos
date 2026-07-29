@@ -1277,4 +1277,71 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_equal installers(:juan_perez).id.to_s, editable.reload.custom_fields[key]
     assert_nil not_editable.reload.custom_fields[key]
   end
+
+  test "responsable can update progress_percent on an assigned stage via the project PATCH" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.first
+    responsable = users(:pedro)
+    ProjectResponsible.create!(project: project, responsible: responsable.responsible, responsible_type: responsible_types(:instalador), project_stage: stage)
+    sign_in responsable
+
+    patch project_path(project), params: {
+      project: { project_stages_attributes: { "0" => { id: stage.id, progress_percent: 55 } } }
+    }
+
+    assert_redirected_to project_path(project)
+    assert_equal 55, stage.reload.progress_percent
+  end
+
+  test "responsable cannot update a stage they are not assigned to" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stages = project.project_stages.order(:id).to_a
+    assigned_stage, other_stage = stages[0], stages[1]
+    responsable = users(:pedro)
+    ProjectResponsible.create!(project: project, responsible: responsable.responsible, responsible_type: responsible_types(:instalador), project_stage: assigned_stage)
+    sign_in responsable
+
+    patch project_path(project), params: {
+      project: { project_stages_attributes: { "0" => { id: other_stage.id, progress_percent: 90 } } }
+    }
+
+    assert_equal 0, other_stage.reload.progress_percent
+  end
+
+  test "responsable cannot change the project name via the project PATCH" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.first
+    responsable = users(:pedro)
+    ProjectResponsible.create!(project: project, responsible: responsable.responsible, responsible_type: responsible_types(:instalador), project_stage: stage)
+    sign_in responsable
+
+    patch project_path(project), params: {
+      project: { name: "Nombre Hackeado", project_stages_attributes: { "0" => { id: stage.id, progress_percent: 10 } } }
+    }
+
+    assert_equal "Torre Norte", project.reload.name
+  end
+
+  test "responsable with no assignment on the project cannot PATCH it at all" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    sign_in users(:pedro)
+
+    patch project_path(project), params: { project: { name: "Nombre Hackeado" } }
+
+    assert_redirected_to projects_path
+    assert_equal "Torre Norte", project.reload.name
+  end
+
+  test "responsable with a project-wide assignment sees an editable row for every stage on show" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    responsable = users(:pedro)
+    ProjectResponsible.create!(project: project, responsible: responsable.responsible, responsible_type: responsible_types(:instalador))
+    sign_in responsable
+
+    get project_path(project)
+    assert_response :success
+    project.project_stages.each do |stage|
+      assert_select "input[name=?]", "project[project_stages_attributes][#{stage.id}][progress_percent]"
+    end
+  end
 end

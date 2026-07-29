@@ -2,7 +2,8 @@ class ProjectsController < ApplicationController
   before_action :set_project, only: [:show, :edit, :update]
   before_action :require_admin_or_gerente!, only: [:new, :create, :bulk_assign_installer]
   before_action :authorize_view!, only: [:show]
-  before_action :authorize_edit!, only: [:edit, :update]
+  before_action :authorize_edit!, only: [:edit]
+  before_action :authorize_update!, only: [:update]
 
   def index
     @statuses = Project.distinct.pluck(:status).compact
@@ -56,15 +57,27 @@ class ProjectsController < ApplicationController
 
   def update
     @project_type = @project.project_type
-    if @project.update(project_params)
-      respond_to do |format|
-        format.html { redirect_to project_path(@project) }
-        format.json { render json: stage_payload }
+    success =
+      if current_user.can_edit_project?(@project)
+        @project.update(project_params)
+      else
+        update_progress_only!
       end
-    else
-      respond_to do |format|
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: { errors: @project.errors.full_messages }, status: :unprocessable_entity }
+
+    respond_to do |format|
+      format.html do
+        if success
+          redirect_to project_path(@project)
+        else
+          render :edit, status: :unprocessable_entity
+        end
+      end
+      format.json do
+        if success
+          render json: stage_payload
+        else
+          render json: { errors: @project.errors.full_messages }, status: :unprocessable_entity
+        end
       end
     end
   end
@@ -104,6 +117,11 @@ class ProjectsController < ApplicationController
     redirect_to projects_path, alert: "No tenés permiso para editar ese proyecto."
   end
 
+  def authorize_update!
+    return if current_user.can_edit_project?(@project) || current_user.editable_project_stage_ids(@project).any?
+    redirect_to projects_path, alert: "No tenés permiso para editar ese proyecto."
+  end
+
   def project_params
     params.require(:project).permit(
       :project_type_id, :name, :status, custom_fields: {},
@@ -115,6 +133,17 @@ class ProjectsController < ApplicationController
     @project.project_stages.map do |stage|
       { id: stage.id, start_date: stage.start_date, end_date: stage.end_date, progress_percent: stage.progress_percent }
     end
+  end
+
+  def update_progress_only!
+    editable_ids = current_user.editable_project_stage_ids(@project).map(&:to_s)
+    submitted = params.fetch(:project, {})[:project_stages_attributes] || {}
+    submitted.each_value do |attrs|
+      next unless editable_ids.include?(attrs["id"].to_s)
+      next if attrs["progress_percent"].blank?
+      @project.project_stages.find(attrs["id"]).update(progress_percent: attrs["progress_percent"])
+    end
+    true
   end
 
   def filter_by_installer(scope, installer_id)

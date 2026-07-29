@@ -1,0 +1,28 @@
+<%= form_with model: project do |f| %>
+  <table class="table table-sm table-bordered mb-0 stage-table">
+    <thead>
+      <tr><th>Etapa</th><th>% Avance</th><th>Estado</th></tr>
+    </thead>
+    <tbody>
+      <% project.project_stages.includes(:stage_template).order(:id).each do |stage| %>
+        <tr>
+          <td><%= stage.name %></td>
+          <td>
+            <% if editable_stage_ids.include?(stage.id) %>
+              <%= hidden_field_tag "project[project_stages_attributes][#{stage.id}][id]", stage.id %>
+              <%= number_field_tag "project[project_stages_attributes][#{stage.id}][progress_percent]", stage.progress_percent,
+                    min: 0, max: 100, class: "form-control form-control-sm" %>
+            <% else %>
+              <%= stage.progress_percent %>%
+            <% end %>
+          </td>
+          <td>
+            <%= progress_status_badge(stage.progress_status) %>
+            <%= overdue_badge if stage.overdue? %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <%= f.submit "Guardar avance", class: "btn btn-primary btn-sm mt-3" %>
+<% end %>
