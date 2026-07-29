@@ -179,6 +179,7 @@
   <% if current_user.admin? || current_user.gerente? %>
     <%= form_with url: bulk_assign_responsible_projects_path(request.query_parameters), method: :patch, local: true,
           id: "bulk-assign-form-#{slug}", class: "d-flex gap-2 align-items-end mb-3" do |f| %>
+      <%= hidden_field_tag :project_type_slug, slug %>
       <div>
         <%= f.label :responsible_type_id, "Tipo", for: "bulk-assign-type-select-#{slug}", class: "form-label" %>
         <%= f.select :responsible_type_id, project_type.responsible_types.order(:name).collect { |t| [t.name, t.id] },

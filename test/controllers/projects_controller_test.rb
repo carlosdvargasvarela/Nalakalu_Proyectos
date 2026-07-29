@@ -756,12 +756,14 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     patch bulk_assign_responsible_projects_path, params: {
       responsible_type_id: responsible_types(:instalador).id, responsible_id: responsibles(:ana_gomez).id,
-      project_ids: [proyecto_a.id, proyecto_b.id]
+      project_ids: [proyecto_a.id, proyecto_b.id], project_type_slug: project_types(:instalaciones).slug
     }
 
-    assert_redirected_to projects_path
+    assert_redirected_to project_type_projects_path(project_types(:instalaciones).slug)
     assert proyecto_a.reload.project_responsibles.exists?(responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
     assert proyecto_b.reload.project_responsibles.exists?(responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
+    follow_redirect!
+    assert_match(/Responsable asignado a 2 proyecto\(s\)/, response.body)
   end
 
   test "bulk_assign_responsible replaces an existing project-wide assignment of the same type" do
@@ -779,10 +781,14 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
   test "bulk_assign_responsible without a type or responsible chosen does nothing and redirects with an alert" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Proyecto A", custom_fields: {})
 
-    patch bulk_assign_responsible_projects_path, params: { responsible_type_id: "", responsible_id: "", project_ids: [project.id] }
+    patch bulk_assign_responsible_projects_path, params: {
+      responsible_type_id: "", responsible_id: "", project_ids: [project.id], project_type_slug: project_types(:instalaciones).slug
+    }
 
-    assert_redirected_to projects_path
+    assert_redirected_to project_type_projects_path(project_types(:instalaciones).slug)
     assert_equal [], project.reload.project_responsibles.to_a
+    follow_redirect!
+    assert_match(/Elegí un tipo, un responsable y al menos un proyecto/, response.body)
   end
 
   test "index renders a bulk-assign form with a checkbox per project, not nested inside another form" do

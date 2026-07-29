@@ -89,7 +89,7 @@ class ProjectsController < ApplicationController
   def bulk_assign_responsible
     project_ids = Array(params[:project_ids]).reject(&:blank?)
     if params[:responsible_type_id].blank? || params[:responsible_id].blank? || project_ids.empty?
-      redirect_to projects_path(request.query_parameters), alert: "Elegí un tipo, un responsable y al menos un proyecto." and return
+      redirect_to bulk_assign_redirect_target, alert: "Elegí un tipo, un responsable y al menos un proyecto." and return
     end
 
     editable_projects = Project.visible_to(current_user).where(id: project_ids).select { |project| current_user.can_edit_project?(project) }
@@ -101,10 +101,15 @@ class ProjectsController < ApplicationController
       count += 1
     end
 
-    redirect_to projects_path(request.query_parameters), notice: "Responsable asignado a #{count} proyecto(s)."
+    redirect_to bulk_assign_redirect_target, notice: "Responsable asignado a #{count} proyecto(s)."
   end
 
   private
+
+  def bulk_assign_redirect_target
+    return projects_path(request.query_parameters) if params[:project_type_slug].blank?
+    project_type_projects_path(params[:project_type_slug], request.query_parameters.except("project_type_slug"))
+  end
 
   def set_project
     @project = Project.find(params[:id])
