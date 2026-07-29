@@ -16,6 +16,7 @@ Rails.application.routes.draw do
       resources :log_entry_types, except: [:index, :show]
     end
     resources :installers
+    resources :responsibles
   end
 
   get "projects/seguimiento", to: "projects#tracker", as: :tracker_projects
