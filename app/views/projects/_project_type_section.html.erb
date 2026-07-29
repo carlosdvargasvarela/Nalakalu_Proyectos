@@ -111,7 +111,7 @@
     end
     selected_type = ResponsibleType.find_by(id: section_params[:responsible_type_id])
     gantt_colors = if selected_type
-      projects_list.map { |project| project.responsible_for(selected_type) }.compact.uniq.map { |r| [r.id, r.color] }
+      projects_list.map { |project| project.responsible_for(selected_type) }.compact.uniq.map { |r| [r.id, r.name, r.color] }
     else
       []
     end
@@ -127,7 +127,7 @@
         .gantt .bar-progress {
           fill: rgba(0, 0, 0, 0.25);
         }
-        <% gantt_colors.each do |responsible_id, color| %>
+        <% gantt_colors.each do |responsible_id, _name, color| %>
           .gantt .bar-wrapper.responsible-color-<%= responsible_id %> .bar,
           .gantt .bar-wrapper.responsible-color-<%= responsible_id %>:hover .bar,
           .gantt .bar-wrapper.responsible-color-<%= responsible_id %>.active .bar {
@@ -141,6 +141,9 @@
         <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Week">Semana</button>
         <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Month">Mes</button>
       </div>
+      <% if selected_type && gantt_colors.any? %>
+        <%= render "gantt_legend", entries: gantt_colors.map { |_, name, color| [name, color] } %>
+      <% end %>
       <div id="gantt-<%= slug %>" class="mb-0"></div>
 
       <script type="application/json" id="gantt-tasks-<%= slug %>"><%== gantt_tasks.to_json %></script>

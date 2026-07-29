@@ -175,6 +175,38 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/\.gantt \.bar-wrapper\.stage-color-#{id}\.active \.bar \{\s*fill:\s*#ff0000;?\s*\}/, response.body)
   end
 
+  test "show's Gantt has a legend naming each stage_template's color" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage_templates(:produccion).update!(color: "#ff0000")
+
+    get project_path(project)
+    assert_response :success
+    assert_select ".gantt-legend span", text: /Producción/
+  end
+
+  test "show's Gantt legend labels a stage with no stage_template as Sin subproceso" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    project.project_stages.first.update!(stage_template: nil)
+
+    get project_path(project)
+    assert_response :success
+    assert_select ".gantt-legend span", text: /Sin subproceso/
+  end
+
+  test "index's Gantt legend appears only when a responsible type is selected" do
+    slug = project_types(:instalaciones).slug
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    ProjectResponsible.create!(project: project, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
+
+    get project_type_projects_path(slug)
+    assert_response :success
+    assert_select ".gantt-legend", count: 0
+
+    get project_type_projects_path(slug), params: { responsible_type_id: responsible_types(:instalador).id }
+    assert_response :success
+    assert_select ".gantt-legend span", text: /Ana Gómez/
+  end
+
   test "index shows one Gantt task per project by default" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_type_projects_path(project_types(:instalaciones).slug)
