@@ -42,4 +42,20 @@ class NavbarTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "nav a[href=?]", admin_responsibles_path, count: 0
   end
+
+  test "navbar includes a link to Tipos de asociación for admin" do
+    sign_in users(:juan)
+    get root_path
+    follow_redirect!
+    assert_response :success
+    assert_select "nav a[href=?]", admin_project_type_associations_path
+  end
+
+  test "navbar does not show the Tipos de asociación link to a gerente" do
+    sign_in users(:carla)
+    get root_path
+    follow_redirect!
+    assert_response :success
+    assert_select "nav a[href=?]", admin_project_type_associations_path, count: 0
+  end
 end
