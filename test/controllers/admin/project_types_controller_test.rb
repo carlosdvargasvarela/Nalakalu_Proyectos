@@ -113,4 +113,13 @@ class Admin::ProjectTypesControllerTest < ActionDispatch::IntegrationTest
     assert_match(/initDragReorder\("field-definitions-list",\s*"#{Regexp.escape(reorder_admin_project_type_field_definitions_path(project_type))}"\)/, response.body)
     assert_match(/initDragReorder\("stage-templates-list",\s*"#{Regexp.escape(reorder_admin_project_type_stage_templates_path(project_type))}"\)/, response.body)
   end
+
+  test "show lists the Responsible catalog with a link to manage it" do
+    Responsible.create!(name: "Ana Gómez", color: "#ff0000")
+    get admin_project_type_path(project_types(:instalaciones))
+    assert_response :success
+    assert_select ".card-header", "Responsables"
+    assert_select "body", /Ana Gómez/
+    assert_select "a[href=?]", admin_responsibles_path, text: "Administrar responsables"
+  end
 end

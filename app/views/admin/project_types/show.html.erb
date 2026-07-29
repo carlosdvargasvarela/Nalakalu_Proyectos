@@ -83,6 +83,20 @@
   </div>
 </div>
 
+<div class="card mb-4">
+  <div class="card-header">Responsables</div>
+  <div class="card-body">
+    <%= link_to "Administrar responsables", admin_responsibles_path, class: "btn btn-outline-secondary btn-sm mb-2" %>
+    <ul class="list-group list-group-flush">
+      <% Responsible.order(:name).each do |responsible| %>
+        <li class="list-group-item">
+          <span class="badge me-2" style="background-color: <%= responsible.color %>">&nbsp;</span><%= responsible.name %>
+        </li>
+      <% end %>
+    </ul>
+  </div>
+</div>
+
 <script>
   function initDragReorder(listId, url) {
     var list = document.getElementById(listId);

@@ -26,4 +26,20 @@ class NavbarTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "nav a[href=?]", new_import_path
   end
+
+  test "navbar includes a link to Responsables for admin" do
+    sign_in users(:juan)
+    get root_path
+    follow_redirect!
+    assert_response :success
+    assert_select "nav a[href=?]", admin_responsibles_path
+  end
+
+  test "navbar does not show the Responsables link to a gerente" do
+    sign_in users(:carla)
+    get root_path
+    follow_redirect!
+    assert_response :success
+    assert_select "nav a[href=?]", admin_responsibles_path, count: 0
+  end
 end
