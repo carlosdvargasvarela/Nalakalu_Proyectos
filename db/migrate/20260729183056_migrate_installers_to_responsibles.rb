@@ -1,4 +1,13 @@
 class MigrateInstallersToResponsibles < ActiveRecord::Migration[7.2]
+  # ponytail: a migration must stay runnable forever against a fresh database,
+  # even after the app's own Installer model is deleted (which happens later
+  # in this same migration sequence's history) — so it defines its own
+  # throwaway model scoped to the migration instead of depending on
+  # app/models/installer.rb, which no longer exists.
+  class MigrationInstaller < ActiveRecord::Base
+    self.table_name = "installers"
+  end
+
   def up
     installer_fields = FieldDefinition.where(reference_table: "installers")
     return if installer_fields.none?
@@ -7,7 +16,7 @@ class MigrateInstallersToResponsibles < ActiveRecord::Migration[7.2]
       ResponsibleType.create!(project_type_id: pt_id, name: "Instalador")
     end
 
-    installer_to_responsible = Installer.all.to_h do |installer|
+    installer_to_responsible = MigrationInstaller.all.to_h do |installer|
       [installer.id, Responsible.create!(name: installer.name, color: installer.color)]
     end
 
