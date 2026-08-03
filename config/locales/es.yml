@@ -76,6 +76,7 @@ es:
         color: "Color"
       project_type_association:
         label: "Etiqueta"
+        shared_field_keys: "Campos compartidos"
       project_association:
         from_project: "Proyecto de origen"
         to_project: "Proyecto de destino"
