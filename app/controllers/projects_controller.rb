@@ -20,10 +20,15 @@ class ProjectsController < ApplicationController
     @project_types = ProjectType.all
     @project_type = ProjectType.find_by(id: params[:project_type_id]) || ProjectType.first
     @responsible_types = @project_type ? @project_type.responsible_types : ResponsibleType.none
+    @responsible_type_id = if params.key?(:responsible_type_id)
+      params[:responsible_type_id]
+    else
+      @project_type&.responsible_types&.find_by(default_in_filter: true)&.id&.to_s
+    end
     @projects = if @project_type
       scope = Project.visible_to(current_user).where(project_type: @project_type).where.not(status: "archived")
                      .includes(project_stages: :stage_template).order(:name)
-      filter_by_responsible(scope, params[:responsible_type_id], params[:responsible_id])
+      filter_by_responsible(scope, @responsible_type_id, params[:responsible_id])
     else
       Project.none
     end

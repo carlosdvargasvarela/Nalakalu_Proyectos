@@ -687,6 +687,30 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/#{con_otro.name}/, response.body)
   end
 
+  test "tracker's responsible-type filter uses the configured default on a fresh, unfiltered load" do
+    responsible_types(:instalador).update!(default_in_filter: true)
+
+    get tracker_projects_path(project_type_id: project_types(:instalaciones).id)
+    assert_response :success
+    assert_select "select#responsible_type_id option[selected]", "Instalador Fixture"
+  end
+
+  test "tracker's responsible-type filter doesn't apply the default when explicitly left blank" do
+    responsible_types(:instalador).update!(default_in_filter: true)
+
+    get tracker_projects_path(project_type_id: project_types(:instalaciones).id, responsible_type_id: "")
+    assert_response :success
+    assert_select "select#responsible_type_id option[selected]", false
+  end
+
+  test "tracker's responsible-type filter respects an explicitly chosen type over the default" do
+    responsible_types(:instalador).update!(default_in_filter: true)
+
+    get tracker_projects_path(project_type_id: project_types(:instalaciones).id, responsible_type_id: responsible_types(:disenador).id)
+    assert_response :success
+    assert_select "select#responsible_type_id option[selected]", "Diseñador Fixture"
+  end
+
   test "tracker excludes archived projects" do
     activo = Project.create!(project_type: project_types(:instalaciones), name: "Activo", custom_fields: {})
     Project.create!(
