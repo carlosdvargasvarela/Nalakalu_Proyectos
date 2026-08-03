@@ -18,4 +18,19 @@ class ProjectTypeAssociationTest < ActiveSupport::TestCase
     pta = ProjectTypeAssociation.create!(from_project_type: other_type, to_project_type: project_types(:instalaciones), label: "Caso de servicio")
     assert_equal false, pta.responsables_can_create
   end
+
+  test "shared_field_keys defaults to an empty array" do
+    other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
+    pta = ProjectTypeAssociation.create!(from_project_type: other_type, to_project_type: project_types(:instalaciones), label: "Caso de servicio")
+    assert_equal [], pta.shared_field_keys
+  end
+
+  test "shared_field_keys persists an array of keys" do
+    other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
+    pta = ProjectTypeAssociation.create!(
+      from_project_type: other_type, to_project_type: project_types(:instalaciones),
+      label: "Caso de servicio", shared_field_keys: ["cliente"]
+    )
+    assert_equal ["cliente"], pta.reload.shared_field_keys
+  end
 end
