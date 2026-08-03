@@ -66,6 +66,9 @@
         }
 
         function render() {
+          var checkedKeys = Array.from(container.querySelectorAll("input:checked")).map(function (cb) { return cb.value; });
+          if (checkedKeys.length === 0 && container.children.length === 0) checkedKeys = initiallyChecked;
+
           var fields = compatibleFields();
           container.innerHTML = "";
           if (fields.length === 0) {
@@ -82,7 +85,7 @@
             input.name = "project_type_association[shared_field_keys][]";
             input.value = f.key;
             input.id = "shared_field_key_" + f.key;
-            input.checked = initiallyChecked.indexOf(f.key) !== -1;
+            input.checked = checkedKeys.indexOf(f.key) !== -1;
 
             var label = document.createElement("label");
             label.className = "form-check-label";
