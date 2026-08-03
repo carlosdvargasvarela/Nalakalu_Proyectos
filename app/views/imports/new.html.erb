@@ -11,7 +11,7 @@
   </div>
 <% end %>
 
-<% if @project_type %>
+<% if @project_type && !@preview && !@results %>
   <div class="card mb-4">
     <div class="card-body">
       <p>
@@ -19,20 +19,58 @@
       </p>
       <p>2. Llená una fila por proyecto. La columna "Nombre" es obligatoria.</p>
 
-      <%= form_with url: imports_path, method: :post, local: true, multipart: true do |form| %>
+      <%= form_with url: preview_imports_path, method: :post, local: true, multipart: true do |form| %>
         <%= form.hidden_field :project_type_id, value: @project_type.id %>
         <div class="mb-3">
-          <%= form.label :file, "Archivo lleno (CSV)", class: "form-label" %>
-          <%= form.file_field :file, class: "form-control", accept: ".csv" %>
+          <%= form.label :file, "Archivo lleno (CSV o Excel)", class: "form-label" %>
+          <%= form.file_field :file, class: "form-control", accept: ".csv,.xlsx,.xls" %>
         </div>
-        <%= form.submit "Importar", class: "btn btn-primary" %>
+        <%= form.submit "Ver vista previa", class: "btn btn-primary" %>
       <% end %>
     </div>
   </div>
 <% end %>
 
+<% if @preview %>
+  <div class="card mb-4">
+    <div class="card-body">
+      <h2 class="h5">Vista previa</h2>
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Fila</th>
+            <th>Nombre</th>
+            <th>Error</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @preview[:rows].each do |row| %>
+            <tr class="<%= "table-danger" if row[:error] %>">
+              <td><%= row[:row] %></td>
+              <td><%= row[:name] %></td>
+              <td><%= row[:error] %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+
+      <% if @preview[:rows].any? { |r| r[:error].nil? } %>
+        <%= form_with url: imports_path, method: :post, local: true do |form| %>
+          <%= form.hidden_field :project_type_id, value: @project_type.id %>
+          <%= form.hidden_field :valid_rows, value: @preview[:valid_rows_json] %>
+          <%= form.submit "Confirmar importación", class: "btn btn-primary" %>
+        <% end %>
+      <% else %>
+        <p class="text-muted">Ninguna fila es válida — corregí el archivo y volvé a subirlo.</p>
+      <% end %>
+
+      <%= link_to "Subir otro archivo", new_import_path(project_type_id: @project_type.id), class: "btn btn-outline-secondary mt-2" %>
+    </div>
+  </div>
+<% end %>
+
 <% if @results %>
-  <div class="alert <%= @results[:errors].any? ? 'alert-warning' : 'alert-success' %>">
+  <div class="alert <%= @results[:errors].any? ? "alert-warning" : "alert-success" %>">
     <%= @results[:created] %> proyecto(s) creado(s).
     <% if @results[:errors].any? %>
       <p class="mb-0 mt-2">Filas con error:</p>

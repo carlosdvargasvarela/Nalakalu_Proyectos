@@ -68,6 +68,46 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
     assert_select "body", /No se subió ningún archivo/
   end
 
+  test "preview parses a valid csv without creating any project" do
+    project_type = project_types(:instalaciones)
+    csv = "Nombre,Cliente,Dirección\nTorre Norte,Acme S.A.,Av. Siempre Viva 123\nTorre Sur,Beta S.A.,Calle Falsa 456\n"
+
+    assert_no_difference("Project.count") do
+      post preview_imports_path, params: {
+        project_type_id: project_type.id,
+        file: Rack::Test::UploadedFile.new(StringIO.new(csv), "text/csv", original_filename: "plantilla.csv")
+      }
+    end
+
+    assert_response :success
+    assert_select "body", /Torre Norte/
+    assert_select "body", /Torre Sur/
+    assert_select "input[name=?]", "valid_rows"
+  end
+
+  test "preview flags a row with a blank Nombre as an error without creating any project" do
+    project_type = project_types(:instalaciones)
+    csv = "Nombre,Cliente,Dirección\n,Acme S.A.,Av. Siempre Viva 123\nTorre Sur,Beta S.A.,Calle Falsa 456\n"
+
+    assert_no_difference("Project.count") do
+      post preview_imports_path, params: {
+        project_type_id: project_type.id,
+        file: Rack::Test::UploadedFile.new(StringIO.new(csv), "text/csv", original_filename: "plantilla.csv")
+      }
+    end
+
+    assert_response :success
+    assert_select "tr.table-danger td", /2/
+    assert_select "tr.table-danger"
+  end
+
+  test "preview reports an error when no file is uploaded" do
+    project_type = project_types(:instalaciones)
+    post preview_imports_path, params: { project_type_id: project_type.id }
+    assert_response :success
+    assert_select "body", /No se subió ningún archivo/
+  end
+
   test "new is blocked for a visor" do
     sign_in users(:maria)
     get new_import_path

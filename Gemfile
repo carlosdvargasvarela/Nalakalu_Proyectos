@@ -62,6 +62,9 @@ gem "paper_trail"
 # Ruby 3.4+ removed csv from default gems; needed by ImportsController for template generation.
 gem "csv"
 
+# Reads .xlsx/.xls uploads for carga masiva (CSV keeps using the stdlib csv gem above).
+gem "roo"
+
 # Rails 7.2's test runner (railties/line_filtering) is incompatible with minitest 6.x's
 # changed Runnable.run signature; pin to the last 5.x until Rails supports minitest 6.
 gem "minitest", "~> 5.25"

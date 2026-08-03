@@ -1,4 +1,5 @@
 require "csv"
+require "roo"
 
 class ImportsController < ApplicationController
   before_action :require_admin_or_gerente!
@@ -13,10 +14,17 @@ class ImportsController < ApplicationController
     send_data csv_template_for(project_type), filename: "plantilla-#{project_type.slug}.csv", type: "text/csv"
   end
 
+  def preview
+    @project_type = ProjectType.find(params[:project_type_id])
+    @project_types = ProjectType.all
+    @preview = build_preview(@project_type, params[:file])
+    render :new
+  end
+
   def create
     @project_type = ProjectType.find(params[:project_type_id])
     @project_types = ProjectType.all
-    @results = import_rows(@project_type, params[:file])
+    @results = { created: 0, errors: [] }
     render :new
   end
 
@@ -29,28 +37,38 @@ class ImportsController < ApplicationController
     end
   end
 
-  def import_rows(project_type, file)
-    return { created: 0, errors: [{ row: 0, message: "No se subió ningún archivo" }] } if file.blank?
+  def build_preview(project_type, file)
+    return { rows: [{ row: 0, name: nil, custom_fields: {}, error: "No se subió ningún archivo" }], valid_rows_json: "[]" } if file.blank?
 
     fields = project_type.field_definitions.order(:position).to_a
-    rows = CSV.parse(file.read.force_encoding("UTF-8").sub("﻿", ""), headers: true)
-    created = 0
-    row_errors = []
+    parsed_rows = parse_rows(file, fields)
+    rows = []
+    valid_rows = []
 
-    rows.each_with_index do |row, index|
-      custom_fields = fields.each_with_object({}) do |field, hash|
-        hash[field.key] = resolve_field_value(field, row[field.label])
-      end
-      project = Project.new(project_type: project_type, name: row["Nombre"], custom_fields: custom_fields)
-      if project.save
-        ProjectAccess.create!(user: current_user, project: project, can_edit: true) if current_user.gerente?
-        created += 1
+    parsed_rows.each_with_index do |(name, custom_fields), index|
+      project = Project.new(project_type: project_type, name: name, custom_fields: custom_fields)
+      if project.valid?
+        rows << { row: index + 2, name: name, custom_fields: custom_fields, error: nil }
+        valid_rows << { name: name, custom_fields: custom_fields }
       else
-        row_errors << { row: index + 2, message: project.errors.full_messages.join(", ") }
+        rows << { row: index + 2, name: name, custom_fields: custom_fields, error: project.errors.full_messages.join(", ") }
       end
     end
 
-    { created: created, errors: row_errors }
+    { rows: rows, valid_rows_json: valid_rows.to_json }
+  end
+
+  def parse_rows(file, fields)
+    extension = File.extname(file.original_filename).downcase
+
+    case extension
+    when ".csv"
+      CSV.parse(file.read.force_encoding("UTF-8").sub("﻿", ""), headers: true).map do |row|
+        [row["Nombre"], fields.each_with_object({}) { |f, h| h[f.key] = resolve_field_value(f, row[f.label]) }]
+      end
+    else
+      raise NotImplementedError, "xlsx/xls support added in a later task"
+    end
   end
 
   def resolve_field_value(field, raw_value)

@@ -29,7 +29,9 @@ Rails.application.routes.draw do
     resources :project_associations, only: [:create, :destroy]
   end
 
-  resources :imports, only: [:new, :create]
+  resources :imports, only: [:new, :create] do
+    collection { post :preview }
+  end
   get "imports/template", to: "imports#template", as: :template_imports
 
   root "projects#index"
