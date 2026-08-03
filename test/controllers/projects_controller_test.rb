@@ -385,6 +385,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     get project_type_projects_path(project_types(:instalaciones).slug)
     assert_response :success
     assert_match(/popup_html:\s*function\s*\(task\)/, response.body)
+    assert_match(/popup_on:\s*"hover"/, response.body)
     assert_no_match(/popup:\s*false/, response.body)
   end
 
