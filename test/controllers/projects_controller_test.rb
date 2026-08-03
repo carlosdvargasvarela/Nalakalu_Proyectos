@@ -383,11 +383,11 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "index's Gantt popup_html renders a styled tooltip instead of the default popup" do
+  test "index's Gantt popup renders a styled tooltip instead of the default popup" do
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_type_projects_path(project_types(:instalaciones).slug)
     assert_response :success
-    assert_match(/popup_html:\s*function\s*\(task\)/, response.body)
+    assert_match(/popup:\s*function\s*\(ctx\)/, response.body)
     assert_match(/popup_on:\s*"hover"/, response.body)
     assert_no_match(/popup:\s*false/, response.body)
   end

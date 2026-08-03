@@ -169,7 +169,8 @@
               view_mode_select: false,
               popup_on: "hover",
               on_click: function (task) { window.location = task.edit_url; },
-              popup_html: function (task) {
+              popup: function (ctx) {
+                var task = ctx.task;
                 function esc(text) {
                   return String(text).replace(/[&<>"']/g, function (c) {
                     return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
