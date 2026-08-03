@@ -90,12 +90,13 @@ class ImportsController < ApplicationController
     valid_rows = []
 
     parsed_rows.each_with_index do |(name, custom_fields), index|
+      row_number = index + 2
       project = Project.new(project_type: project_type, name: name, custom_fields: custom_fields)
       if project.valid?
-        rows << { row: index + 2, name: name, custom_fields: custom_fields, error: nil }
-        valid_rows << { name: name, custom_fields: custom_fields }
+        rows << { row: row_number, name: name, custom_fields: custom_fields, error: nil }
+        valid_rows << { row: row_number, name: name, custom_fields: custom_fields }
       else
-        rows << { row: index + 2, name: name, custom_fields: custom_fields, error: project.errors.full_messages.join(", ") }
+        rows << { row: row_number, name: name, custom_fields: custom_fields, error: project.errors.full_messages.join(", ") }
       end
     end
 
@@ -106,13 +107,13 @@ class ImportsController < ApplicationController
     created = 0
     row_errors = []
 
-    valid_rows.each_with_index do |row, index|
-      project = Project.new(project_type: project_type, name: row["name"], custom_fields: row["custom_fields"])
+    valid_rows.each do |row|
+      project = Project.new(project_type: project_type, name: row["name"], custom_fields: row["custom_fields"] || {})
       if project.save
         ProjectAccess.create!(user: current_user, project: project, can_edit: true) if current_user.gerente?
         created += 1
       else
-        row_errors << { row: index + 2, message: project.errors.full_messages.join(", ") }
+        row_errors << { row: row["row"], message: project.errors.full_messages.join(", ") }
       end
     end
 
@@ -146,7 +147,7 @@ end
 
 Notas:
 - `Roo::Spreadsheet.open` necesita un path en disco; `Rack::Test::UploadedFile`/`ActionDispatch::Http::UploadedFile` ya exponen `.path` (tempfile), así que no hace falta guardar nada aparte.
-- El número de fila reportado (`index + 2`) se mantiene igual para ambos formatos.
+- El número de fila (`index + 2`) se calcula una sola vez en `build_preview` y viaja como `row:` dentro de cada fila de `valid_rows_json`; `commit_rows` lo reusa tal cual (`row["row"]`) en vez de recalcularlo sobre el array ya filtrado — así un error al confirmar sigue apuntando a la fila real del archivo, no a su posición entre las filas válidas.
 - `resolve_field_value` no cambia: sigue resolviendo `reference` por nombre.
 
 ## 4. Vista `imports/new.html.erb`
