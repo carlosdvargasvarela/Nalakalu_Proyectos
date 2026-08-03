@@ -1,10 +1,12 @@
 class ProjectResponsible < ApplicationRecord
   belongs_to :project
-  belongs_to :responsible
+  belongs_to :responsible, optional: true
   belongs_to :responsible_type
   belongs_to :project_stage, optional: true
 
-  validates :responsible_id, uniqueness: { scope: [:project_id, :responsible_type_id, :project_stage_id] }
+  before_validation :snapshot_responsible, if: -> { responsible_id_changed? && responsible.present? }
+
+  validates :responsible_id, uniqueness: { scope: [:project_id, :responsible_type_id, :project_stage_id] }, allow_nil: true
   validate :project_stage_belongs_to_project
   validate :responsible_type_belongs_to_project_type
   validate :responsible_enabled_for_project_type
@@ -14,6 +16,11 @@ class ProjectResponsible < ApplicationRecord
   end
 
   private
+
+  def snapshot_responsible
+    self.responsible_name = responsible.name
+    self.responsible_color = responsible.color
+  end
 
   def project_stage_belongs_to_project
     return if project_stage.nil? || project.nil?

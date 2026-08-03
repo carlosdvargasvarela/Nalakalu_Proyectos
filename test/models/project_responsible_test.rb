@@ -64,4 +64,25 @@ class ProjectResponsibleTest < ActiveSupport::TestCase
     pr = ProjectResponsible.new(project: @project, responsible: @responsible, responsible_type: foreign_responsible_type)
     assert_not pr.valid?
   end
+
+  test "creating an assignment snapshots the responsible's name and color" do
+    pr = ProjectResponsible.create!(project: @project, responsible: @responsible, responsible_type: @responsible_type)
+    assert_equal @responsible.name, pr.responsible_name
+    assert_equal @responsible.color, pr.responsible_color
+  end
+
+  test "renaming the responsible resyncs the snapshot on existing assignments" do
+    pr = ProjectResponsible.create!(project: @project, responsible: @responsible, responsible_type: @responsible_type)
+    @responsible.update!(name: "Ana G.", color: "#123456")
+    assert_equal "Ana G.", pr.reload.responsible_name
+    assert_equal "#123456", pr.reload.responsible_color
+  end
+
+  test "changing project_stage on an existing assignment does not touch the snapshot" do
+    pr = ProjectResponsible.create!(project: @project, responsible: @responsible, responsible_type: @responsible_type)
+    original_name = pr.responsible_name
+    stage = @project.project_stages.first
+    pr.update!(project_stage: stage)
+    assert_equal original_name, pr.reload.responsible_name
+  end
 end

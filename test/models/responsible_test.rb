@@ -28,4 +28,22 @@ class ResponsibleTest < ActiveSupport::TestCase
     dup = Responsible.new(name: "Otra Persona", user: users(:maria))
     assert_not dup.valid?
   end
+
+  test "destroying a responsible with assignments nullifies responsible_id but keeps the row and its snapshot" do
+    project_type = project_types(:instalaciones)
+    responsible_type = ResponsibleType.create!(project_type: project_type, name: "Instalador")
+    responsible = Responsible.create!(name: "Ana Gómez")
+    ResponsibleProjectType.create!(responsible: responsible, project_type: project_type)
+    project = Project.create!(project_type: project_type, name: "Torre Norte", custom_fields: {})
+    pr = ProjectResponsible.create!(project: project, responsible: responsible, responsible_type: responsible_type)
+
+    assert_no_difference("ProjectResponsible.count") do
+      responsible.destroy
+    end
+
+    pr.reload
+    assert_nil pr.responsible_id
+    assert_equal "Ana Gómez", pr.responsible_name
+    assert_equal "#6c757d", pr.responsible_color
+  end
 end

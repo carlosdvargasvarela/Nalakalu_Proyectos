@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_07_29_202101) do
+ActiveRecord::Schema[7.2].define(version: 2026_08_03_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -111,11 +111,13 @@ ActiveRecord::Schema[7.2].define(version: 2026_07_29_202101) do
 
   create_table "project_responsibles", force: :cascade do |t|
     t.bigint "project_id", null: false
-    t.bigint "responsible_id", null: false
+    t.bigint "responsible_id"
     t.bigint "responsible_type_id", null: false
     t.bigint "project_stage_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "responsible_name", null: false
+    t.string "responsible_color", null: false
     t.index ["project_id", "responsible_id", "responsible_type_id", "project_stage_id"], name: "index_project_responsibles_on_assignment", unique: true
     t.index ["project_id"], name: "index_project_responsibles_on_project_id"
     t.index ["project_stage_id"], name: "index_project_responsibles_on_project_stage_id"
