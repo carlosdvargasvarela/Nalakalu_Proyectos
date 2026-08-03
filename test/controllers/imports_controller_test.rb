@@ -140,7 +140,10 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
     fake_spreadsheet = Minitest::Mock.new
     fake_spreadsheet.expect(:sheet, fake_sheet, [0])
 
-    Roo::Spreadsheet.stub(:open, fake_spreadsheet) do
+    Roo::Spreadsheet.stub(:open, ->(path, extension:) {
+      assert_equal :xlsx, extension
+      fake_spreadsheet
+    }) do
       assert_no_difference("Project.count") do
         post preview_imports_path, params: {
           project_type_id: project_type.id,
