@@ -1330,6 +1330,21 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "show's historial de cambios is visible to a visor with access, and they can write to the bitácora" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    ProjectAccess.create!(user: users(:maria), project: project)
+    PaperTrail.request(whodunnit: users(:juan).id.to_s) do
+      project.update!(name: "Torre Norte Renovada")
+    end
+
+    sign_in users(:maria)
+    get project_path(project)
+
+    assert_response :success
+    assert_select ".card-header", text: "Historial de cambios"
+    assert_select "form[action=?]", project_log_entries_path(project)
+  end
+
   test "show's historial de cambios includes stage version changes, prefixed with the stage name" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     stage = project.project_stages.find_by(name: "Producción")

@@ -278,7 +278,7 @@
 <div class="card mb-4">
   <div class="card-header">Bitácora</div>
   <div class="card-body">
-    <% if current_user.can_edit_project?(@project) %>
+    <% if current_user.can_edit_project?(@project) || (current_user.visor? && current_user.can_view_project?(@project)) %>
       <%= form_with model: LogEntry.new, url: project_log_entries_path(@project), class: "mb-3" do |f| %>
         <%= f.rich_text_area :body, id: "bitacora-trix-editor", class: "trix-content mb-2" %>
         <div class="d-flex gap-2">

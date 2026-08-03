@@ -38,9 +38,35 @@ class LogEntriesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "create is blocked for a visor even with view access" do
+  test "create succeeds for a visor with view access via ProjectAccess" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     ProjectAccess.create!(user: users(:maria), project: project)
+
+    sign_in users(:maria)
+    assert_difference("project.log_entries.count", 1) do
+      post project_log_entries_path(project), params: {
+        log_entry: { body: "Nota de visor", log_entry_type_id: log_entry_types(:nota).id }
+      }
+    end
+  end
+
+  test "create succeeds for a visor with view access via their linked responsible" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    visor = User.create!(email: "visor-bitacora@example.com", password: "password123", role: "visor")
+    responsible = Responsible.create!(name: "Visor Bitácora", user: visor)
+    ResponsibleProjectType.create!(responsible: responsible, project_type: project_types(:instalaciones))
+    ProjectResponsible.create!(project: project, responsible: responsible, responsible_type: responsible_types(:instalador))
+
+    sign_in visor
+    assert_difference("project.log_entries.count", 1) do
+      post project_log_entries_path(project), params: {
+        log_entry: { body: "Nota de visor por responsable", log_entry_type_id: log_entry_types(:nota).id }
+      }
+    end
+  end
+
+  test "create is blocked for a visor without any view access" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
 
     sign_in users(:maria)
     assert_no_difference("project.log_entries.count") do

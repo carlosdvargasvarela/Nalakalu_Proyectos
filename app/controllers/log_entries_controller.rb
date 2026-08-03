@@ -25,6 +25,7 @@ class LogEntriesController < ApplicationController
 
   def authorize_edit!
     return if current_user.can_edit_project?(@project)
+    return if current_user.visor? && current_user.can_view_project?(@project)
     redirect_to project_path(@project), alert: "No tenés permiso para agregar notas a este proyecto."
   end
 
