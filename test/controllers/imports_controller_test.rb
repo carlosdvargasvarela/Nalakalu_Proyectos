@@ -127,4 +127,41 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
     project = Project.find_by(name: "Torre Norte")
     assert users(:carla).can_edit_project?(project)
   end
+
+  test "preview parses an xlsx file the same way as the equivalent csv" do
+    project_type = project_types(:instalaciones)
+    header = ["Nombre", "Cliente", "Dirección"]
+    data_row = ["Torre Norte", "Acme S.A.", "Av. Siempre Viva 123"]
+
+    fake_sheet = Minitest::Mock.new
+    fake_sheet.expect(:row, header, [1])
+    fake_sheet.expect(:last_row, 2)
+    fake_sheet.expect(:row, data_row, [2])
+    fake_spreadsheet = Minitest::Mock.new
+    fake_spreadsheet.expect(:sheet, fake_sheet, [0])
+
+    Roo::Spreadsheet.stub(:open, fake_spreadsheet) do
+      assert_no_difference("Project.count") do
+        post preview_imports_path, params: {
+          project_type_id: project_type.id,
+          file: Rack::Test::UploadedFile.new(StringIO.new("dummy"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", original_filename: "plantilla.xlsx")
+        }
+      end
+    end
+
+    assert_response :success
+    assert_select "body", /Torre Norte/
+    fake_sheet.verify
+    fake_spreadsheet.verify
+  end
+
+  test "preview treats an unsupported file extension as no file uploaded" do
+    project_type = project_types(:instalaciones)
+    post preview_imports_path, params: {
+      project_type_id: project_type.id,
+      file: Rack::Test::UploadedFile.new(StringIO.new("hola"), "text/plain", original_filename: "notas.txt")
+    }
+    assert_response :success
+    assert_select "body", /Formato no soportado/
+  end
 end

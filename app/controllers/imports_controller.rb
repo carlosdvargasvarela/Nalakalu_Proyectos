@@ -41,7 +41,11 @@ class ImportsController < ApplicationController
     return { rows: [{ row: 0, name: nil, custom_fields: {}, error: "No se subió ningún archivo" }], valid_rows_json: "[]" } if file.blank?
 
     fields = project_type.field_definitions.order(:position).to_a
-    parsed_rows = parse_rows(file, fields)
+    parsed_rows = begin
+      parse_rows(file, fields)
+    rescue ArgumentError
+      return { rows: [{ row: 0, name: nil, custom_fields: {}, error: "Formato no soportado, subí un .csv, .xlsx o .xls" }], valid_rows_json: "[]" }
+    end
     rows = []
     valid_rows = []
 
@@ -66,8 +70,15 @@ class ImportsController < ApplicationController
       CSV.parse(file.read.force_encoding("UTF-8").sub("﻿", ""), headers: true).map do |row|
         [row["Nombre"], fields.each_with_object({}) { |f, h| h[f.key] = resolve_field_value(f, row[f.label]) }]
       end
+    when ".xlsx", ".xls"
+      sheet = Roo::Spreadsheet.open(file.path, extension: extension.delete(".").to_sym).sheet(0)
+      header = sheet.row(1)
+      (2..sheet.last_row).map do |i|
+        row = header.zip(sheet.row(i)).to_h
+        [row["Nombre"], fields.each_with_object({}) { |f, h| h[f.key] = resolve_field_value(f, row[f.label]) }]
+      end
     else
-      raise NotImplementedError, "xlsx/xls support added in a later task"
+      raise ArgumentError, "unsupported extension"
     end
   end
 
