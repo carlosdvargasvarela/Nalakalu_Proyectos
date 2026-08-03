@@ -10,6 +10,8 @@
       </div>
     <% end %>
 
+    <script type="application/json" id="field-definitions-by-type"><%== @field_definitions_by_type.to_json %></script>
+
     <div class="mb-3">
       <%= form.label :from_project_type_id, "Tipo de origen", class: "form-label" %>
       <%= form.collection_select :from_project_type_id, ProjectType.order(:name), :id, :name, {}, class: "form-select" %>

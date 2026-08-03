@@ -53,4 +53,36 @@ class Admin::ProjectTypeAssociationsControllerTest < ActionDispatch::Integration
       delete admin_project_type_association_path(pta)
     end
   end
+
+  test "create persists shared_field_keys" do
+    assert_difference("ProjectTypeAssociation.count", 1) do
+      post admin_project_type_associations_path, params: {
+        project_type_association: {
+          from_project_type_id: @other_type.id, to_project_type_id: project_types(:instalaciones).id,
+          label: "Caso de servicio", shared_field_keys: ["cliente"]
+        }
+      }
+    end
+    assert_equal ["cliente"], ProjectTypeAssociation.order(:id).last.shared_field_keys
+  end
+
+  test "update with no shared_field_keys checked clears the list" do
+    pta = ProjectTypeAssociation.create!(
+      from_project_type: @other_type, to_project_type: project_types(:instalaciones),
+      label: "Caso de servicio", shared_field_keys: ["cliente"]
+    )
+    patch admin_project_type_association_path(pta), params: {
+      project_type_association: {
+        from_project_type_id: @other_type.id, to_project_type_id: project_types(:instalaciones).id,
+        label: "Caso de servicio", shared_field_keys: [""]
+      }
+    }
+    assert_equal [], pta.reload.shared_field_keys
+  end
+
+  test "new exposes field definitions grouped by project type" do
+    get new_admin_project_type_association_path
+    assert_response :success
+    assert_select "script#field-definitions-by-type", 1
+  end
 end

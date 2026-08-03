@@ -1,5 +1,6 @@
 class Admin::ProjectTypeAssociationsController < Admin::BaseController
   before_action :set_project_type_association, only: [:edit, :update, :destroy]
+  before_action :set_field_definitions_by_type, only: [:new, :create, :edit, :update]
 
   def index
     @project_type_associations = ProjectTypeAssociation.all
@@ -40,7 +41,20 @@ class Admin::ProjectTypeAssociationsController < Admin::BaseController
     @project_type_association = ProjectTypeAssociation.find(params[:id])
   end
 
+  def set_field_definitions_by_type
+    @field_definitions_by_type = ProjectType.includes(:field_definitions).each_with_object({}) do |project_type, hash|
+      hash[project_type.id] = project_type.field_definitions.map do |field|
+        { key: field.key, label: field.label, data_type: field.data_type, reference_table: field.reference_table }
+      end
+    end
+  end
+
   def project_type_association_params
-    params.require(:project_type_association).permit(:from_project_type_id, :to_project_type_id, :label, :responsables_can_create)
+    permitted = params.require(:project_type_association).permit(
+      :from_project_type_id, :to_project_type_id, :label, :responsables_can_create,
+      shared_field_keys: []
+    )
+    permitted[:shared_field_keys] = permitted[:shared_field_keys].reject(&:blank?) if permitted.key?(:shared_field_keys)
+    permitted
   end
 end
