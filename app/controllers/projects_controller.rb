@@ -50,7 +50,9 @@ class ProjectsController < ApplicationController
     @project = Project.new(project_type: @project_type)
     @project_type_association_id = params[:project_type_association_id]
     @associate_with_project_id = params[:associate_with_project_id]
-    @project.custom_fields = shared_field_copies(@project_type_association_id, @associate_with_project_id)
+    copies = shared_field_copies(@project_type_association_id, @associate_with_project_id)
+    @project.custom_fields = copies[:custom_fields]
+    @project.name = copies[:name] if copies[:name].present?
   end
 
   def create
@@ -159,34 +161,50 @@ class ProjectsController < ApplicationController
   end
 
   def fill_missing_shared_fields
-    shared_field_copies(params[:project_type_association_id], params[:associate_with_project_id]).each do |key, value|
+    copies = shared_field_copies(params[:project_type_association_id], params[:associate_with_project_id])
+    copies[:custom_fields].each do |key, value|
       @project.custom_fields[key] = value if @project.custom_fields[key].blank?
     end
+    @project.name = copies[:name] if copies[:name].present? && @project.name.blank?
   end
 
   # The quick-create button lives on a `to_project_type` project (the existing one, `source`)
   # and creates a `from_project_type` project (the new one). A mapping's "from" key belongs to
   # from_project_type (the new project); its "to" key belongs to to_project_type (source's type).
-  # The value we're copying already lives on `source`, under the "to" key.
+  # The value we're copying already lives on `source`, under the "to" key. "name" is a project
+  # attribute, not a custom_fields key, so it's handled separately from the rest.
   def shared_field_copies(association_id, source_id)
-    return {} if association_id.blank? || source_id.blank?
+    empty = { custom_fields: {}, name: nil }
+    return empty if association_id.blank? || source_id.blank?
     association = ProjectTypeAssociation.find_by(id: association_id)
     source = Project.find_by(id: source_id)
-    return {} if association.nil? || source.nil?
+    return empty if association.nil? || source.nil?
 
-    from_fields = association.from_project_type.field_definitions.index_by(&:key)
-    to_fields = association.to_project_type.field_definitions.index_by(&:key)
+    from_fields = shareable_field_infos(association.from_project_type)
+    to_fields = shareable_field_infos(association.to_project_type)
 
-    association.shared_field_mappings.each_with_object({}) do |mapping, fields|
+    association.shared_field_mappings.each_with_object(empty.merge(custom_fields: {})) do |mapping, result|
       from_field = from_fields[mapping["from"]]
       to_field = to_fields[mapping["to"]]
       next unless from_field && to_field
-      next unless from_field.data_type == to_field.data_type
-      next if from_field.data_type == "reference" && from_field.reference_table != to_field.reference_table
+      next unless from_field[:data_type] == to_field[:data_type]
+      next if from_field[:data_type] == "reference" && from_field[:reference_table] != to_field[:reference_table]
 
-      value = source.custom_fields[mapping["to"]]
-      fields[mapping["from"]] = value if value.present?
+      value = mapping["to"] == "name" ? source.name : source.custom_fields[mapping["to"]]
+      next if value.blank?
+
+      if mapping["from"] == "name"
+        result[:name] = value
+      else
+        result[:custom_fields][mapping["from"]] = value
+      end
     end
+  end
+
+  def shareable_field_infos(project_type)
+    { "name" => { data_type: "text", reference_table: nil } }.merge(
+      project_type.field_definitions.index_by(&:key).transform_values { |f| { data_type: f.data_type, reference_table: f.reference_table } }
+    )
   end
 
   def project_params

@@ -122,6 +122,50 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Otro Cliente", Project.order(:id).last.custom_fields["nombre_cliente"]
   end
 
+  test "new prefills the project name when mapped from the source project's name" do
+    other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
+    association = ProjectTypeAssociation.create!(
+      from_project_type: other_type, to_project_type: project_types(:instalaciones),
+      label: "Caso de servicio", shared_field_mappings: [{ from: "name", to: "name" }]
+    )
+    source = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+
+    get new_project_path(project_type_id: other_type.id, project_type_association_id: association.id, associate_with_project_id: source.id)
+
+    assert_response :success
+    assert_select "input[name=?][value=?]", "project[name]", "Torre Norte"
+  end
+
+  test "new prefills the project name from a mapped custom field on the source project" do
+    other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
+    association = ProjectTypeAssociation.create!(
+      from_project_type: other_type, to_project_type: project_types(:instalaciones),
+      label: "Caso de servicio", shared_field_mappings: [{ from: "name", to: "cliente" }]
+    )
+    source = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A." })
+
+    get new_project_path(project_type_id: other_type.id, project_type_association_id: association.id, associate_with_project_id: source.id)
+
+    assert_response :success
+    assert_select "input[name=?][value=?]", "project[name]", "Acme S.A."
+  end
+
+  test "create copies the project name from the source project when left blank" do
+    other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
+    association = ProjectTypeAssociation.create!(
+      from_project_type: other_type, to_project_type: project_types(:instalaciones),
+      label: "Caso de servicio", shared_field_mappings: [{ from: "name", to: "name" }]
+    )
+    source = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+
+    post projects_path, params: {
+      project: { project_type_id: other_type.id, name: "", custom_fields: {} },
+      project_type_association_id: association.id, associate_with_project_id: source.id
+    }
+
+    assert_equal "Torre Norte", Project.order(:id).last.name
+  end
+
   test "new does not prefill when shared_field_mappings references a since-deleted field definition" do
     other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
     association = ProjectTypeAssociation.create!(

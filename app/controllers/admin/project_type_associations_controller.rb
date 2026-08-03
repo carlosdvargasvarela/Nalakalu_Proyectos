@@ -43,7 +43,7 @@ class Admin::ProjectTypeAssociationsController < Admin::BaseController
 
   def set_field_definitions_by_type
     @field_definitions_by_type = ProjectType.includes(:field_definitions).each_with_object({}) do |project_type, hash|
-      hash[project_type.id] = project_type.field_definitions.map do |field|
+      hash[project_type.id] = [{ key: "name", label: "Nombre", data_type: "text", reference_table: nil }] + project_type.field_definitions.map do |field|
         { key: field.key, label: field.label, data_type: field.data_type, reference_table: field.reference_table }
       end
     end
