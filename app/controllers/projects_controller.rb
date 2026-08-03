@@ -50,12 +50,13 @@ class ProjectsController < ApplicationController
     @project = Project.new(project_type: @project_type)
     @project_type_association_id = params[:project_type_association_id]
     @associate_with_project_id = params[:associate_with_project_id]
-    prefill_shared_fields
+    @project.custom_fields = shared_field_copies(@project_type_association_id, @associate_with_project_id, @project_type)
   end
 
   def create
     @project = Project.new(project_params)
     @project_type = @project.project_type
+    fill_missing_shared_fields
     if @project.save
       ProjectAccess.create!(user: current_user, project: @project, can_edit: true) if current_user.gerente?
       if params[:project_type_association_id].present? && params[:associate_with_project_id].present?
@@ -157,16 +158,22 @@ class ProjectsController < ApplicationController
     redirect_to projects_path, alert: "No tenés permiso para crear proyectos."
   end
 
-  def prefill_shared_fields
-    return if @associate_with_project_id.blank? || @project_type_association_id.blank?
-    association = ProjectTypeAssociation.find_by(id: @project_type_association_id)
-    source = Project.find_by(id: @associate_with_project_id)
-    return if association.nil? || source.nil?
+  def fill_missing_shared_fields
+    shared_field_copies(params[:project_type_association_id], params[:associate_with_project_id], @project_type).each do |key, value|
+      @project.custom_fields[key] = value if @project.custom_fields[key].blank?
+    end
+  end
+
+  def shared_field_copies(association_id, source_id, target_project_type)
+    return {} if association_id.blank? || source_id.blank? || target_project_type.nil?
+    association = ProjectTypeAssociation.find_by(id: association_id)
+    source = Project.find_by(id: source_id)
+    return {} if association.nil? || source.nil?
 
     source_fields = source.project_type.field_definitions.index_by(&:key)
-    target_fields = @project_type.field_definitions.index_by(&:key)
+    target_fields = target_project_type.field_definitions.index_by(&:key)
 
-    @project.custom_fields = association.shared_field_mappings.each_with_object({}) do |mapping, fields|
+    association.shared_field_mappings.each_with_object({}) do |mapping, fields|
       source_field = source_fields[mapping["from"]]
       target_field = target_fields[mapping["to"]]
       next unless source_field && target_field
