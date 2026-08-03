@@ -70,4 +70,4 @@ gem "caxlsx"
 
 # Rails 7.2's test runner (railties/line_filtering) is incompatible with minitest 6.x's
 # changed Runnable.run signature; pin to the last 5.x until Rails supports minitest 6.
-gem "minitest", "~> 5.25"
+gem "minitest", "~> 6.0"
