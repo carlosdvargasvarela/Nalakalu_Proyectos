@@ -15,7 +15,10 @@
   <div class="card mb-4">
     <div class="card-body">
       <p>
-        1. <%= link_to "Descargar plantilla de #{@project_type.name}", template_imports_path(project_type_id: @project_type.id) %>
+        1. Descargar plantilla de <%= @project_type.name %>:
+        <%= link_to "CSV", template_imports_path(project_type_id: @project_type.id, format: "csv") %>
+        ·
+        <%= link_to "Excel", template_imports_path(project_type_id: @project_type.id, format: "xlsx") %>
       </p>
       <p>2. Llená una fila por proyecto. La columna "Nombre" es obligatoria.</p>
 

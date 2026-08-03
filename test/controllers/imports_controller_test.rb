@@ -9,20 +9,38 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
     assert_select "select[name=?]", "project_type_id"
   end
 
-  test "new with a project_type_id shows the template download link" do
+  test "new with a project_type_id shows the CSV and Excel template download links" do
     project_type = project_types(:instalaciones)
     get new_import_path, params: { project_type_id: project_type.id }
     assert_response :success
-    assert_select "a[href=?]", template_imports_path(project_type_id: project_type.id)
+    assert_select "a[href=?]", template_imports_path(project_type_id: project_type.id, format: "csv")
+    assert_select "a[href=?]", template_imports_path(project_type_id: project_type.id, format: "xlsx")
   end
 
   test "template generates a CSV with Nombre plus one column per field_definition, in position order" do
     project_type = project_types(:instalaciones)
-    get template_imports_path, params: { project_type_id: project_type.id }
+    get template_imports_path, params: { project_type_id: project_type.id, format: "csv" }
     assert_response :success
     assert_equal "text/csv", response.media_type
     header = response.body.lines.first.strip
     assert_equal "Nombre,Cliente,Dirección", header
+  end
+
+  test "template without a format still defaults to CSV" do
+    project_type = project_types(:instalaciones)
+    get template_imports_path, params: { project_type_id: project_type.id }
+    assert_response :success
+    assert_equal "text/csv", response.media_type
+  end
+
+  test "template generates an xlsx with Nombre plus one column per field_definition, in position order" do
+    project_type = project_types(:instalaciones)
+    get template_imports_path, params: { project_type_id: project_type.id, format: "xlsx" }
+    assert_response :success
+    assert_equal "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", response.media_type
+
+    sheet = Roo::Spreadsheet.open(StringIO.new(response.body), extension: :xlsx).sheet(0)
+    assert_equal ["Nombre", "Cliente", "Dirección"], sheet.row(1)
   end
 
   test "create builds one project per confirmed row, including its auto-generated stages" do

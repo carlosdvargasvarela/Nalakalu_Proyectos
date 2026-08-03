@@ -1,5 +1,6 @@
 require "csv"
 require "roo"
+require "caxlsx"
 
 class ImportsController < ApplicationController
   before_action :require_admin_or_gerente!
@@ -11,7 +12,12 @@ class ImportsController < ApplicationController
 
   def template
     project_type = ProjectType.find(params[:project_type_id])
-    send_data csv_template_for(project_type), filename: "plantilla-#{project_type.slug}.csv", type: "text/csv"
+    if params[:format] == "xlsx"
+      send_data xlsx_template_for(project_type), filename: "plantilla-#{project_type.slug}.xlsx",
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    else
+      send_data csv_template_for(project_type), filename: "plantilla-#{project_type.slug}.csv", type: "text/csv"
+    end
   end
 
   def preview
@@ -57,6 +63,15 @@ class ImportsController < ApplicationController
     CSV.generate do |csv|
       csv << ["Nombre"] + fields.map(&:label)
     end
+  end
+
+  def xlsx_template_for(project_type)
+    fields = project_type.field_definitions.order(:position)
+    package = Axlsx::Package.new
+    package.workbook.add_worksheet(name: project_type.name.truncate(31)) do |sheet|
+      sheet.add_row ["Nombre"] + fields.map(&:label)
+    end
+    package.to_stream.read
   end
 
   def build_preview(project_type, file)

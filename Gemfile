@@ -65,6 +65,9 @@ gem "csv"
 # Reads .xlsx/.xls uploads for carga masiva (CSV keeps using the stdlib csv gem above).
 gem "roo"
 
+# Writes the .xlsx import template (CSV template uses the stdlib csv gem above).
+gem "caxlsx"
+
 # Rails 7.2's test runner (railties/line_filtering) is incompatible with minitest 6.x's
 # changed Runnable.run signature; pin to the last 5.x until Rails supports minitest 6.
 gem "minitest", "~> 5.25"
