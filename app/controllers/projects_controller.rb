@@ -45,6 +45,7 @@ class ProjectsController < ApplicationController
     @project = Project.new(project_type: @project_type)
     @project_type_association_id = params[:project_type_association_id]
     @associate_with_project_id = params[:associate_with_project_id]
+    prefill_shared_fields
   end
 
   def create
@@ -149,6 +150,27 @@ class ProjectsController < ApplicationController
     target_project = Project.find_by(id: params[:associate_with_project_id])
     return if association && target_project && current_user.can_create_associated_project?(association, target_project)
     redirect_to projects_path, alert: "No tenés permiso para crear proyectos."
+  end
+
+  def prefill_shared_fields
+    return if @associate_with_project_id.blank? || @project_type_association_id.blank?
+    association = ProjectTypeAssociation.find_by(id: @project_type_association_id)
+    source = Project.find_by(id: @associate_with_project_id)
+    return if association.nil? || source.nil?
+
+    source_fields = source.project_type.field_definitions.index_by(&:key)
+    target_fields = @project_type.field_definitions.index_by(&:key)
+
+    @project.custom_fields = association.shared_field_keys.each_with_object({}) do |key, fields|
+      source_field = source_fields[key]
+      target_field = target_fields[key]
+      next unless source_field && target_field
+      next unless source_field.data_type == target_field.data_type
+      next if source_field.data_type == "reference" && source_field.reference_table != target_field.reference_table
+
+      value = source.custom_fields[key]
+      fields[key] = value if value.present?
+    end
   end
 
   def project_params

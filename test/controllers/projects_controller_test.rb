@@ -56,6 +56,56 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
   end
 
+  test "new prefills shared fields from the source project when quick-creating an associated project" do
+    other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
+    FieldDefinition.create!(project_type: other_type, key: "cliente", label: "Cliente", data_type: "text", position: 1)
+    association = ProjectTypeAssociation.create!(
+      from_project_type: project_types(:instalaciones), to_project_type: other_type,
+      label: "Caso de servicio", shared_field_keys: ["cliente"]
+    )
+    source = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A." })
+
+    get new_project_path(project_type_id: other_type.id, project_type_association_id: association.id, associate_with_project_id: source.id)
+
+    assert_response :success
+    assert_select "input[name=?][value=?]", "project[custom_fields][cliente]", "Acme S.A."
+  end
+
+  test "new does not prefill a shared field when data_type differs between types" do
+    other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
+    FieldDefinition.create!(project_type: other_type, key: "cliente", label: "Cliente", data_type: "number", position: 1)
+    association = ProjectTypeAssociation.create!(
+      from_project_type: project_types(:instalaciones), to_project_type: other_type,
+      label: "Caso de servicio", shared_field_keys: ["cliente"]
+    )
+    source = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A." })
+
+    get new_project_path(project_type_id: other_type.id, project_type_association_id: association.id, associate_with_project_id: source.id)
+
+    assert_response :success
+    assert_select "input[name=?][value=?]", "project[custom_fields][cliente]", "Acme S.A.", count: 0
+  end
+
+  test "new does not prefill when shared_field_keys references a since-deleted field definition" do
+    other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
+    association = ProjectTypeAssociation.create!(
+      from_project_type: project_types(:instalaciones), to_project_type: other_type,
+      label: "Caso de servicio", shared_field_keys: ["cliente"]
+    )
+    source = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A." })
+
+    get new_project_path(project_type_id: other_type.id, project_type_association_id: association.id, associate_with_project_id: source.id)
+
+    assert_response :success
+  end
+
+  test "new without associate_with_project_id renders an empty form as before" do
+    get new_project_path(project_type_id: project_types(:instalaciones).id)
+    assert_response :success
+    assert_select "input[name=?]", "project[custom_fields][cliente]", count: 1
+    assert_select "input[name=?][value]", "project[custom_fields][cliente]", count: 0
+  end
+
   test "show displays custom fields and the stage table" do
     project = Project.create!(
       project_type: project_types(:instalaciones), name: "Torre Norte",
