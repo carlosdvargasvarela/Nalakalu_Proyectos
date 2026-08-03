@@ -39,6 +39,32 @@ class UserTest < ActiveSupport::TestCase
     assert_not visor.can_edit_project?(project)
   end
 
+  test "visor can also view a project through their linked responsible, without any ProjectAccess" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    visor = User.create!(email: "visor-instalador@example.com", password: "password123", role: "visor")
+    responsible = Responsible.create!(name: "Visor Instalador", user: visor)
+    ResponsibleProjectType.create!(responsible: responsible, project_type: project_types(:instalaciones))
+    ProjectResponsible.create!(project: project, responsible: responsible, responsible_type: responsible_types(:instalador))
+
+    assert visor.can_view_project?(project)
+    assert_not visor.can_edit_project?(project)
+  end
+
+  test "visor's responsible-linked view doesn't require a project-wide assignment, a single stage is enough" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    visor = User.create!(email: "visor-etapa@example.com", password: "password123", role: "visor")
+    responsible = Responsible.create!(name: "Visor Etapa", user: visor)
+    ResponsibleProjectType.create!(responsible: responsible, project_type: project_types(:instalaciones))
+    ProjectResponsible.create!(
+      project: project, responsible: responsible, responsible_type: responsible_types(:instalador),
+      project_stage: project.project_stages.first
+    )
+
+    assert visor.can_view_project?(project)
+    assert_not visor.can_edit_project?(project)
+    assert_equal [project.project_stages.first.id], visor.editable_project_stage_ids(project)
+  end
+
   test "gerente with a ProjectTypeAccess can edit any project of that type, including new ones" do
     gerente = users(:carla)
     ProjectTypeAccess.create!(user: gerente, project_type: project_types(:instalaciones), can_edit: true)

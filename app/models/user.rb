@@ -12,7 +12,7 @@ class User < ApplicationRecord
 
   def can_view_project?(project)
     return true if admin? || gerente?
-    return project_accesses.exists?(project_id: project.id) if visor?
+    return true if visor? && project_accesses.exists?(project_id: project.id)
     return false if responsible.nil?
     ProjectResponsible.where(project_id: project.id, responsible_id: responsible.id).exists?
   end

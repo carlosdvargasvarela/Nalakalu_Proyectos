@@ -187,6 +187,32 @@ class ProjectTest < ActiveSupport::TestCase
     assert_not_includes visible, other
   end
 
+  test "visible_to also returns a visor's projects via their linked responsible, without a ProjectAccess" do
+    assigned = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    unassigned = Project.create!(project_type: project_types(:instalaciones), name: "Torre Sur", custom_fields: {})
+    visor = User.create!(email: "visor-instalador@example.com", password: "password123", role: "visor")
+    responsible = Responsible.create!(name: "Visor Instalador", user: visor)
+    ResponsibleProjectType.create!(responsible: responsible, project_type: project_types(:instalaciones))
+    ProjectResponsible.create!(project: assigned, responsible: responsible, responsible_type: responsible_types(:instalador))
+
+    visible = Project.visible_to(visor)
+    assert_includes visible, assigned
+    assert_not_includes visible, unassigned
+  end
+
+  test "visible_to combines a visor's ProjectAccess and responsible-linked projects without duplicates" do
+    via_access = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    via_responsible = Project.create!(project_type: project_types(:instalaciones), name: "Torre Sur", custom_fields: {})
+    visor = User.create!(email: "visor-ambos@example.com", password: "password123", role: "visor")
+    responsible = Responsible.create!(name: "Visor Ambos", user: visor)
+    ResponsibleProjectType.create!(responsible: responsible, project_type: project_types(:instalaciones))
+    ProjectAccess.create!(user: visor, project: via_access)
+    ProjectResponsible.create!(project: via_responsible, responsible: responsible, responsible_type: responsible_types(:instalador))
+
+    visible = Project.visible_to(visor).to_a
+    assert_equal [via_access, via_responsible].sort_by(&:id), visible.sort_by(&:id)
+  end
+
   test "visible_to a responsable only returns projects with an assignment" do
     assigned = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
     Project.create!(project_type: @project_type, name: "Torre Sur", custom_fields: {})
