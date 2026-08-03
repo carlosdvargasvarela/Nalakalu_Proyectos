@@ -10,7 +10,7 @@
       </div>
     <% end %>
 
-    <script type="application/json" id="field-definitions-by-type"><%== @field_definitions_by_type.to_json %></script>
+    <script type="application/json" id="field-definitions-by-type"><%== ERB::Util.json_escape(@field_definitions_by_type.to_json) %></script>
 
     <div class="mb-3">
       <%= form.label :from_project_type_id, "Tipo de origen", class: "form-label" %>
@@ -49,7 +49,7 @@
         if (!fromSelect || !toSelect || !container || !dataEl) return;
 
         var fieldsByType = JSON.parse(dataEl.textContent);
-        var initiallyChecked = <%== (project_type_association.shared_field_keys || []).to_json %>;
+        var initiallyChecked = <%== ERB::Util.json_escape((project_type_association.shared_field_keys || []).to_json) %>;
 
         function compatibleFields() {
           var fromFields = fieldsByType[fromSelect.value] || [];
