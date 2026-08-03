@@ -23,7 +23,7 @@
         <%= form.hidden_field :project_type_id, value: @project_type.id %>
         <div class="mb-3">
           <%= form.label :file, "Archivo lleno (CSV o Excel)", class: "form-label" %>
-          <%= form.file_field :file, class: "form-control", accept: ".csv,.xlsx,.xls" %>
+          <%= form.file_field :file, class: "form-control", accept: ".csv,.xlsx" %>
         </div>
         <%= form.submit "Ver vista previa", class: "btn btn-primary" %>
       <% end %>

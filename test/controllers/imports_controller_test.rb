@@ -28,8 +28,8 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
   test "create builds one project per confirmed row, including its auto-generated stages" do
     project_type = project_types(:instalaciones)
     valid_rows = [
-      { name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A.", "direccion" => "Av. Siempre Viva 123" } },
-      { name: "Torre Sur", custom_fields: { "cliente" => "Beta S.A.", "direccion" => "Calle Falsa 456" } }
+      { row: 2, name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A.", "direccion" => "Av. Siempre Viva 123" } },
+      { row: 3, name: "Torre Sur", custom_fields: { "cliente" => "Beta S.A.", "direccion" => "Calle Falsa 456" } }
     ].to_json
 
     assert_difference("Project.count", 2) do
@@ -69,7 +69,7 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
 
   test "create with a row missing custom_fields still creates the project" do
     project_type = project_types(:instalaciones)
-    valid_rows = [{ name: "Torre Norte" }].to_json
+    valid_rows = [{ row: 2, name: "Torre Norte" }].to_json
 
     assert_difference("Project.count", 1) do
       post imports_path, params: { project_type_id: project_type.id, valid_rows: valid_rows }
@@ -78,6 +78,22 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "body", /1 proyecto/
     assert Project.exists?(name: "Torre Norte")
+  end
+
+  test "create reports the row's own row number, not its position in valid_rows, when it fails to save" do
+    project_type = project_types(:instalaciones)
+    valid_rows = [
+      { row: 5, name: nil, custom_fields: {} },
+      { row: 6, name: "Torre Sur", custom_fields: {} }
+    ].to_json
+
+    assert_difference("Project.count", 1) do
+      post imports_path, params: { project_type_id: project_type.id, valid_rows: valid_rows }
+    end
+
+    assert_response :success
+    assert_select "body", /Fila 5/
+    assert_no_match(/Fila 2\D/, response.body)
   end
 
   test "preview then create end to end: a blank Nombre row is excluded and only the valid one is created" do
@@ -150,7 +166,7 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
   test "create as a gerente grants edit access on each imported project" do
     sign_in users(:carla)
     project_type = project_types(:instalaciones)
-    valid_rows = [{ name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A." } }].to_json
+    valid_rows = [{ row: 2, name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A." } }].to_json
 
     post imports_path, params: { project_type_id: project_type.id, valid_rows: valid_rows }
 
@@ -196,5 +212,19 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
     }
     assert_response :success
     assert_select "body", /Formato no soportado/
+  end
+
+  test "preview shows a friendly error instead of crashing on a corrupt xlsx file" do
+    project_type = project_types(:instalaciones)
+
+    assert_no_difference("Project.count") do
+      post preview_imports_path, params: {
+        project_type_id: project_type.id,
+        file: Rack::Test::UploadedFile.new(StringIO.new("this is not a real xlsx zip file"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", original_filename: "plantilla.xlsx")
+      }
+    end
+
+    assert_response :success
+    assert_select "body", /No se pudo leer el archivo/
   end
 end
