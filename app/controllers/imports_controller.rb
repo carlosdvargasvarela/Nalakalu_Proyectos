@@ -24,7 +24,11 @@ class ImportsController < ApplicationController
   def create
     @project_type = ProjectType.find(params[:project_type_id])
     @project_types = ProjectType.all
-    valid_rows = JSON.parse(params[:valid_rows] || "[]")
+    valid_rows = begin
+      JSON.parse(params[:valid_rows] || "[]")
+    rescue JSON::ParserError
+      []
+    end
     @results = commit_rows(@project_type, valid_rows)
     render :new
   end
@@ -36,7 +40,7 @@ class ImportsController < ApplicationController
     row_errors = []
 
     valid_rows.each_with_index do |row, index|
-      project = Project.new(project_type: project_type, name: row["name"], custom_fields: row["custom_fields"])
+      project = Project.new(project_type: project_type, name: row["name"], custom_fields: row["custom_fields"] || {})
       if project.save
         ProjectAccess.create!(user: current_user, project: project, can_edit: true) if current_user.gerente?
         created += 1

@@ -56,6 +56,30 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
     assert_select "body", /0 proyecto/
   end
 
+  test "create with malformed valid_rows JSON reports zero created instead of crashing" do
+    project_type = project_types(:instalaciones)
+
+    assert_no_difference("Project.count") do
+      post imports_path, params: { project_type_id: project_type.id, valid_rows: "not json{{{" }
+    end
+
+    assert_response :success
+    assert_select "body", /0 proyecto/
+  end
+
+  test "create with a row missing custom_fields still creates the project" do
+    project_type = project_types(:instalaciones)
+    valid_rows = [{ name: "Torre Norte" }].to_json
+
+    assert_difference("Project.count", 1) do
+      post imports_path, params: { project_type_id: project_type.id, valid_rows: valid_rows }
+    end
+
+    assert_response :success
+    assert_select "body", /1 proyecto/
+    assert Project.exists?(name: "Torre Norte")
+  end
+
   test "preview then create end to end: a blank Nombre row is excluded and only the valid one is created" do
     project_type = project_types(:instalaciones)
     csv = "Nombre,Cliente,Dirección\n,Acme S.A.,Av. Siempre Viva 123\nTorre Sur,Beta S.A.,Calle Falsa 456\n"
