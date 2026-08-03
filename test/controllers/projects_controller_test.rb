@@ -60,8 +60,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
     FieldDefinition.create!(project_type: other_type, key: "nombre_cliente", label: "Nombre del cliente", data_type: "text", position: 1)
     association = ProjectTypeAssociation.create!(
-      from_project_type: project_types(:instalaciones), to_project_type: other_type,
-      label: "Caso de servicio", shared_field_mappings: [{ from: "cliente", to: "nombre_cliente" }]
+      from_project_type: other_type, to_project_type: project_types(:instalaciones),
+      label: "Caso de servicio", shared_field_mappings: [{ from: "nombre_cliente", to: "cliente" }]
     )
     source = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A." })
 
@@ -75,8 +75,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
     FieldDefinition.create!(project_type: other_type, key: "nombre_cliente", label: "Nombre del cliente", data_type: "number", position: 1)
     association = ProjectTypeAssociation.create!(
-      from_project_type: project_types(:instalaciones), to_project_type: other_type,
-      label: "Caso de servicio", shared_field_mappings: [{ from: "cliente", to: "nombre_cliente" }]
+      from_project_type: other_type, to_project_type: project_types(:instalaciones),
+      label: "Caso de servicio", shared_field_mappings: [{ from: "nombre_cliente", to: "cliente" }]
     )
     source = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A." })
 
@@ -90,8 +90,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
     FieldDefinition.create!(project_type: other_type, key: "nombre_cliente", label: "Nombre del cliente", data_type: "text", position: 1)
     association = ProjectTypeAssociation.create!(
-      from_project_type: project_types(:instalaciones), to_project_type: other_type,
-      label: "Caso de servicio", shared_field_mappings: [{ from: "cliente", to: "nombre_cliente" }]
+      from_project_type: other_type, to_project_type: project_types(:instalaciones),
+      label: "Caso de servicio", shared_field_mappings: [{ from: "nombre_cliente", to: "cliente" }]
     )
     source = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A." })
 
@@ -109,8 +109,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
     FieldDefinition.create!(project_type: other_type, key: "nombre_cliente", label: "Nombre del cliente", data_type: "text", position: 1)
     association = ProjectTypeAssociation.create!(
-      from_project_type: project_types(:instalaciones), to_project_type: other_type,
-      label: "Caso de servicio", shared_field_mappings: [{ from: "cliente", to: "nombre_cliente" }]
+      from_project_type: other_type, to_project_type: project_types(:instalaciones),
+      label: "Caso de servicio", shared_field_mappings: [{ from: "nombre_cliente", to: "cliente" }]
     )
     source = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A." })
 
@@ -125,8 +125,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
   test "new does not prefill when shared_field_mappings references a since-deleted field definition" do
     other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
     association = ProjectTypeAssociation.create!(
-      from_project_type: project_types(:instalaciones), to_project_type: other_type,
-      label: "Caso de servicio", shared_field_mappings: [{ from: "cliente", to: "nombre_cliente" }]
+      from_project_type: other_type, to_project_type: project_types(:instalaciones),
+      label: "Caso de servicio", shared_field_mappings: [{ from: "nombre_cliente", to: "cliente" }]
     )
     source = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A." })
 
