@@ -106,7 +106,14 @@
         end: last.to_s,
         progress: average_progress,
         edit_url: project_path(project),
-        custom_class: "responsible-color-#{responsible&.id || 'none'}"
+        custom_class: "responsible-color-#{responsible&.id || 'none'}",
+        status_label: status_label(project.status),
+        status_badge_class: ApplicationHelper::STATUS_BADGE_CLASSES.fetch(project.status, "bg-light text-dark"),
+        progress_status_label: progress_status_label(project.progress_status),
+        progress_status_badge_class: ApplicationHelper::PROGRESS_STATUS_BADGE_CLASSES.fetch(project.progress_status, "bg-light text-dark"),
+        overdue: project.overdue?,
+        responsible_name: responsible&.name,
+        date_range_label: "#{l(first, format: :long)} – #{l(last, format: :long)}"
       }
     end
     selected_type = ResponsibleType.find_by(id: section_params[:responsible_type_id])
@@ -157,11 +164,24 @@
               language: "es",
               readonly_dates: true,
               readonly_progress: true,
-              popup: false,
               today_button: false,
               container_height: 630,
               view_mode_select: false,
-              on_click: function (task) { window.location = task.edit_url; }
+              on_click: function (task) { window.location = task.edit_url; },
+              popup_html: function (task) {
+                var rows = [
+                  '<span class="badge ' + task.status_badge_class + '">' + task.status_label + '</span>',
+                  '<span class="badge ' + task.progress_status_badge_class + '">' + task.progress_status_label + '</span>'
+                ];
+                if (task.overdue) rows.push('<span class="badge bg-danger">Vencido</span>');
+                var responsibleRow = task.responsible_name ? '<div class="small text-white-50 mt-1">' + task.responsible_name + '</div>' : "";
+                return '<div class="p-2">' +
+                  '<div class="fw-bold mb-1">' + task.name + '</div>' +
+                  '<div class="d-flex gap-1 flex-wrap">' + rows.join("") + '</div>' +
+                  responsibleRow +
+                  '<div class="small text-white-50 mt-1">' + task.date_range_label + '</div>' +
+                '</div>';
+              }
             });
 
             document.querySelectorAll("#view-mode-<%= slug %> .view-mode-btn").forEach(function (btn) {
