@@ -32,6 +32,73 @@
       <%= form.label :responsables_can_create, "Responsables pueden crear", class: "form-check-label" %>
     </div>
 
+    <div class="mb-3">
+      <%= form.label :shared_field_keys, "Campos compartidos", class: "form-label" %>
+      <%= hidden_field_tag "project_type_association[shared_field_keys][]", "" %>
+      <div id="shared-field-keys-checks" class="form-text"></div>
+    </div>
+
     <%= form.submit class: "btn btn-primary" %>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var fromSelect = document.querySelector("#project_type_association_from_project_type_id");
+        var toSelect = document.querySelector("#project_type_association_to_project_type_id");
+        var container = document.getElementById("shared-field-keys-checks");
+        var dataEl = document.getElementById("field-definitions-by-type");
+        if (!fromSelect || !toSelect || !container || !dataEl) return;
+
+        var fieldsByType = JSON.parse(dataEl.textContent);
+        var initiallyChecked = <%== (project_type_association.shared_field_keys || []).to_json %>;
+
+        function compatibleFields() {
+          var fromFields = fieldsByType[fromSelect.value] || [];
+          var toFields = fieldsByType[toSelect.value] || [];
+          var toByKey = {};
+          toFields.forEach(function (f) { toByKey[f.key] = f; });
+
+          return fromFields.filter(function (f) {
+            var match = toByKey[f.key];
+            if (!match || match.data_type !== f.data_type) return false;
+            if (f.data_type === "reference" && f.reference_table !== match.reference_table) return false;
+            return true;
+          });
+        }
+
+        function render() {
+          var fields = compatibleFields();
+          container.innerHTML = "";
+          if (fields.length === 0) {
+            container.textContent = "No hay campos en común entre estos tipos.";
+            return;
+          }
+          fields.forEach(function (f) {
+            var wrapper = document.createElement("div");
+            wrapper.className = "form-check";
+
+            var input = document.createElement("input");
+            input.type = "checkbox";
+            input.className = "form-check-input";
+            input.name = "project_type_association[shared_field_keys][]";
+            input.value = f.key;
+            input.id = "shared_field_key_" + f.key;
+            input.checked = initiallyChecked.indexOf(f.key) !== -1;
+
+            var label = document.createElement("label");
+            label.className = "form-check-label";
+            label.setAttribute("for", input.id);
+            label.textContent = f.label + " (" + f.key + ")";
+
+            wrapper.appendChild(input);
+            wrapper.appendChild(label);
+            container.appendChild(wrapper);
+          });
+        }
+
+        fromSelect.addEventListener("change", render);
+        toSelect.addEventListener("change", render);
+        render();
+      });
+    </script>
   <% end %>
 <% end %>
