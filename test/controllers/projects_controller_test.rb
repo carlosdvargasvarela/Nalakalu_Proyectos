@@ -1110,6 +1110,35 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "index's responsible-type filter uses the configured default on a fresh, unfiltered load" do
+    responsible_types(:instalador).update!(default_in_filter: true)
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    ProjectResponsible.create!(project: project, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
+    slug = project_types(:instalaciones).slug
+
+    get project_type_projects_path(slug)
+    assert_response :success
+    assert_select "select#responsible_type_id option[selected]", "Instalador Fixture"
+  end
+
+  test "index's responsible-type filter doesn't apply the default when the section was explicitly filtered with it left blank" do
+    responsible_types(:instalador).update!(default_in_filter: true)
+    slug = project_types(:instalaciones).slug
+
+    get project_type_projects_path(slug), params: { responsible_type_id: "", status: "" }
+    assert_response :success
+    assert_select "select#responsible_type_id option[selected]", false
+  end
+
+  test "index's responsible-type filter respects an explicitly chosen type over the default" do
+    responsible_types(:instalador).update!(default_in_filter: true)
+    slug = project_types(:instalaciones).slug
+
+    get project_type_projects_path(slug), params: { responsible_type_id: responsible_types(:disenador).id, status: "" }
+    assert_response :success
+    assert_select "select#responsible_type_id option[selected]", "Diseñador Fixture"
+  end
+
   test "index's Etapa filter doesn't apply the default when the section was explicitly filtered with Etapa left blank" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     stage_templates(:instalacion).update!(default_in_filter: true)

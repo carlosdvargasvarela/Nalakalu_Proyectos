@@ -231,9 +231,15 @@ class ProjectsController < ApplicationController
   def build_section(project_type)
     filtered = params.key?(:status)
 
+    responsible_type_id = if filtered
+      params[:responsible_type_id]
+    else
+      params[:responsible_type_id].presence || project_type.responsible_types.find_by(default_in_filter: true)&.id&.to_s
+    end
+
     projects = Project.visible_to(current_user).where(project_type: project_type).includes(:project_type, project_stages: :stage_template).order(:name)
     projects = params[:status].present? ? projects.where(status: params[:status]) : projects.where.not(status: "archived")
-    projects = filter_by_responsible(projects, params[:responsible_type_id], params[:responsible_id])
+    projects = filter_by_responsible(projects, responsible_type_id, params[:responsible_id])
     projects = filter_by_date_range(projects, params[:from_date], params[:to_date])
     projects = filter_by_query(projects, params[:q])
 
@@ -252,7 +258,7 @@ class ProjectsController < ApplicationController
 
     {
       project_type: project_type,
-      params: params.slice(:status, :responsible_type_id, :responsible_id, :from_date, :to_date, :stage_name, :q, :page),
+      params: params.slice(:status, :responsible_type_id, :responsible_id, :from_date, :to_date, :stage_name, :q, :page).merge(responsible_type_id: responsible_type_id),
       stage_name: stage_name,
       projects_list: projects_list,
       page_projects: page_projects,
