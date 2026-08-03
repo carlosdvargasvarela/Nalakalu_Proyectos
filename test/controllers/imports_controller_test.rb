@@ -25,15 +25,15 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Nombre,Cliente,Dirección", header
   end
 
-  test "create builds one project per valid row, including its auto-generated stages" do
+  test "create builds one project per confirmed row, including its auto-generated stages" do
     project_type = project_types(:instalaciones)
-    csv = "Nombre,Cliente,Dirección\nTorre Norte,Acme S.A.,Av. Siempre Viva 123\nTorre Sur,Beta S.A.,Calle Falsa 456\n"
+    valid_rows = [
+      { name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A.", "direccion" => "Av. Siempre Viva 123" } },
+      { name: "Torre Sur", custom_fields: { "cliente" => "Beta S.A.", "direccion" => "Calle Falsa 456" } }
+    ].to_json
 
     assert_difference("Project.count", 2) do
-      post imports_path, params: {
-        project_type_id: project_type.id,
-        file: Rack::Test::UploadedFile.new(StringIO.new(csv), "text/csv", original_filename: "plantilla.csv")
-      }
+      post imports_path, params: { project_type_id: project_type.id, valid_rows: valid_rows }
     end
 
     assert_response :success
@@ -45,27 +45,36 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 5, torre.project_stages.count
   end
 
-  test "create skips a row with a blank Nombre and reports the error, without blocking the others" do
+  test "create with no valid_rows reports zero created" do
+    project_type = project_types(:instalaciones)
+
+    assert_no_difference("Project.count") do
+      post imports_path, params: { project_type_id: project_type.id }
+    end
+
+    assert_response :success
+    assert_select "body", /0 proyecto/
+  end
+
+  test "preview then create end to end: a blank Nombre row is excluded and only the valid one is created" do
     project_type = project_types(:instalaciones)
     csv = "Nombre,Cliente,Dirección\n,Acme S.A.,Av. Siempre Viva 123\nTorre Sur,Beta S.A.,Calle Falsa 456\n"
 
+    post preview_imports_path, params: {
+      project_type_id: project_type.id,
+      file: Rack::Test::UploadedFile.new(StringIO.new(csv), "text/csv", original_filename: "plantilla.csv")
+    }
+    assert_response :success
+    valid_rows_json = css_select("input[name='valid_rows']").first["value"]
+
     assert_difference("Project.count", 1) do
-      post imports_path, params: {
-        project_type_id: project_type.id,
-        file: Rack::Test::UploadedFile.new(StringIO.new(csv), "text/csv", original_filename: "plantilla.csv")
-      }
+      post imports_path, params: { project_type_id: project_type.id, valid_rows: valid_rows_json }
     end
 
     assert_response :success
     assert_select "body", /1 proyecto/
-    assert_select "body", /Fila 2/
-  end
-
-  test "create reports an error when no file is uploaded" do
-    project_type = project_types(:instalaciones)
-    post imports_path, params: { project_type_id: project_type.id }
-    assert_response :success
-    assert_select "body", /No se subió ningún archivo/
+    assert Project.exists?(name: "Torre Sur")
+    assert_not Project.exists?(name: nil)
   end
 
   test "preview parses a valid csv without creating any project" do
@@ -117,12 +126,9 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
   test "create as a gerente grants edit access on each imported project" do
     sign_in users(:carla)
     project_type = project_types(:instalaciones)
-    csv = "Nombre,Cliente,Instalador\nTorre Norte,Acme S.A.,Juan Pérez\n"
+    valid_rows = [{ name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A." } }].to_json
 
-    post imports_path, params: {
-      project_type_id: project_type.id,
-      file: Rack::Test::UploadedFile.new(StringIO.new(csv), "text/csv", original_filename: "plantilla.csv")
-    }
+    post imports_path, params: { project_type_id: project_type.id, valid_rows: valid_rows }
 
     project = Project.find_by(name: "Torre Norte")
     assert users(:carla).can_edit_project?(project)

@@ -24,11 +24,29 @@ class ImportsController < ApplicationController
   def create
     @project_type = ProjectType.find(params[:project_type_id])
     @project_types = ProjectType.all
-    @results = { created: 0, errors: [] }
+    valid_rows = JSON.parse(params[:valid_rows] || "[]")
+    @results = commit_rows(@project_type, valid_rows)
     render :new
   end
 
   private
+
+  def commit_rows(project_type, valid_rows)
+    created = 0
+    row_errors = []
+
+    valid_rows.each_with_index do |row, index|
+      project = Project.new(project_type: project_type, name: row["name"], custom_fields: row["custom_fields"])
+      if project.save
+        ProjectAccess.create!(user: current_user, project: project, can_edit: true) if current_user.gerente?
+        created += 1
+      else
+        row_errors << { row: index + 2, message: project.errors.full_messages.join(", ") }
+      end
+    end
+
+    { created: created, errors: row_errors }
+  end
 
   def csv_template_for(project_type)
     fields = project_type.field_definitions.order(:position)
