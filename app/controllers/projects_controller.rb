@@ -166,15 +166,15 @@ class ProjectsController < ApplicationController
     source_fields = source.project_type.field_definitions.index_by(&:key)
     target_fields = @project_type.field_definitions.index_by(&:key)
 
-    @project.custom_fields = association.shared_field_keys.each_with_object({}) do |key, fields|
-      source_field = source_fields[key]
-      target_field = target_fields[key]
+    @project.custom_fields = association.shared_field_mappings.each_with_object({}) do |mapping, fields|
+      source_field = source_fields[mapping["from"]]
+      target_field = target_fields[mapping["to"]]
       next unless source_field && target_field
       next unless source_field.data_type == target_field.data_type
       next if source_field.data_type == "reference" && source_field.reference_table != target_field.reference_table
 
-      value = source.custom_fields[key]
-      fields[key] = value if value.present?
+      value = source.custom_fields[mapping["from"]]
+      fields[mapping["to"]] = value if value.present?
     end
   end
 

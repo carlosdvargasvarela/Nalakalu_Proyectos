@@ -52,9 +52,11 @@ class Admin::ProjectTypeAssociationsController < Admin::BaseController
   def project_type_association_params
     permitted = params.require(:project_type_association).permit(
       :from_project_type_id, :to_project_type_id, :label, :responsables_can_create,
-      shared_field_keys: []
+      shared_field_mappings: [:from, :to]
     )
-    permitted[:shared_field_keys] = permitted[:shared_field_keys].reject(&:blank?) if permitted.key?(:shared_field_keys)
+    if permitted.key?(:shared_field_mappings)
+      permitted[:shared_field_mappings] = permitted[:shared_field_mappings].reject { |m| m[:from].blank? || m[:to].blank? }
+    end
     permitted
   end
 end

@@ -54,30 +54,41 @@ class Admin::ProjectTypeAssociationsControllerTest < ActionDispatch::Integration
     end
   end
 
-  test "create persists shared_field_keys" do
+  test "create persists shared_field_mappings" do
     assert_difference("ProjectTypeAssociation.count", 1) do
       post admin_project_type_associations_path, params: {
         project_type_association: {
           from_project_type_id: @other_type.id, to_project_type_id: project_types(:instalaciones).id,
-          label: "Caso de servicio", shared_field_keys: ["cliente"]
+          label: "Caso de servicio", shared_field_mappings: [{ from: "cliente", to: "nombre_cliente" }]
         }
       }
     end
-    assert_equal ["cliente"], ProjectTypeAssociation.order(:id).last.shared_field_keys
+    assert_equal [{ "from" => "cliente", "to" => "nombre_cliente" }], ProjectTypeAssociation.order(:id).last.shared_field_mappings
   end
 
-  test "update with no shared_field_keys checked clears the list" do
+  test "update with no mapping rows left clears the list" do
     pta = ProjectTypeAssociation.create!(
       from_project_type: @other_type, to_project_type: project_types(:instalaciones),
-      label: "Caso de servicio", shared_field_keys: ["cliente"]
+      label: "Caso de servicio", shared_field_mappings: [{ from: "cliente", to: "nombre_cliente" }]
     )
     patch admin_project_type_association_path(pta), params: {
       project_type_association: {
         from_project_type_id: @other_type.id, to_project_type_id: project_types(:instalaciones).id,
-        label: "Caso de servicio", shared_field_keys: [""]
+        label: "Caso de servicio", shared_field_mappings: []
       }
     }
-    assert_equal [], pta.reload.shared_field_keys
+    assert_equal [], pta.reload.shared_field_mappings
+  end
+
+  test "create drops incomplete mapping rows (missing from or to)" do
+    post admin_project_type_associations_path, params: {
+      project_type_association: {
+        from_project_type_id: @other_type.id, to_project_type_id: project_types(:instalaciones).id,
+        label: "Caso de servicio",
+        shared_field_mappings: [{ from: "cliente", to: "" }, { from: "", to: "nombre_cliente" }, { from: "cliente", to: "nombre_cliente" }]
+      }
+    }
+    assert_equal [{ "from" => "cliente", "to" => "nombre_cliente" }], ProjectTypeAssociation.order(:id).last.shared_field_mappings
   end
 
   test "new exposes field definitions grouped by project type" do

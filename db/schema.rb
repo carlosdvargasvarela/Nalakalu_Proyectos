@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_08_03_140000) do
+ActiveRecord::Schema[7.2].define(version: 2026_08_03_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -158,7 +158,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_03_140000) do
     t.boolean "responsables_can_create", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.jsonb "shared_field_keys", default: [], null: false
+    t.jsonb "shared_field_mappings", default: [], null: false
     t.index ["from_project_type_id"], name: "index_project_type_associations_on_from_project_type_id"
     t.index ["to_project_type_id"], name: "index_project_type_associations_on_to_project_type_id"
   end

@@ -56,41 +56,41 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
   end
 
-  test "new prefills shared fields from the source project when quick-creating an associated project" do
+  test "new prefills a shared field from the source project even when the target key has a different name" do
     other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
-    FieldDefinition.create!(project_type: other_type, key: "cliente", label: "Cliente", data_type: "text", position: 1)
+    FieldDefinition.create!(project_type: other_type, key: "nombre_cliente", label: "Nombre del cliente", data_type: "text", position: 1)
     association = ProjectTypeAssociation.create!(
       from_project_type: project_types(:instalaciones), to_project_type: other_type,
-      label: "Caso de servicio", shared_field_keys: ["cliente"]
+      label: "Caso de servicio", shared_field_mappings: [{ from: "cliente", to: "nombre_cliente" }]
     )
     source = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A." })
 
     get new_project_path(project_type_id: other_type.id, project_type_association_id: association.id, associate_with_project_id: source.id)
 
     assert_response :success
-    assert_select "input[name=?][value=?]", "project[custom_fields][cliente]", "Acme S.A."
+    assert_select "input[name=?][value=?]", "project[custom_fields][nombre_cliente]", "Acme S.A."
   end
 
-  test "new does not prefill a shared field when data_type differs between types" do
+  test "new does not prefill a mapped field when data_type differs between types" do
     other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
-    FieldDefinition.create!(project_type: other_type, key: "cliente", label: "Cliente", data_type: "number", position: 1)
+    FieldDefinition.create!(project_type: other_type, key: "nombre_cliente", label: "Nombre del cliente", data_type: "number", position: 1)
     association = ProjectTypeAssociation.create!(
       from_project_type: project_types(:instalaciones), to_project_type: other_type,
-      label: "Caso de servicio", shared_field_keys: ["cliente"]
+      label: "Caso de servicio", shared_field_mappings: [{ from: "cliente", to: "nombre_cliente" }]
     )
     source = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A." })
 
     get new_project_path(project_type_id: other_type.id, project_type_association_id: association.id, associate_with_project_id: source.id)
 
     assert_response :success
-    assert_select "input[name=?][value=?]", "project[custom_fields][cliente]", "Acme S.A.", count: 0
+    assert_select "input[name=?][value=?]", "project[custom_fields][nombre_cliente]", "Acme S.A.", count: 0
   end
 
-  test "new does not prefill when shared_field_keys references a since-deleted field definition" do
+  test "new does not prefill when shared_field_mappings references a since-deleted field definition" do
     other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
     association = ProjectTypeAssociation.create!(
       from_project_type: project_types(:instalaciones), to_project_type: other_type,
-      label: "Caso de servicio", shared_field_keys: ["cliente"]
+      label: "Caso de servicio", shared_field_mappings: [{ from: "cliente", to: "nombre_cliente" }]
     )
     source = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { "cliente" => "Acme S.A." })
 
