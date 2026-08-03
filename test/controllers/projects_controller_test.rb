@@ -1401,4 +1401,34 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "select.js-tomselect#project_association_other_project_id"
   end
+
+  test "show marks a historical (deleted) responsible assignment" do
+    project_type = project_types(:instalaciones)
+    responsible_type = ResponsibleType.create!(project_type: project_type, name: "Instalador")
+    responsible = Responsible.create!(name: "Ana Gómez")
+    ResponsibleProjectType.create!(responsible: responsible, project_type: project_type)
+    project = Project.create!(project_type: project_type, name: "Torre Norte", custom_fields: {})
+    ProjectResponsible.create!(project: project, responsible: responsible, responsible_type: responsible_type)
+    responsible.destroy
+
+    get project_path(project)
+
+    assert_response :success
+    assert_select "body", /Ana Gómez \(eliminado\)/
+  end
+
+  test "show does not mark an active responsible assignment as deleted" do
+    project_type = project_types(:instalaciones)
+    responsible_type = ResponsibleType.create!(project_type: project_type, name: "Instalador")
+    responsible = Responsible.create!(name: "Ana Gómez")
+    ResponsibleProjectType.create!(responsible: responsible, project_type: project_type)
+    project = Project.create!(project_type: project_type, name: "Torre Norte", custom_fields: {})
+    ProjectResponsible.create!(project: project, responsible: responsible, responsible_type: responsible_type)
+
+    get project_path(project)
+
+    assert_response :success
+    assert_select "body", /Ana Gómez/
+    assert_select "body", { text: /Ana Gómez \(eliminado\)/, count: 0 }
+  end
 end

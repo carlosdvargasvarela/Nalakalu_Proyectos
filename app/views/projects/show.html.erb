@@ -156,8 +156,8 @@
         <% @project.project_responsibles.includes(:responsible, :responsible_type, :project_stage).each do |pr| %>
           <li class="list-group-item d-flex justify-content-between align-items-center">
             <span>
-              <span class="badge me-2" style="background-color: <%= pr.responsible.color %>">&nbsp;</span>
-              <%= pr.responsible.name %> — <%= pr.responsible_type.name %>
+              <span class="badge me-2" style="background-color: <%= pr.responsible_color %>">&nbsp;</span>
+              <%= pr.responsible_name %><%= " (eliminado)" if pr.responsible_id.nil? %> — <%= pr.responsible_type.name %>
               (<%= pr.project_stage&.name || "Todo el proyecto" %>)
             </span>
             <%= button_to "Quitar", project_project_responsible_path(@project, pr), method: :delete,
