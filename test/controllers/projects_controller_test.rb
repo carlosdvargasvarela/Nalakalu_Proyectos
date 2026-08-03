@@ -365,18 +365,21 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/readonly_progress:\s*true/, response.body)
   end
 
-  test "index's Gantt tasks include status, progress, and responsible info for the hover popup" do
+  test "index's Gantt tasks include status, progress, and every responsible for the hover popup" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {}, status: "active")
     ProjectResponsible.create!(project: project, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
+    ProjectResponsible.create!(project: project, responsible: responsibles(:pedro_responsable), responsible_type: responsible_types(:disenador))
     slug = project_types(:instalaciones).slug
 
-    get project_type_projects_path(slug), params: { responsible_type_id: responsible_types(:instalador).id }
+    get project_type_projects_path(slug)
     assert_response :success
     assert_select "script#gantt-tasks-#{slug}" do |elements|
       task = JSON.parse(elements.first.text).find { |t| t["id"] == project.id.to_s }
       assert_equal "Activo", task["status_label"]
       assert_equal "Sin iniciar", task["progress_status_label"]
-      assert_equal "Ana Gómez", task["responsible_name"]
+      names = task["responsibles"].map { |r| [r["type"], r["name"]] }
+      assert_includes names, ["Instalador Fixture", "Ana Gómez"]
+      assert_includes names, ["Diseñador Fixture", "Pedro Instalador"]
     end
   end
 

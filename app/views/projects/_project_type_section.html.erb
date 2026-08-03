@@ -112,7 +112,7 @@
         progress_status_label: progress_status_label(project.progress_status),
         progress_status_badge_class: ApplicationHelper::PROGRESS_STATUS_BADGE_CLASSES.fetch(project.progress_status, "bg-light text-dark"),
         overdue: project.overdue?,
-        responsible_name: responsible&.name,
+        responsibles: project.project_responsibles.includes(:responsible_type).map { |pr| { type: pr.responsible_type.name, name: pr.responsible_name, color: pr.responsible_color } },
         date_range_label: "#{l(first, format: :long)} – #{l(last, format: :long)}"
       }
     end
@@ -170,17 +170,25 @@
               popup_on: "hover",
               on_click: function (task) { window.location = task.edit_url; },
               popup_html: function (task) {
+                function esc(text) {
+                  return String(text).replace(/[&<>"']/g, function (c) {
+                    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+                  });
+                }
                 var rows = [
-                  '<span class="badge ' + task.status_badge_class + '">' + task.status_label + '</span>',
-                  '<span class="badge ' + task.progress_status_badge_class + '">' + task.progress_status_label + '</span>'
+                  '<span class="badge ' + task.status_badge_class + '">' + esc(task.status_label) + '</span>',
+                  '<span class="badge ' + task.progress_status_badge_class + '">' + esc(task.progress_status_label) + '</span>'
                 ];
                 if (task.overdue) rows.push('<span class="badge bg-danger">Vencido</span>');
-                var responsibleRow = task.responsible_name ? '<div class="small text-white-50 mt-1">' + task.responsible_name + '</div>' : "";
+                var responsiblesHtml = (task.responsibles || []).map(function (r) {
+                  return '<div class="small mt-1"><span class="badge me-1" style="background-color: ' + r.color + '">&nbsp;</span>' +
+                    esc(r.type) + ': ' + esc(r.name) + '</div>';
+                }).join("");
                 return '<div class="p-2">' +
-                  '<div class="fw-bold mb-1">' + task.name + '</div>' +
+                  '<div class="fw-bold mb-1">' + esc(task.name) + '</div>' +
                   '<div class="d-flex gap-1 flex-wrap">' + rows.join("") + '</div>' +
-                  responsibleRow +
-                  '<div class="small text-white-50 mt-1">' + task.date_range_label + '</div>' +
+                  responsiblesHtml +
+                  '<div class="small text-white-50 mt-1">' + esc(task.date_range_label) + '</div>' +
                 '</div>';
               }
             });
