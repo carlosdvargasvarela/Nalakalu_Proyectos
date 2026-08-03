@@ -4,6 +4,10 @@
       <%= f.label :name, "Nombre" %>
       <%= f.text_field :name, class: "form-control" %>
     </div>
+    <div class="mb-3 form-check">
+      <%= f.check_box :default_in_filter, class: "form-check-input" %>
+      <%= f.label :default_in_filter, "Tipo de responsable por defecto en el filtro", class: "form-check-label" %>
+    </div>
     <%= f.submit (@responsible_type.persisted? ? "Actualizar Tipo de Responsable" : "Crear Tipo de Responsable"), class: "btn btn-primary" %>
   <% end %>
 <% end %>

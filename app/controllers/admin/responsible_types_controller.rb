@@ -42,6 +42,6 @@ class Admin::ResponsibleTypesController < Admin::BaseController
   end
 
   def responsible_type_params
-    params.require(:responsible_type).permit(:name)
+    params.require(:responsible_type).permit(:name, :default_in_filter)
   end
 end

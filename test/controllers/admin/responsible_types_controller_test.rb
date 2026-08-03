@@ -48,4 +48,31 @@ class Admin::ResponsibleTypesControllerTest < ActionDispatch::IntegrationTest
       delete admin_project_type_responsible_type_path(@project_type, type)
     end
   end
+
+  test "create saves default_in_filter" do
+    post admin_project_type_responsible_types_path(@project_type), params: {
+      responsible_type: { name: "Electricista", default_in_filter: "1" }
+    }
+    assert ResponsibleType.order(:id).last.default_in_filter
+  end
+
+  test "update saves default_in_filter and clears the previous default" do
+    instalador = responsible_types(:instalador)
+    disenador = responsible_types(:disenador)
+    instalador.update!(default_in_filter: true)
+
+    patch admin_project_type_responsible_type_path(@project_type, disenador), params: {
+      responsible_type: { name: disenador.name, default_in_filter: "1" }
+    }
+
+    assert_redirected_to admin_project_type_path(@project_type)
+    assert disenador.reload.default_in_filter
+    assert_not instalador.reload.default_in_filter
+  end
+
+  test "new and edit show the default_in_filter checkbox" do
+    get new_admin_project_type_responsible_type_path(@project_type)
+    assert_response :success
+    assert_select "input[type=checkbox][name=?]", "responsible_type[default_in_filter]"
+  end
 end
