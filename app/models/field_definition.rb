@@ -1,5 +1,6 @@
 class FieldDefinition < ApplicationRecord
   DATA_TYPES = %w[text textarea number currency percent date boolean reference].freeze
+  REFERENCEABLE_TABLES = %w[responsibles].freeze
   DATA_TYPE_LABELS = {
     "text" => "Texto",
     "textarea" => "Texto largo",
@@ -16,7 +17,7 @@ class FieldDefinition < ApplicationRecord
   validates :key, presence: true, uniqueness: { scope: :project_type_id }
   validates :label, presence: true
   validates :data_type, inclusion: { in: DATA_TYPES }
-  validates :reference_table, presence: true, if: -> { data_type == "reference" }
+  validates :reference_table, inclusion: { in: REFERENCEABLE_TABLES }, if: -> { data_type == "reference" }
 
   def data_type_label
     DATA_TYPE_LABELS.fetch(data_type, data_type)

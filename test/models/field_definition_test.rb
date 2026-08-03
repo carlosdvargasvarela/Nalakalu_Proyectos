@@ -33,6 +33,22 @@ class FieldDefinitionTest < ActiveSupport::TestCase
     assert_not field.valid?
   end
 
+  test "invalid reference field with a reference_table that isn't a real, allowed model" do
+    field = FieldDefinition.new(
+      project_type: project_types(:instalaciones),
+      key: "supervisor", label: "Supervisor", data_type: "reference", reference_table: "installers"
+    )
+    assert_not field.valid?
+  end
+
+  test "valid reference field with an allowed reference_table" do
+    field = FieldDefinition.new(
+      project_type: project_types(:instalaciones),
+      key: "supervisor", label: "Supervisor", data_type: "reference", reference_table: "responsibles"
+    )
+    assert field.valid?
+  end
+
   test "data_type_label translates every known type to Spanish" do
     expected = {
       "text" => "Texto", "textarea" => "Texto largo", "number" => "Número",

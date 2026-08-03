@@ -15,7 +15,7 @@ end
   { key: "vendedor", label: "Vendedor", data_type: "text", position: 3, show_in_gantt: false },
   { key: "direccion", label: "Dirección", data_type: "text", position: 4, show_in_gantt: false },
   { key: "contacto", label: "Contacto", data_type: "text", position: 5, show_in_gantt: false },
-  { key: "instalador", label: "Instalador", data_type: "reference", reference_table: "installers", position: 6, show_in_gantt: true }
+  { key: "instalador", label: "Instalador", data_type: "reference", reference_table: "responsibles", position: 6, show_in_gantt: true }
 ].each do |attrs|
   instalaciones.field_definitions.find_or_create_by!(key: attrs[:key]) { |f| f.assign_attributes(attrs) }
 end
