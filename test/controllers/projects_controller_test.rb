@@ -1015,6 +1015,21 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_equal [otro_responsable], project.reload.project_responsibles.where(responsible_type: responsible_types(:instalador), project_stage: nil).map(&:responsible)
   end
 
+  test "bulk_assign_responsible skips projects when the responsible isn't configured with the chosen type" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Proyecto A", custom_fields: {})
+    disenador = Responsible.create!(name: "Diana Diseñadora")
+    ResponsibleProjectType.create!(responsible: disenador, project_type: project_types(:instalaciones), responsible_type: responsible_types(:disenador))
+
+    patch bulk_assign_responsible_projects_path, params: {
+      responsible_type_id: responsible_types(:instalador).id, responsible_id: disenador.id,
+      project_ids: [project.id], project_type_slug: project_types(:instalaciones).slug
+    }
+
+    assert_equal [], project.reload.project_responsibles.to_a
+    follow_redirect!
+    assert_match(/no es del tipo elegido para 1 proyecto\(s\)/, response.body)
+  end
+
   test "bulk_assign_responsible without a type or responsible chosen does nothing and redirects with an alert" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Proyecto A", custom_fields: {})
 
@@ -1053,8 +1068,23 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_type_projects_path(project_types(:instalaciones).slug)
     assert_response :success
-    assert_select "select#bulk-assign-responsible-select-#{project_types(:instalaciones).slug} option", text: "Ana Gómez"
-    assert_select "select#bulk-assign-responsible-select-#{project_types(:instalaciones).slug} option", text: "No Habilitado", count: 0
+    assert_match(/"Ana G.mez"/, response.body)
+    assert_no_match(/No Habilitado/, response.body)
+  end
+
+  test "index's bulk-assign selector groups responsibles by their configured responsible_type" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    disenador = Responsible.create!(name: "Diana Diseñadora")
+    ResponsibleProjectType.create!(responsible: disenador, project_type: project_types(:instalaciones), responsible_type: responsible_types(:disenador))
+
+    get project_type_projects_path(project_types(:instalaciones).slug)
+    assert_response :success
+    doc = Nokogiri::HTML5(response.body)
+    script = doc.css("script").map(&:text).find { |t| t.include?("bulk-assign-type-select-#{project_types(:instalaciones).slug}") }
+    payload = JSON.parse(script[/var responsiblesByType = (\{.*?\});/m, 1])
+    assert_equal [[responsibles(:ana_gomez).id, "Ana Gómez"], [responsibles(:pedro_responsable).id, "Pedro Instalador"]].sort_by(&:last),
+      payload[responsible_types(:instalador).id.to_s].sort_by(&:last)
+    assert_equal [[disenador.id, "Diana Diseñadora"]], payload[responsible_types(:disenador).id.to_s]
   end
 
   test "index's select-all checkbox toggles every project checkbox via JS" do

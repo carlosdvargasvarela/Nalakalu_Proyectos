@@ -208,6 +208,11 @@
   </div>
 
   <% if current_user.admin? || current_user.gerente? %>
+    <%
+      responsibles_by_type = project_type.responsible_project_types.includes(:responsible)
+        .group_by { |rpt| rpt.responsible_type_id.to_s }
+        .transform_values { |rows| rows.map { |rpt| [rpt.responsible_id, rpt.responsible.name] }.sort_by { |_, name| name } }
+    %>
     <%= form_with url: bulk_assign_responsible_projects_path(request.query_parameters), method: :patch, local: true,
           id: "bulk-assign-form-#{slug}", class: "d-flex gap-2 align-items-end mb-3" do |f| %>
       <%= hidden_field_tag :project_type_slug, slug %>
@@ -218,11 +223,31 @@
       </div>
       <div>
         <%= f.label :responsible_id, "Asignar a los seleccionados", for: "bulk-assign-responsible-select-#{slug}", class: "form-label" %>
-        <%= f.select :responsible_id, project_type.responsibles.order(:name).collect { |r| [r.name, r.id] },
-              { include_blank: "Elegí un responsable" }, class: "form-select js-tomselect", id: "bulk-assign-responsible-select-#{slug}" %>
+        <%= f.select :responsible_id, [], { include_blank: "Elegí un responsable" }, class: "form-select js-tomselect", id: "bulk-assign-responsible-select-#{slug}" %>
       </div>
       <%= f.submit "Asignar", class: "btn btn-primary" %>
     <% end %>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var responsiblesByType = <%= raw responsibles_by_type.to_json %>;
+        var typeSelect = document.getElementById("bulk-assign-type-select-<%= slug %>");
+        var responsibleSelect = document.getElementById("bulk-assign-responsible-select-<%= slug %>");
+
+        function applyOptions() {
+          var ts = responsibleSelect.tomselect;
+          if (!ts) return;
+          ts.clear(true);
+          ts.clearOptions();
+          (responsiblesByType[typeSelect.value] || []).forEach(function (pair) {
+            ts.addOption({ value: String(pair[0]), text: pair[1] });
+          });
+          ts.refreshOptions(false);
+        }
+
+        typeSelect.addEventListener("change", applyOptions);
+        applyOptions();
+      });
+    </script>
   <% end %>
 
   <div class="card mb-4">

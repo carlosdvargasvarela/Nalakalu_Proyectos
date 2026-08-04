@@ -114,16 +114,22 @@ class ProjectsController < ApplicationController
       redirect_to bulk_assign_redirect_target, alert: "Elegí un tipo, un responsable y al menos un proyecto." and return
     end
 
+    responsible = Responsible.find_by(id: params[:responsible_id])
     editable_projects = Project.visible_to(current_user).where(id: project_ids).select { |project| current_user.can_edit_project?(project) }
-    count = 0
-    editable_projects.each do |project|
-      existing = project.project_responsibles.find_by(responsible_type_id: params[:responsible_type_id], project_stage_id: nil)
-      existing&.destroy
-      project.project_responsibles.create!(responsible_type_id: params[:responsible_type_id], responsible_id: params[:responsible_id])
-      count += 1
+    eligible, ineligible = editable_projects.partition do |project|
+      responsible&.responsible_project_types&.exists?(project_type_id: project.project_type_id, responsible_type_id: params[:responsible_type_id])
     end
 
-    redirect_to bulk_assign_redirect_target, notice: "Responsable asignado a #{count} proyecto(s)."
+    eligible.each do |project|
+      project.project_responsibles.find_by(responsible_type_id: params[:responsible_type_id], project_stage_id: nil)&.destroy
+      project.project_responsibles.create!(responsible_type_id: params[:responsible_type_id], responsible_id: params[:responsible_id])
+    end
+
+    if ineligible.empty?
+      redirect_to bulk_assign_redirect_target, notice: "Responsable asignado a #{eligible.size} proyecto(s)."
+    else
+      redirect_to bulk_assign_redirect_target, alert: "Ese responsable no es del tipo elegido para #{ineligible.size} proyecto(s); se omitieron."
+    end
   end
 
   private
