@@ -1,5 +1,10 @@
 <%= panel_card(project_type_association.persisted? ? "Editar tipo de asociación" : "Nuevo tipo de asociación") do %>
-  <%= form_with model: [:admin, project_type_association] do |form| %>
+  <%= form_with model: [:admin, project_type_association],
+        data: {
+          controller: "shared-field-mapping",
+          shared_field_mapping_fields_by_type_value: @field_definitions_by_type.to_json,
+          shared_field_mapping_initial_mappings_value: (project_type_association.shared_field_mappings || []).to_json
+        } do |form| %>
     <% if project_type_association.errors.any? %>
       <div class="alert alert-danger">
         <ul class="mb-0">
@@ -10,16 +15,16 @@
       </div>
     <% end %>
 
-    <script type="application/json" id="field-definitions-by-type"><%== ERB::Util.json_escape(@field_definitions_by_type.to_json) %></script>
-
     <div class="mb-3">
       <%= form.label :from_project_type_id, "Tipo de origen", class: "form-label" %>
-      <%= form.collection_select :from_project_type_id, ProjectType.order(:name), :id, :name, {}, class: "form-select" %>
+      <%= form.collection_select :from_project_type_id, ProjectType.order(:name), :id, :name, {},
+            class: "form-select", data: { shared_field_mapping_target: "fromType", action: "change->shared-field-mapping#resetRows" } %>
     </div>
 
     <div class="mb-3">
       <%= form.label :to_project_type_id, "Tipo de destino", class: "form-label" %>
-      <%= form.collection_select :to_project_type_id, ProjectType.order(:name), :id, :name, {}, class: "form-select" %>
+      <%= form.collection_select :to_project_type_id, ProjectType.order(:name), :id, :name, {},
+            class: "form-select", data: { shared_field_mapping_target: "toType", action: "change->shared-field-mapping#resetRows" } %>
     </div>
 
     <div class="mb-3">
@@ -35,122 +40,10 @@
     <div class="mb-3">
       <%= form.label :shared_field_mappings, "Campos compartidos", class: "form-label" %>
       <p class="form-text">Elegí qué campo del tipo de origen precarga cuál campo del tipo de destino al crear un proyecto asociado. Solo se pueden mapear campos del mismo tipo de dato.</p>
-      <div id="shared-field-mappings-rows"></div>
-      <button type="button" id="add-shared-field-mapping" class="btn btn-outline-secondary btn-sm mt-2">+ Agregar campo compartido</button>
+      <div data-shared-field-mapping-target="rows"></div>
+      <button type="button" class="btn btn-outline-secondary btn-sm mt-2" data-action="click->shared-field-mapping#addBlankRow">+ Agregar campo compartido</button>
     </div>
 
     <%= form.submit class: "btn btn-primary" %>
-
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        var fromSelect = document.querySelector("#project_type_association_from_project_type_id");
-        var toSelect = document.querySelector("#project_type_association_to_project_type_id");
-        var rowsContainer = document.getElementById("shared-field-mappings-rows");
-        var addButton = document.getElementById("add-shared-field-mapping");
-        var dataEl = document.getElementById("field-definitions-by-type");
-        if (!fromSelect || !toSelect || !rowsContainer || !addButton || !dataEl) return;
-
-        var fieldsByType = JSON.parse(dataEl.textContent);
-        var initialMappings = <%== ERB::Util.json_escape((project_type_association.shared_field_mappings || []).to_json) %>;
-
-        function fieldsCompatibleWith(field, candidates) {
-          if (!field) return candidates;
-          return candidates.filter(function (c) {
-            if (c.data_type !== field.data_type) return false;
-            if (field.data_type === "reference" && c.reference_table !== field.reference_table) return false;
-            return true;
-          });
-        }
-
-        function buildSelect(fields, selectedKey, onChange) {
-          var select = document.createElement("select");
-          select.className = "form-select form-select-sm";
-
-          var blank = document.createElement("option");
-          blank.value = "";
-          blank.textContent = "Elegí un campo";
-          select.appendChild(blank);
-
-          fields.forEach(function (f) {
-            var option = document.createElement("option");
-            option.value = f.key;
-            option.textContent = f.label + " (" + f.key + ")";
-            if (f.key === selectedKey) option.selected = true;
-            select.appendChild(option);
-          });
-
-          select.addEventListener("change", onChange);
-          return select;
-        }
-
-        function addRow(fromKey, toKey) {
-          var fromFields = fieldsByType[fromSelect.value] || [];
-          var toFields = fieldsByType[toSelect.value] || [];
-
-          var row = document.createElement("div");
-          row.className = "d-flex align-items-center gap-2 mb-2 shared-field-mapping-row";
-
-          var fromInput = document.createElement("input");
-          fromInput.type = "hidden";
-          fromInput.name = "project_type_association[shared_field_mappings][][from]";
-          fromInput.value = fromKey || "";
-
-          var toInput = document.createElement("input");
-          toInput.type = "hidden";
-          toInput.name = "project_type_association[shared_field_mappings][][to]";
-          toInput.value = toKey || "";
-
-          var toWrapper = document.createElement("div");
-
-          function refreshToOptions() {
-            var field = fromFields.find(function (f) { return f.key === fromInput.value; });
-            var compatible = fieldsCompatibleWith(field, toFields);
-            var currentToValue = compatible.some(function (f) { return f.key === toInput.value; }) ? toInput.value : "";
-            toInput.value = currentToValue;
-            toWrapper.innerHTML = "";
-            toWrapper.appendChild(buildSelect(compatible, currentToValue, function () {
-              toInput.value = this.value;
-            }));
-          }
-
-          var fromSelectEl = buildSelect(fromFields, fromKey, function () {
-            fromInput.value = this.value;
-            refreshToOptions();
-          });
-
-          var fromWrapper = document.createElement("div");
-          fromWrapper.appendChild(fromSelectEl);
-
-          var arrow = document.createElement("span");
-          arrow.textContent = "→";
-
-          refreshToOptions();
-
-          var removeButton = document.createElement("button");
-          removeButton.type = "button";
-          removeButton.className = "btn btn-outline-danger btn-sm";
-          removeButton.textContent = "Quitar";
-          removeButton.addEventListener("click", function () { row.remove(); });
-
-          row.appendChild(fromWrapper);
-          row.appendChild(arrow);
-          row.appendChild(toWrapper);
-          row.appendChild(fromInput);
-          row.appendChild(toInput);
-          row.appendChild(removeButton);
-          rowsContainer.appendChild(row);
-        }
-
-        addButton.addEventListener("click", function () { addRow(null, null); });
-
-        [fromSelect, toSelect].forEach(function (select) {
-          select.addEventListener("change", function () {
-            rowsContainer.innerHTML = "";
-          });
-        });
-
-        initialMappings.forEach(function (mapping) { addRow(mapping.from, mapping.to); });
-      });
-    </script>
   <% end %>
 <% end %>

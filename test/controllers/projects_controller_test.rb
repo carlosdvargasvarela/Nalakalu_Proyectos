@@ -267,7 +267,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     get project_path(project)
     assert_response :success
     assert_select "#gantt"
-    assert_select "script#gantt-tasks", text: /#{project.project_stages.first.name}/
+    tasks = json_data_attribute('[data-controller="gantt-stage-editor"]', "data-gantt-stage-editor-tasks-value")
+    assert(tasks.any? { |t| t["name"] == project.project_stages.first.name })
   end
 
   test "show renders the bitácora with existing entries and an add form" do
@@ -300,9 +301,10 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_path(project)
     assert_response :success
-    assert_match(/\.gantt \.bar-wrapper\.stage-color-#{id} \.bar,/, response.body)
-    assert_match(/\.gantt \.bar-wrapper\.stage-color-#{id}:hover \.bar,/, response.body)
-    assert_match(/\.gantt \.bar-wrapper\.stage-color-#{id}\.active \.bar \{\s*fill:\s*#ff0000;?\s*\}/, response.body)
+    colors = json_data_attribute('[data-controller="gantt-stage-editor"]', "data-gantt-stage-editor-colors-value")
+    assert_includes colors, [id, "Producción", "#ff0000"]
+    gantt_css = Rails.root.join("app/assets/stylesheets/gantt.css").read
+    assert_match(/\.bar-wrapper \.bar,\s*\n.*\.bar-wrapper:hover \.bar,\s*\n.*\.bar-wrapper\.active \.bar \{\s*\n\s*fill:\s*var\(--bar-fill/, gantt_css)
   end
 
   test "show's Gantt has a legend naming each stage_template's color" do
@@ -354,16 +356,18 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_type_projects_path(project_types(:instalaciones).slug)
     assert_response :success
-    assert_select "script#gantt-tasks-#{project_types(:instalaciones).slug}", text: /#{project.name}/
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    assert(tasks.any? { |t| t["name"] == project.name })
   end
 
   test "index configures the Gantt in Spanish with native readonly options" do
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_type_projects_path(project_types(:instalaciones).slug)
     assert_response :success
-    assert_match(/language:\s*"es"/, response.body)
-    assert_match(/readonly_dates:\s*true/, response.body)
-    assert_match(/readonly_progress:\s*true/, response.body)
+    source = Rails.root.join("app/javascript/controllers/gantt_project_list_controller.js").read
+    assert_match(/language:\s*"es"/, source)
+    assert_match(/readonly_dates:\s*true/, source)
+    assert_match(/readonly_progress:\s*true/, source)
   end
 
   test "index's Gantt tasks include status, progress, and every responsible for the hover popup" do
@@ -376,38 +380,40 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_type_projects_path(slug)
     assert_response :success
-    assert_select "script#gantt-tasks-#{slug}" do |elements|
-      task = JSON.parse(elements.first.text).find { |t| t["id"] == project.id.to_s }
-      assert_equal "Activo", task["status_label"]
-      assert_equal "Sin iniciar", task["progress_status_label"]
-      names = task["responsibles"].map { |r| [r["type"], r["name"]] }
-      assert_includes names, ["Instalador Fixture", "Ana Gómez"]
-      assert_includes names, ["Diseñador Fixture", "Diana Diseñadora"]
-    end
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    task = tasks.find { |t| t["id"] == project.id.to_s }
+    assert_equal "Activo", task["status_label"]
+    assert_equal "Sin iniciar", task["progress_status_label"]
+    names = task["responsibles"].map { |r| [r["type"], r["name"]] }
+    assert_includes names, ["Instalador Fixture", "Ana Gómez"]
+    assert_includes names, ["Diseñador Fixture", "Diana Diseñadora"]
   end
 
   test "index's Gantt popup renders a styled tooltip instead of the default popup" do
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_type_projects_path(project_types(:instalaciones).slug)
     assert_response :success
-    assert_match(/popup:\s*function\s*\(ctx\)/, response.body)
-    assert_match(/popup_on:\s*"hover"/, response.body)
-    assert_no_match(/popup:\s*false/, response.body)
+    source = Rails.root.join("app/javascript/controllers/gantt_project_list_controller.js").read
+    assert_match(/popup:\s*\(ctx\)\s*=>/, source)
+    assert_match(/popup_on:\s*"hover"/, source)
+    assert_no_match(/popup:\s*false/, source)
   end
 
   test "index's Gantt click handler is wired via the on_click constructor option, not gantt.on" do
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_type_projects_path(project_types(:instalaciones).slug)
     assert_response :success
-    assert_match(/on_click:\s*function\s*\(task\)\s*\{\s*window\.location\s*=\s*task\.edit_url;\s*\}/, response.body)
-    assert_no_match(/gantt\.on\(/, response.body)
+    source = Rails.root.join("app/javascript/controllers/gantt_project_list_controller.js").read
+    assert_match(/on_click:\s*\(task\)\s*=>\s*\{\s*window\.location\s*=\s*task\.edit_url\s*\}/, source)
+    assert_no_match(/gantt\.on\(/, source)
   end
 
   test "index's Gantt overrides the progress-bar fill for visibility against custom bar colors" do
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_type_projects_path(project_types(:instalaciones).slug)
     assert_response :success
-    assert_match(/\.gantt \.bar-progress \{\s*fill:\s*rgba\(0,\s*0,\s*0,\s*0\.25\);?\s*\}/, response.body)
+    gantt_css = Rails.root.join("app/assets/stylesheets/gantt.css").read
+    assert_match(/\.bar-progress \{\s*\n\s*fill:\s*rgba\(0,\s*0,\s*0,\s*0\.25\);?\s*\n\s*\}/, gantt_css)
   end
 
   test "index configures the Gantt with a fixed container height instead of manual scroll CSS" do
@@ -416,7 +422,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     slug = project_types(:instalaciones).slug
     assert_select "#gantt-#{slug}[style]", count: 0
-    assert_match(/container_height:\s*630/, response.body)
+    source = Rails.root.join("app/javascript/controllers/gantt_project_list_controller.js").read
+    assert_match(/container_height:\s*630/, source)
   end
 
   test "index loads frappe-gantt 1.2.2" do
@@ -446,12 +453,10 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_type_projects_path(slug), params: { stage_name: "Instalación", status: "" }
     assert_response :success
-    assert_select "script#gantt-tasks-#{slug}" do |elements|
-      tasks = JSON.parse(elements.first.text)
-      task = tasks.find { |t| t["id"] == project.id.to_s }
-      assert_equal "2026-09-01", task["start"]
-      assert_equal "2026-09-10", task["end"]
-    end
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    task = tasks.find { |t| t["id"] == project.id.to_s }
+    assert_equal "2026-09-01", task["start"]
+    assert_equal "2026-09-10", task["end"]
   end
 
   test "index's Gantt section omits every project when the filtered stage doesn't exist for that type" do
@@ -460,10 +465,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_type_projects_path(slug), params: { stage_name: "Etapa Inexistente", status: "" }
     assert_response :success
-    assert_select "script#gantt-tasks-#{slug}" do |elements|
-      tasks = JSON.parse(elements.first.text)
-      assert_nil tasks.find { |t| t["id"] == project.id.to_s }
-    end
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    assert_nil tasks.find { |t| t["id"] == project.id.to_s }
   end
 
   test "index's Gantt without a stage filter still shows each project's full range" do
@@ -471,13 +474,11 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     slug = project_types(:instalaciones).slug
     get project_type_projects_path(slug)
     assert_response :success
-    assert_select "script#gantt-tasks-#{slug}" do |elements|
-      tasks = JSON.parse(elements.first.text)
-      task = tasks.find { |t| t["id"] == project.id.to_s }
-      first, last = project.gantt_window
-      assert_equal first.to_s, task["start"]
-      assert_equal last.to_s, task["end"]
-    end
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    task = tasks.find { |t| t["id"] == project.id.to_s }
+    first, last = project.gantt_window
+    assert_equal first.to_s, task["start"]
+    assert_equal last.to_s, task["end"]
   end
 
   test "index's stage filter doesn't affect that section's Listado table or KPI cards" do
@@ -719,10 +720,11 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_path(project)
     assert_response :success
-    assert_match(/function saveStage\(/, response.body)
-    assert_match(/on_date_change:\s*function\s*\(task,\s*start,\s*end\)/, response.body)
-    assert_match(/on_progress_change:\s*function\s*\(task,\s*progress\)/, response.body)
-    assert_match(/toDateInputValue/, response.body)
+    source = Rails.root.join("app/javascript/controllers/gantt_stage_editor_controller.js").read
+    assert_match(/saveStage\(/, source)
+    assert_match(/on_date_change:\s*\(task,\s*start,\s*end\)\s*=>/, source)
+    assert_match(/on_progress_change:\s*\(task,\s*progress\)\s*=>/, source)
+    assert_match(/toDateInputValue/, source)
   end
 
   test "show loads frappe-gantt 1.2.2" do
@@ -747,22 +749,25 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_path(project)
     assert_response :success
-    assert_match(/gantt\.refresh\(tasks\)/, response.body)
+    source = Rails.root.join("app/javascript/controllers/gantt_stage_editor_controller.js").read
+    assert_match(/this\.gantt\.refresh\(this\.tasksValue\)/, source)
   end
 
   test "show's Gantt handlers are wired via constructor options, not gantt.on" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_path(project)
     assert_response :success
-    assert_match(/on_click:\s*function\s*\(task\)\s*\{\s*window\.location\.hash\s*=\s*"stage-"\s*\+\s*task\.id;\s*\}/, response.body)
-    assert_no_match(/gantt\.on\(/, response.body)
+    source = Rails.root.join("app/javascript/controllers/gantt_stage_editor_controller.js").read
+    assert_match(/on_click:\s*\(task\)\s*=>\s*\{\s*window\.location\.hash\s*=\s*`stage-\$\{task\.id\}`\s*\}/, source)
+    assert_no_match(/gantt\.on\(/, source)
   end
 
   test "show's Gantt overrides the progress-bar fill for visibility against custom bar colors" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_path(project)
     assert_response :success
-    assert_match(/\.gantt \.bar-progress \{\s*fill:\s*rgba\(0,\s*0,\s*0,\s*0\.25\);?\s*\}/, response.body)
+    gantt_css = Rails.root.join("app/assets/stylesheets/gantt.css").read
+    assert_match(/\.bar-progress \{\s*\n\s*fill:\s*rgba\(0,\s*0,\s*0,\s*0\.25\);?\s*\n\s*\}/, gantt_css)
   end
 
   test "tracker defaults to the first project type when none is given" do
@@ -1068,8 +1073,10 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_type_projects_path(project_types(:instalaciones).slug)
     assert_response :success
-    assert_match(/"Ana G.mez"/, response.body)
-    assert_no_match(/No Habilitado/, response.body)
+    options = json_data_attribute('form[data-controller="dependent-select"]', "data-dependent-select-options-value")
+    all_names = options.values.flatten(1).map(&:last)
+    assert_includes all_names, "Ana Gómez"
+    assert_not_includes all_names, "No Habilitado"
   end
 
   test "index's bulk-assign selector groups responsibles by their configured responsible_type" do
@@ -1079,9 +1086,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_type_projects_path(project_types(:instalaciones).slug)
     assert_response :success
-    doc = Nokogiri::HTML5(response.body)
-    script = doc.css("script").map(&:text).find { |t| t.include?("bulk-assign-type-select-#{project_types(:instalaciones).slug}") }
-    payload = JSON.parse(script[/var responsiblesByType = (\{.*?\});/m, 1])
+    payload = json_data_attribute('form[data-controller="dependent-select"]', "data-dependent-select-options-value")
     assert_equal [[responsibles(:ana_gomez).id, "Ana Gómez"], [responsibles(:pedro_responsable).id, "Pedro Instalador"]].sort_by(&:last),
       payload[responsible_types(:instalador).id.to_s].sort_by(&:last)
     assert_equal [[disenador.id, "Diana Diseñadora"]], payload[responsible_types(:disenador).id.to_s]
@@ -1091,9 +1096,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_type_projects_path(project_types(:instalaciones).slug)
     assert_response :success
-    slug = project_types(:instalaciones).slug
-    assert_select "input#select-all-projects-#{slug}[type=checkbox]"
-    assert_match(/select-all-projects-#{slug}/, response.body)
+    assert_select "input[type=checkbox][data-bulk-select-target=?]", "selectAll"
     assert_match(/project_ids\[\]/, response.body)
   end
 
@@ -1234,10 +1237,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     get project_type_projects_path(slug)
     assert_response :success
     assert_select ".card .display-6", "25"
-    assert_select "script#gantt-tasks-#{slug}" do |elements|
-      tasks = JSON.parse(elements.first.text)
-      assert_equal 25, tasks.size
-    end
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    assert_equal 25, tasks.size
   end
 
   test "index shows no pagination controls when there are 20 projects or fewer" do
@@ -1267,12 +1268,10 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     get project_type_projects_path(slug)
     assert_response :success
     assert_select "select#stage_name option[selected]", "Instalación"
-    assert_select "script#gantt-tasks-#{slug}" do |elements|
-      tasks = JSON.parse(elements.first.text)
-      task = tasks.find { |t| t["id"] == project.id.to_s }
-      assert_equal "2026-09-01", task["start"]
-      assert_equal "2026-09-10", task["end"]
-    end
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    task = tasks.find { |t| t["id"] == project.id.to_s }
+    assert_equal "2026-09-01", task["start"]
+    assert_equal "2026-09-10", task["end"]
   end
 
   test "index's responsible-type filter uses the configured default on a fresh, unfiltered load" do
@@ -1311,13 +1310,11 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_type_projects_path(slug), params: { stage_name: "", status: "" }
     assert_response :success
-    assert_select "script#gantt-tasks-#{slug}" do |elements|
-      tasks = JSON.parse(elements.first.text)
-      task = tasks.find { |t| t["id"] == project.id.to_s }
-      first, last = project.gantt_window
-      assert_equal first.to_s, task["start"]
-      assert_equal last.to_s, task["end"]
-    end
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    task = tasks.find { |t| t["id"] == project.id.to_s }
+    first, last = project.gantt_window
+    assert_equal first.to_s, task["start"]
+    assert_equal last.to_s, task["end"]
   end
 
   test "index without any default stage configured behaves exactly as before" do
@@ -1326,13 +1323,11 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_type_projects_path(slug)
     assert_response :success
-    assert_select "script#gantt-tasks-#{slug}" do |elements|
-      tasks = JSON.parse(elements.first.text)
-      task = tasks.find { |t| t["id"] == project.id.to_s }
-      first, last = project.gantt_window
-      assert_equal first.to_s, task["start"]
-      assert_equal last.to_s, task["end"]
-    end
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    task = tasks.find { |t| t["id"] == project.id.to_s }
+    first, last = project.gantt_window
+    assert_equal first.to_s, task["start"]
+    assert_equal last.to_s, task["end"]
   end
 
   test "index shows a Quitar filtros link that points at the bare tab URL" do
@@ -1605,7 +1600,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to project_path(created)
   end
 
-  test "show's link-existing-project form tags each option with its project type, for JS filtering" do
+  test "show's link-existing-project form provides options grouped by the other side's project type, for JS filtering" do
     other_type = ProjectType.create!(name: "Caso de Servicio", slug: "caso-de-servicio")
     association = ProjectTypeAssociation.create!(from_project_type: other_type, to_project_type: project_types(:instalaciones), label: "Caso de servicio")
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
@@ -1613,52 +1608,52 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_path(project)
     assert_response :success
-    assert_select "select#project_association_project_type_association_id option[value=?][data-other-project-type-id=?]",
+    assert_select "select#project_association_project_type_association_id option[value=?][data-key=?]",
       association.id.to_s, other_type.id.to_s
-    assert_select "select#project_association_other_project_id option[value=?][data-project-type-id=?]",
-      caso.id.to_s, other_type.id.to_s
+    options = json_data_attribute('form[data-controller="dependent-select"]', "data-dependent-select-options-value")
+    assert_equal [[caso.id, caso.name]], options[other_type.id.to_s]
   end
 
   test "index's Responsable filter select is marked for TomSelect" do
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_type_projects_path(project_types(:instalaciones).slug)
     assert_response :success
-    assert_select "select.js-tomselect[name=?]", "responsible_id"
+    assert_select "select[data-controller=?][name=?]", "tom-select", "responsible_id"
   end
 
-  test "index's bulk-assign Responsable select is marked for TomSelect" do
+  test "index's bulk-assign Responsable select is filtered by a dependent-select controller" do
     slug = project_types(:instalaciones).slug
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_type_projects_path(slug)
     assert_response :success
-    assert_select "select#bulk-assign-responsible-select-#{slug}.js-tomselect"
+    assert_select "select#bulk-assign-responsible-select-#{slug}[data-dependent-select-target=?]", "select"
   end
 
   test "show's Asociaciones Tipo de asociación select stays a plain native select" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_path(project)
     assert_response :success
-    assert_select "select#project_association_project_type_association_id.js-tomselect", count: 0
+    assert_select "select#project_association_project_type_association_id[data-controller=?]", "tom-select", count: 0
   end
 
   test "tracker's Responsable filter select is marked for TomSelect" do
     get tracker_projects_path
     assert_response :success
-    assert_select "select.js-tomselect[name=?]", "responsible_id"
+    assert_select "select[data-controller=?][name=?]", "tom-select", "responsible_id"
   end
 
   test "show's Responsables assignment select is marked for TomSelect" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_path(project)
     assert_response :success
-    assert_select "select.js-tomselect#project_responsible_responsible_id"
+    assert_select "select[data-controller=?]#project_responsible_responsible_id", "tom-select"
   end
 
-  test "show's Asociaciones Proyecto select is marked for TomSelect" do
+  test "show's Asociaciones Proyecto select is filtered by a dependent-select controller" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_path(project)
     assert_response :success
-    assert_select "select.js-tomselect#project_association_other_project_id"
+    assert_select "select#project_association_other_project_id[data-dependent-select-target=?]", "select"
   end
 
   test "show marks a historical (deleted) responsible assignment" do
@@ -1689,5 +1684,15 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "body", /Ana Gómez/
     assert_select "body", { text: /Ana Gómez \(eliminado\)/, count: 0 }
+  end
+
+  private
+
+  # The Gantt/dependent-select controllers now receive their data via
+  # data-*-value attributes (JSON-encoded by Stimulus's Values API) instead of
+  # an inline <script> block - this reads one back out for assertions.
+  def json_data_attribute(selector, attribute)
+    el = Nokogiri::HTML5(response.body).at_css(selector)
+    JSON.parse(el[attribute])
   end
 end

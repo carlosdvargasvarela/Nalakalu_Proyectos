@@ -94,6 +94,6 @@ class Admin::ProjectTypeAssociationsControllerTest < ActionDispatch::Integration
   test "new exposes field definitions grouped by project type" do
     get new_admin_project_type_association_path
     assert_response :success
-    assert_select "script#field-definitions-by-type", 1
+    assert_select 'form[data-controller="shared-field-mapping"][data-shared-field-mapping-fields-by-type-value]'
   end
 end

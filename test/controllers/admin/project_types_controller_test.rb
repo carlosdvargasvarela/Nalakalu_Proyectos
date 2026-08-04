@@ -106,12 +106,14 @@ class Admin::ProjectTypesControllerTest < ActionDispatch::IntegrationTest
     assert_select "#stage-templates-list li[data-id=?] .drag-handle", stage.id.to_s
   end
 
-  test "show wires the drag-reorder script to the correct endpoints" do
+  test "show wires the drag-reorder controller to the correct endpoints" do
     project_type = project_types(:instalaciones)
     get admin_project_type_path(project_type)
     assert_response :success
-    assert_match(/initDragReorder\("field-definitions-list",\s*"#{Regexp.escape(reorder_admin_project_type_field_definitions_path(project_type))}"\)/, response.body)
-    assert_match(/initDragReorder\("stage-templates-list",\s*"#{Regexp.escape(reorder_admin_project_type_stage_templates_path(project_type))}"\)/, response.body)
+    assert_select "#field-definitions-list[data-controller=?][data-drag-reorder-url-value=?]",
+      "drag-reorder", reorder_admin_project_type_field_definitions_path(project_type)
+    assert_select "#stage-templates-list[data-controller=?][data-drag-reorder-url-value=?]",
+      "drag-reorder", reorder_admin_project_type_stage_templates_path(project_type)
   end
 
   test "show lists only the Responsible catalog entries enabled for this project type" do

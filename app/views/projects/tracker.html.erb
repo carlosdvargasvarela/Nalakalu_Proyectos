@@ -15,7 +15,7 @@
     <%= form.label :responsible_id, "Responsable", class: "form-label" %>
     <%= form.select :responsible_id,
           [["Sin asignar", "none"]] + Responsible.joins(:project_responsibles).where(project_responsibles: { responsible_type_id: @responsible_type_id }).distinct.collect { |r| [r.name, r.id] },
-          { include_blank: "Todos", selected: params[:responsible_id] }, class: "form-select js-tomselect" %>
+          { include_blank: "Todos", selected: params[:responsible_id] }, class: "form-select", data: { controller: "tom-select" } %>
   </div>
   <div class="col-auto align-self-end">
     <%= form.submit "Ver", class: "btn btn-primary" %>

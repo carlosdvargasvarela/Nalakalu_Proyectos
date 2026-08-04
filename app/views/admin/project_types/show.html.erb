@@ -5,7 +5,9 @@
   <div class="card-header">Campos</div>
   <div class="card-body">
     <%= link_to "Nuevo campo", new_admin_project_type_field_definition_path(@project_type), class: "btn btn-primary btn-sm mb-2" %>
-    <ul class="list-group list-group-flush" id="field-definitions-list">
+    <ul class="list-group list-group-flush" id="field-definitions-list" data-controller="drag-reorder"
+        data-drag-reorder-url-value="<%= reorder_admin_project_type_field_definitions_path(@project_type) %>"
+        data-action="dragstart->drag-reorder#start dragend->drag-reorder#end dragover->drag-reorder#over drop->drag-reorder#drop">
       <% @project_type.field_definitions.each do |field| %>
         <li class="list-group-item d-flex justify-content-between align-items-center" data-id="<%= field.id %>">
           <span>
@@ -27,7 +29,9 @@
   <div class="card-header">Subprocesos</div>
   <div class="card-body">
     <%= link_to "Nuevo subproceso", new_admin_project_type_stage_template_path(@project_type), class: "btn btn-primary btn-sm mb-2" %>
-    <ol class="list-group list-group-numbered list-group-flush" id="stage-templates-list">
+    <ol class="list-group list-group-numbered list-group-flush" id="stage-templates-list" data-controller="drag-reorder"
+        data-drag-reorder-url-value="<%= reorder_admin_project_type_stage_templates_path(@project_type) %>"
+        data-action="dragstart->drag-reorder#start dragend->drag-reorder#end dragover->drag-reorder#over drop->drag-reorder#drop">
       <% @project_type.stage_templates.each do |stage| %>
         <li class="list-group-item d-flex justify-content-between align-items-center" data-id="<%= stage.id %>">
           <span>
@@ -96,51 +100,3 @@
     </ul>
   </div>
 </div>
-
-<script>
-  function initDragReorder(listId, url) {
-    var list = document.getElementById(listId);
-    if (!list) return;
-    var dragging;
-
-    list.addEventListener("dragstart", function (e) {
-      if (!e.target.classList.contains("drag-handle")) return;
-      dragging = e.target.closest("li");
-      dragging.classList.add("opacity-50");
-    });
-
-    list.addEventListener("dragend", function () {
-      if (dragging) dragging.classList.remove("opacity-50");
-    });
-
-    list.addEventListener("dragover", function (e) {
-      e.preventDefault();
-      if (!dragging) return;
-      var target = e.target.closest("li");
-      if (!target || target === dragging) return;
-      var rect = target.getBoundingClientRect();
-      var after = (e.clientY - rect.top) > rect.height / 2;
-      list.insertBefore(dragging, after ? target.nextSibling : target);
-    });
-
-    list.addEventListener("drop", function (e) {
-      e.preventDefault();
-      if (!dragging) return;
-      var ids = Array.from(list.querySelectorAll("li[data-id]")).map(function (li) { return li.dataset.id; });
-      dragging = null;
-      fetch(url, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify({ ids: ids })
-      });
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", function () {
-    initDragReorder("field-definitions-list", "<%= reorder_admin_project_type_field_definitions_path(@project_type) %>");
-    initDragReorder("stage-templates-list", "<%= reorder_admin_project_type_stage_templates_path(@project_type) %>");
-  });
-</script>

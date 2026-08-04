@@ -57,29 +57,24 @@
       "Ver" alcanza para un rol Visor. "Editar" da acceso puntual a un proyecto fuera de su
       tipo asignado (solo tiene efecto extra para un rol Gerente; Admin siempre tiene acceso total).
     </p>
-    <%= text_field_tag :project_access_search, nil, class: "form-control mb-2", placeholder: "Buscar proyecto...", id: "project-access-search" %>
-    <table class="table table-sm" id="project-access-table">
-      <thead><tr><th>Proyecto</th><th>Tipo</th><th>Ver</th><th>Editar</th></tr></thead>
-      <tbody>
-        <% @projects.each do |project| %>
-          <% access = user.project_accesses.find { |a| a.project_id == project.id } %>
-          <tr data-name="<%= project.name.downcase %>">
-            <td><%= project.name %></td>
-            <td><%= project.project_type.name %></td>
-            <td><%= check_box_tag "project_access[#{project.id}][view]", "1", access.present?, form: "user-access-form" %></td>
-            <td><%= check_box_tag "project_access[#{project.id}][edit]", "1", access&.can_edit || false, form: "user-access-form" %></td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
-    <script>
-      document.getElementById("project-access-search").addEventListener("input", function (e) {
-        var term = e.target.value.toLowerCase();
-        document.querySelectorAll("#project-access-table tbody tr").forEach(function (row) {
-          row.style.display = row.dataset.name.includes(term) ? "" : "none";
-        });
-      });
-    </script>
+    <div data-controller="project-access-search">
+      <%= text_field_tag :project_access_search, nil, class: "form-control mb-2", placeholder: "Buscar proyecto...", id: "project-access-search",
+            data: { action: "input->project-access-search#filter" } %>
+      <table class="table table-sm" id="project-access-table">
+        <thead><tr><th>Proyecto</th><th>Tipo</th><th>Ver</th><th>Editar</th></tr></thead>
+        <tbody>
+          <% @projects.each do |project| %>
+            <% access = user.project_accesses.find { |a| a.project_id == project.id } %>
+            <tr data-name="<%= project.name.downcase %>" data-project-access-search-target="row">
+              <td><%= project.name %></td>
+              <td><%= project.project_type.name %></td>
+              <td><%= check_box_tag "project_access[#{project.id}][view]", "1", access.present?, form: "user-access-form" %></td>
+              <td><%= check_box_tag "project_access[#{project.id}][edit]", "1", access&.can_edit || false, form: "user-access-form" %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
 
     <%= form_with url: admin_user_path(user), method: :patch, id: "user-access-form" do %>
       <%= hidden_field_tag "user[email]", user.email %>

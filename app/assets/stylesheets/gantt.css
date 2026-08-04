@@ -1,0 +1,21 @@
+/*
+ * Shared styling for both frappe-gantt charts in the app (the editable
+ * per-project stage chart and the read-only per-project-type list chart).
+ * Per-row/per-stage colors come from data, not CSS - the JS controllers set
+ * a --bar-fill custom property on each bar-wrapper element instead of
+ * generating a <style> block with one dynamically-named class per record.
+ */
+
+.gantt .bar-label {
+  font-weight: bold;
+}
+
+.gantt .bar-progress {
+  fill: rgba(0, 0, 0, 0.25);
+}
+
+.gantt .bar-wrapper .bar,
+.gantt .bar-wrapper:hover .bar,
+.gantt .bar-wrapper.active .bar {
+  fill: var(--bar-fill, #6c757d);
+}

@@ -22,7 +22,7 @@
 
     <div class="mb-3">
       <%= form.label :user_id, "Usuario vinculado", class: "form-label" %>
-      <%= form.collection_select :user_id, unlinked_users, :id, :email, { include_blank: "Ninguno" }, class: "form-select js-tomselect" %>
+      <%= form.collection_select :user_id, unlinked_users, :id, :email, { include_blank: "Ninguno" }, class: "form-select", data: { controller: "tom-select" } %>
     </div>
 
     <div class="mb-3">

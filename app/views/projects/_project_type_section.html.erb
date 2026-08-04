@@ -20,7 +20,7 @@
       <%= form.label :responsible_id, "Responsable", class: "form-label" %>
       <%= form.select :responsible_id,
             [["Sin asignar", "none"]] + Responsible.joins(:project_responsibles).where(project_responsibles: { responsible_type_id: section_params[:responsible_type_id] }).distinct.order(:name).collect { |r| [r.name, r.id] },
-            { include_blank: "Todos", selected: section_params[:responsible_id] }, class: "form-select js-tomselect" %>
+            { include_blank: "Todos", selected: section_params[:responsible_id] }, class: "form-select", data: { controller: "tom-select" } %>
     </div>
     <div class="col-auto">
       <%= form.label :from_date, "Desde", class: "form-label" %>
@@ -126,225 +126,122 @@
 
   <div class="card mb-4">
     <div class="card-header">Cronograma</div>
-    <div class="card-body">
-      <style>
-        .gantt .bar-label {
-          font-weight: bold;
-        }
-        .gantt .bar-progress {
-          fill: rgba(0, 0, 0, 0.25);
-        }
-        <% gantt_colors.each do |responsible_id, _name, color| %>
-          .gantt .bar-wrapper.responsible-color-<%= responsible_id %> .bar,
-          .gantt .bar-wrapper.responsible-color-<%= responsible_id %>:hover .bar,
-          .gantt .bar-wrapper.responsible-color-<%= responsible_id %>.active .bar {
-            fill: <%= color %>;
-          }
-        <% end %>
-      </style>
-
+    <div class="card-body" data-controller="gantt-project-list"
+         data-gantt-project-list-tasks-value="<%= gantt_tasks.to_json %>"
+         data-gantt-project-list-colors-value="<%= gantt_colors.to_json %>">
       <div class="btn-group btn-group-sm mb-2" role="group" id="view-mode-<%= slug %>">
-        <button type="button" class="btn btn-outline-secondary view-mode-btn active" data-mode="Day">Día</button>
-        <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Week">Semana</button>
-        <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Month">Mes</button>
+        <button type="button" class="btn btn-outline-secondary view-mode-btn active" data-mode="Day"
+                data-gantt-project-list-target="viewModeButton" data-action="click->gantt-project-list#changeViewMode">Día</button>
+        <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Week"
+                data-gantt-project-list-target="viewModeButton" data-action="click->gantt-project-list#changeViewMode">Semana</button>
+        <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Month"
+                data-gantt-project-list-target="viewModeButton" data-action="click->gantt-project-list#changeViewMode">Mes</button>
       </div>
       <% if selected_type && gantt_colors.any? %>
         <%= render "gantt_legend", entries: gantt_colors.map { |_, name, color| [name, color] } %>
       <% end %>
-      <div id="gantt-<%= slug %>" class="mb-0"></div>
-
-      <script type="application/json" id="gantt-tasks-<%= slug %>"><%== gantt_tasks.to_json %></script>
+      <div id="gantt-<%= slug %>" data-gantt-project-list-target="chart" class="mb-0"></div>
 
       <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@1.2.2/dist/frappe-gantt.umd.js"></script>
-      <script>
-        document.addEventListener("DOMContentLoaded", function () {
-          var tasks = JSON.parse(document.getElementById("gantt-tasks-<%= slug %>").textContent);
-          if (tasks.length > 0) {
-            var gantt = new Gantt("#gantt-<%= slug %>", tasks, {
-              language: "es",
-              readonly_dates: true,
-              readonly_progress: true,
-              today_button: false,
-              container_height: 630,
-              view_mode_select: false,
-              popup_on: "hover",
-              on_click: function (task) { window.location = task.edit_url; },
-              popup: function (ctx) {
-                var task = ctx.task;
-                function esc(text) {
-                  return String(text).replace(/[&<>"']/g, function (c) {
-                    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
-                  });
-                }
-                var rows = [
-                  '<span class="badge ' + task.status_badge_class + '">' + esc(task.status_label) + '</span>',
-                  '<span class="badge ' + task.progress_status_badge_class + '">' + esc(task.progress_status_label) + '</span>'
-                ];
-                if (task.overdue) rows.push('<span class="badge bg-danger">Vencido</span>');
-                var responsiblesHtml = (task.responsibles || []).map(function (r) {
-                  return '<div class="small mt-1"><span class="badge me-1" style="background-color: ' + r.color + '">&nbsp;</span>' +
-                    esc(r.type) + ': ' + esc(r.name) + '</div>';
-                }).join("");
-                return '<div class="p-2">' +
-                  '<div class="fw-bold mb-1">' + esc(task.name) + '</div>' +
-                  '<div class="d-flex gap-1 flex-wrap">' + rows.join("") + '</div>' +
-                  responsiblesHtml +
-                  '<div class="small text-white-50 mt-1">' + esc(task.date_range_label) + '</div>' +
-                '</div>';
-              }
-            });
-
-            document.querySelectorAll("#view-mode-<%= slug %> .view-mode-btn").forEach(function (btn) {
-              btn.addEventListener("click", function () {
-                gantt.change_view_mode(btn.dataset.mode);
-                document.querySelectorAll("#view-mode-<%= slug %> .view-mode-btn").forEach(function (b) { b.classList.remove("active"); });
-                btn.classList.add("active");
-              });
-            });
-          }
-        });
-      </script>
     </div>
   </div>
 
-  <% if current_user.admin? || current_user.gerente? %>
-    <%
-      responsibles_by_type = project_type.responsible_project_types.includes(:responsible)
-        .group_by { |rpt| rpt.responsible_type_id.to_s }
-        .transform_values { |rows| rows.map { |rpt| [rpt.responsible_id, rpt.responsible.name] }.sort_by { |_, name| name } }
-    %>
-    <div class="card mb-4">
-      <div class="card-header d-flex align-items-center gap-2">
-        <i class="bi bi-people-fill"></i> Asignación masiva
+  <% show_bulk_controls = current_user.admin? || current_user.gerente? %>
+  <div data-controller="bulk-select">
+    <% if show_bulk_controls %>
+      <%
+        responsibles_by_type = project_type.responsible_project_types.includes(:responsible)
+          .group_by { |rpt| rpt.responsible_type_id.to_s }
+          .transform_values { |rows| rows.map { |rpt| [rpt.responsible_id, rpt.responsible.name] }.sort_by { |_, name| name } }
+      %>
+      <div class="card mb-4">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i class="bi bi-people-fill"></i> Asignación masiva
+        </div>
+        <div class="card-body">
+          <%= form_with url: bulk_assign_responsible_projects_path(request.query_parameters), method: :patch, local: true,
+                id: "bulk-assign-form-#{slug}", class: "row g-3 align-items-end",
+                data: { controller: "dependent-select", dependent_select_options_value: responsibles_by_type.to_json } do |f| %>
+            <%= hidden_field_tag :project_type_slug, slug %>
+            <div class="col-auto">
+              <%= f.label :responsible_type_id, "Tipo", for: "bulk-assign-type-select-#{slug}", class: "form-label" %>
+              <%= f.select :responsible_type_id, project_type.responsible_types.order(:name).collect { |t| [t.name, t.id] },
+                    { include_blank: "Elegí un tipo", selected: section_params[:responsible_type_id] }, class: "form-select", id: "bulk-assign-type-select-#{slug}",
+                    data: { dependent_select_target: "control", action: "change->dependent-select#apply" } %>
+            </div>
+            <div class="col-auto">
+              <%= f.label :responsible_id, "Responsable", for: "bulk-assign-responsible-select-#{slug}", class: "form-label" %>
+              <%= f.select :responsible_id, [], { include_blank: "Elegí un responsable" }, class: "form-select", id: "bulk-assign-responsible-select-#{slug}",
+                    data: { dependent_select_target: "select" } %>
+            </div>
+            <div class="col-auto">
+              <%= f.submit "Asignar", class: "btn btn-primary", disabled: true, data: { bulk_select_target: "submit" } %>
+            </div>
+            <div class="col-auto ms-auto">
+              <span class="badge rounded-pill text-bg-secondary-subtle text-secondary-emphasis fw-normal" data-bulk-select-target="count">
+                0 seleccionados
+              </span>
+            </div>
+          <% end %>
+        </div>
       </div>
-      <div class="card-body">
-        <%= form_with url: bulk_assign_responsible_projects_path(request.query_parameters), method: :patch, local: true,
-              id: "bulk-assign-form-#{slug}", class: "row g-3 align-items-end" do |f| %>
-          <%= hidden_field_tag :project_type_slug, slug %>
-          <div class="col-auto">
-            <%= f.label :responsible_type_id, "Tipo", for: "bulk-assign-type-select-#{slug}", class: "form-label" %>
-            <%= f.select :responsible_type_id, project_type.responsible_types.order(:name).collect { |t| [t.name, t.id] },
-                  { include_blank: "Elegí un tipo", selected: section_params[:responsible_type_id] }, class: "form-select", id: "bulk-assign-type-select-#{slug}" %>
-          </div>
-          <div class="col-auto">
-            <%= f.label :responsible_id, "Responsable", for: "bulk-assign-responsible-select-#{slug}", class: "form-label" %>
-            <%= f.select :responsible_id, [], { include_blank: "Elegí un responsable" }, class: "form-select js-tomselect", id: "bulk-assign-responsible-select-#{slug}" %>
-          </div>
-          <div class="col-auto">
-            <%= f.submit "Asignar", class: "btn btn-primary", disabled: true, id: "bulk-assign-submit-#{slug}" %>
-          </div>
-          <div class="col-auto ms-auto">
-            <span class="badge rounded-pill text-bg-secondary-subtle text-secondary-emphasis fw-normal" id="bulk-assign-count-<%= slug %>">
-              0 seleccionados
-            </span>
-          </div>
+    <% end %>
+
+    <div class="card mb-4">
+      <div class="card-header">Listado</div>
+      <div class="card-body p-0">
+        <table class="table table-striped mb-0">
+          <thead>
+            <tr>
+              <% if show_bulk_controls %><th><input type="checkbox" data-bulk-select-target="selectAll" data-action="change->bulk-select#toggleAll"></th><% end %>
+              <th>Nombre</th><th>Estado</th><th>Avance</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% page_projects.each do |project| %>
+              <tr>
+                <% if show_bulk_controls %>
+                  <td><%= check_box_tag "project_ids[]", project.id, false, id: nil, form: "bulk-assign-form-#{slug}",
+                        data: { bulk_select_target: "checkbox", action: "change->bulk-select#updateCount" } %></td>
+                <% end %>
+                <td><%= link_to project.name, project_path(project) %></td>
+                <td><%= status_badge(project.status) %></td>
+                <td>
+                  <%= progress_status_badge(project.progress_status) %>
+                  <%= overdue_badge if project.overdue? %>
+                </td>
+                <td>
+                  <% if current_user.can_edit_project?(project) %>
+                    <div class="d-flex gap-2">
+                      <%= link_to edit_project_path(project), class: "btn btn-outline-secondary btn-sm" do %>
+                        <i class="bi bi-pencil"></i> Editar
+                      <% end %>
+                      <%= render "archive_button", project: project %>
+                    </div>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+        <% if section[:total_pages] > 1 %>
+          <nav class="p-3">
+            <ul class="pagination mb-0">
+              <li class="page-item <%= "disabled" if section[:page] <= 1 %>">
+                <%= link_to "Anterior", project_type_projects_path(slug, request.query_parameters.merge(page: section[:page] - 1)), class: "page-link" %>
+              </li>
+              <% (1..section[:total_pages]).each do |n| %>
+                <li class="page-item <%= "active" if n == section[:page] %>">
+                  <%= link_to n, project_type_projects_path(slug, request.query_parameters.merge(page: n)), class: "page-link" %>
+                </li>
+              <% end %>
+              <li class="page-item <%= "disabled" if section[:page] >= section[:total_pages] %>">
+                <%= link_to "Siguiente", project_type_projects_path(slug, request.query_parameters.merge(page: section[:page] + 1)), class: "page-link" %>
+              </li>
+            </ul>
+          </nav>
         <% end %>
       </div>
     </div>
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        var responsiblesByType = <%= raw responsibles_by_type.to_json %>;
-        var typeSelect = document.getElementById("bulk-assign-type-select-<%= slug %>");
-        var responsibleSelect = document.getElementById("bulk-assign-responsible-select-<%= slug %>");
-
-        // Initialize TomSelect here instead of relying on the layout's own
-        // DOMContentLoaded listener - that one is registered after this
-        // script in the DOM, so it hasn't run yet when this fires.
-        if (!responsibleSelect.tomselect) {
-          new TomSelect(responsibleSelect, { create: false, allowEmptyOption: true });
-        }
-        var ts = responsibleSelect.tomselect;
-
-        function applyOptions() {
-          ts.clear(true);
-          ts.clearOptions();
-          (responsiblesByType[typeSelect.value] || []).forEach(function (pair) {
-            ts.addOption({ value: String(pair[0]), text: pair[1] });
-          });
-          ts.refreshOptions(false);
-        }
-
-        typeSelect.addEventListener("change", applyOptions);
-        applyOptions();
-      });
-    </script>
-  <% end %>
-
-  <div class="card mb-4">
-    <div class="card-header">Listado</div>
-    <div class="card-body p-0">
-      <table class="table table-striped mb-0">
-        <thead>
-          <tr>
-            <% if current_user.admin? || current_user.gerente? %><th><input type="checkbox" id="select-all-projects-<%= slug %>"></th><% end %>
-            <th>Nombre</th><th>Estado</th><th>Avance</th><th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <% page_projects.each do |project| %>
-            <tr>
-              <% if current_user.admin? || current_user.gerente? %><td><%= check_box_tag "project_ids[]", project.id, false, id: nil, form: "bulk-assign-form-#{slug}" %></td><% end %>
-              <td><%= link_to project.name, project_path(project) %></td>
-              <td><%= status_badge(project.status) %></td>
-              <td>
-                <%= progress_status_badge(project.progress_status) %>
-                <%= overdue_badge if project.overdue? %>
-              </td>
-              <td>
-                <% if current_user.can_edit_project?(project) %>
-                  <div class="d-flex gap-2">
-                    <%= link_to edit_project_path(project), class: "btn btn-outline-secondary btn-sm" do %>
-                      <i class="bi bi-pencil"></i> Editar
-                    <% end %>
-                    <%= render "archive_button", project: project %>
-                  </div>
-                <% end %>
-              </td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
-      <% if section[:total_pages] > 1 %>
-        <nav class="p-3">
-          <ul class="pagination mb-0">
-            <li class="page-item <%= "disabled" if section[:page] <= 1 %>">
-              <%= link_to "Anterior", project_type_projects_path(slug, request.query_parameters.merge(page: section[:page] - 1)), class: "page-link" %>
-            </li>
-            <% (1..section[:total_pages]).each do |n| %>
-              <li class="page-item <%= "active" if n == section[:page] %>">
-                <%= link_to n, project_type_projects_path(slug, request.query_parameters.merge(page: n)), class: "page-link" %>
-              </li>
-            <% end %>
-            <li class="page-item <%= "disabled" if section[:page] >= section[:total_pages] %>">
-              <%= link_to "Siguiente", project_type_projects_path(slug, request.query_parameters.merge(page: section[:page] + 1)), class: "page-link" %>
-            </li>
-          </ul>
-        </nav>
-      <% end %>
-    </div>
   </div>
-
-  <% if current_user.admin? || current_user.gerente? %>
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        var selectAll = document.getElementById("select-all-projects-<%= slug %>");
-        var countBadge = document.getElementById("bulk-assign-count-<%= slug %>");
-        var submitBtn = document.getElementById("bulk-assign-submit-<%= slug %>");
-        var projectCheckboxes = function () { return document.querySelectorAll('input[form="bulk-assign-form-<%= slug %>"]'); };
-
-        function updateCount() {
-          var count = document.querySelectorAll('input[form="bulk-assign-form-<%= slug %>"]:checked').length;
-          countBadge.textContent = count + (count === 1 ? " seleccionado" : " seleccionados");
-          submitBtn.disabled = count === 0;
-        }
-
-        selectAll.addEventListener("change", function (e) {
-          projectCheckboxes().forEach(function (cb) { cb.checked = e.target.checked; });
-          updateCount();
-        });
-        projectCheckboxes().forEach(function (cb) { cb.addEventListener("change", updateCount); });
-        updateCount();
-      });
-    </script>
-  <% end %>
 <% end %>

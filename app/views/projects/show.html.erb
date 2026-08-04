@@ -45,100 +45,22 @@
 %>
 <div class="card mb-4">
   <div class="card-header">Cronograma</div>
-  <div class="card-body">
-    <style>
-      .gantt .bar-label {
-        font-weight: bold;
-      }
-      .gantt .bar-progress {
-        fill: rgba(0, 0, 0, 0.25);
-      }
-      <% stage_colors.each do |template_id, _name, color| %>
-        .gantt .bar-wrapper.stage-color-<%= template_id %> .bar,
-        .gantt .bar-wrapper.stage-color-<%= template_id %>:hover .bar,
-        .gantt .bar-wrapper.stage-color-<%= template_id %>.active .bar {
-          fill: <%= color %>;
-        }
-      <% end %>
-    </style>
-
+  <div class="card-body" data-controller="gantt-stage-editor"
+       data-gantt-stage-editor-patch-url-value="<%= project_path(@project) %>"
+       data-gantt-stage-editor-tasks-value="<%= gantt_tasks.to_json %>"
+       data-gantt-stage-editor-colors-value="<%= stage_colors.to_json %>">
     <div class="btn-group btn-group-sm mb-2" role="group" id="view-mode-show">
-      <button type="button" class="btn btn-outline-secondary view-mode-btn active" data-mode="Day">Día</button>
-      <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Week">Semana</button>
-      <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Month">Mes</button>
+      <button type="button" class="btn btn-outline-secondary view-mode-btn active" data-mode="Day"
+              data-gantt-stage-editor-target="viewModeButton" data-action="click->gantt-stage-editor#changeViewMode">Día</button>
+      <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Week"
+              data-gantt-stage-editor-target="viewModeButton" data-action="click->gantt-stage-editor#changeViewMode">Semana</button>
+      <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Month"
+              data-gantt-stage-editor-target="viewModeButton" data-action="click->gantt-stage-editor#changeViewMode">Mes</button>
     </div>
     <%= render "gantt_legend", entries: stage_colors.map { |_, name, color| [name, color] } %>
-    <div id="gantt" class="mb-4"></div>
-
-    <script type="application/json" id="gantt-tasks"><%== gantt_tasks.to_json %></script>
+    <div id="gantt" data-gantt-stage-editor-target="chart" class="mb-4"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@1.2.2/dist/frappe-gantt.umd.js"></script>
-    <script>
-      function toDateInputValue(date) {
-        var year = date.getFullYear();
-        var month = String(date.getMonth() + 1).padStart(2, "0");
-        var day = String(date.getDate()).padStart(2, "0");
-        return year + "-" + month + "-" + day;
-      }
-
-      document.addEventListener("DOMContentLoaded", function () {
-        var tasks = JSON.parse(document.getElementById("gantt-tasks").textContent);
-        if (tasks.length === 0) return;
-
-        function saveStage(stageId, attrs) {
-          fetch("<%= project_path(@project) %>", {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json",
-              "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify({
-              project: { project_stages_attributes: { "0": Object.assign({ id: stageId }, attrs) } }
-            })
-          })
-            .then(function (response) {
-              if (!response.ok) throw new Error("save failed");
-              return response.json();
-            })
-            .then(function (stages) {
-              var updated = stages.find(function (s) { return String(s.id) === String(stageId); });
-              if (!updated) return;
-              var row = document.getElementById("stage-" + stageId);
-              row.querySelector("input[name*='[start_date]']").value = updated.start_date || "";
-              row.querySelector("input[name*='[end_date]']").value = updated.end_date || "";
-              row.querySelector("input[name*='[progress_percent]']").value = updated.progress_percent;
-            })
-            .catch(function () {
-              gantt.refresh(tasks);
-              alert("No se pudo guardar el cambio. Intenta de nuevo.");
-            });
-        }
-
-        var gantt = new Gantt("#gantt", tasks, {
-          language: "es",
-          popup: false,
-          today_button: false,
-          container_height: 630,
-          view_mode_select: false,
-          on_click: function (task) { window.location.hash = "stage-" + task.id; },
-          on_date_change: function (task, start, end) {
-            saveStage(task.id, { start_date: toDateInputValue(start), end_date: toDateInputValue(end) });
-          },
-          on_progress_change: function (task, progress) {
-            saveStage(task.id, { progress_percent: Math.round(progress) });
-          }
-        });
-
-        document.querySelectorAll("#view-mode-show .view-mode-btn").forEach(function (btn) {
-          btn.addEventListener("click", function () {
-            gantt.change_view_mode(btn.dataset.mode);
-            document.querySelectorAll("#view-mode-show .view-mode-btn").forEach(function (b) { b.classList.remove("active"); });
-            btn.classList.add("active");
-          });
-        });
-      });
-    </script>
 
     <% if current_user.can_edit_project?(@project) %>
       <%= render "stage_table", project: @project %>
@@ -168,7 +90,7 @@
       <%= form_with model: ProjectResponsible.new, url: project_project_responsibles_path(@project) do |form| %>
         <div class="row g-2">
           <div class="col-auto">
-            <%= form.collection_select :responsible_id, @project.project_type.responsibles.order(:name), :id, :name, { include_blank: "Responsable" }, class: "form-select js-tomselect" %>
+            <%= form.collection_select :responsible_id, @project.project_type.responsibles.order(:name), :id, :name, { include_blank: "Responsable" }, class: "form-select", data: { controller: "tom-select" } %>
           </div>
           <div class="col-auto">
             <%= form.collection_select :responsible_type_id, @project.project_type.responsible_types.order(:name), :id, :name, { include_blank: "Tipo" }, class: "form-select" %>
@@ -209,59 +131,30 @@
       </ul>
 
       <% if current_user.can_edit_project?(@project) %>
-        <%= form_with url: project_project_associations_path(@project), method: :post, scope: :project_association, class: "row g-2 mb-3" do |f| %>
+        <%
+          applicable_associations = ProjectTypeAssociation.where(from_project_type: @project.project_type).or(ProjectTypeAssociation.where(to_project_type: @project.project_type))
+          association_options = applicable_associations.map do |a|
+            other_type_id = a.from_project_type_id == @project.project_type_id ? a.to_project_type_id : a.from_project_type_id
+            [a.label, a.id, { data: { key: other_type_id } }]
+          end
+          projects_by_other_type = Project.where.not(id: @project.id).order(:name).group_by(&:project_type_id)
+            .transform_values { |projects| projects.map { |p| [p.id, p.name] } }
+        %>
+        <%= form_with url: project_project_associations_path(@project), method: :post, scope: :project_association, class: "row g-2 mb-3",
+              data: { controller: "dependent-select", dependent_select_options_value: projects_by_other_type.to_json } do |f| %>
           <div class="col-auto">
-            <%
-              applicable_associations = ProjectTypeAssociation.where(from_project_type: @project.project_type).or(ProjectTypeAssociation.where(to_project_type: @project.project_type))
-              association_options = applicable_associations.map do |a|
-                other_type_id = a.from_project_type_id == @project.project_type_id ? a.to_project_type_id : a.from_project_type_id
-                [a.label, a.id, { data: { other_project_type_id: other_type_id } }]
-              end
-            %>
             <%= f.select :project_type_association_id, options_for_select(association_options),
-                  { include_blank: "Tipo de asociación" }, class: "form-select", id: "project_association_project_type_association_id" %>
+                  { include_blank: "Tipo de asociación" }, class: "form-select", id: "project_association_project_type_association_id",
+                  data: { dependent_select_target: "control", action: "change->dependent-select#apply" } %>
           </div>
           <div class="col-auto">
-            <%
-              project_options = Project.where.not(id: @project.id).order(:name).map { |p| [p.name, p.id, { data: { project_type_id: p.project_type_id } }] }
-            %>
-            <%= f.select :other_project_id, options_for_select(project_options),
-                  { include_blank: "Proyecto" }, class: "form-select js-tomselect", id: "project_association_other_project_id" %>
+            <%= f.select :other_project_id, [], { include_blank: "Proyecto" }, class: "form-select", id: "project_association_other_project_id",
+                  data: { dependent_select_target: "select" } %>
           </div>
           <div class="col-auto">
             <%= f.submit "Vincular", class: "btn btn-primary" %>
           </div>
         <% end %>
-
-        <script>
-          document.addEventListener("DOMContentLoaded", function () {
-            var typeSelect = document.getElementById("project_association_project_type_association_id");
-            var otherSelect = document.getElementById("project_association_other_project_id");
-            if (!typeSelect || !otherSelect) return;
-            if (!otherSelect.tomselect) new TomSelect(otherSelect, { create: false, allowEmptyOption: true });
-
-            var allProjectOptions = Array.from(otherSelect.options)
-              .filter(function (o) { return o.value; })
-              .map(function (o) { return { value: o.value, text: o.text, projectTypeId: o.dataset.projectTypeId }; });
-
-            function filterProjects() {
-              var selectedValue = typeSelect.value;
-              var selectedOption = selectedValue ? typeSelect.querySelector('option[value="' + selectedValue + '"]') : null;
-              var otherProjectTypeId = selectedOption ? selectedOption.dataset.otherProjectTypeId : null;
-
-              var ts = otherSelect.tomselect;
-              ts.clear();
-              ts.clearOptions();
-              allProjectOptions
-                .filter(function (o) { return !otherProjectTypeId || o.projectTypeId === otherProjectTypeId; })
-                .forEach(function (o) { ts.addOption(o); });
-              ts.refreshOptions(false);
-            }
-
-            typeSelect.addEventListener("change", filterProjects);
-            filterProjects();
-          });
-        </script>
       <% end %>
 
       <% ProjectTypeAssociation.where(to_project_type: @project.project_type).each do |association| %>
@@ -280,17 +173,12 @@
   <div class="card-body">
     <% if current_user.can_edit_project?(@project) || (current_user.visor? && current_user.can_view_project?(@project)) %>
       <%= form_with model: LogEntry.new, url: project_log_entries_path(@project), class: "mb-3" do |f| %>
-        <%= f.rich_text_area :body, id: "bitacora-trix-editor", class: "trix-content mb-2" %>
+        <%= f.rich_text_area :body, id: "bitacora-trix-editor", class: "trix-content mb-2", data: { controller: "trix-attachments" } %>
         <div class="d-flex gap-2">
           <%= f.collection_select :log_entry_type_id, @project.project_type.log_entry_types, :id, :name, {}, class: "form-select form-select-sm w-auto" %>
           <%= f.submit "Agregar", class: "btn btn-primary btn-sm" %>
         </div>
       <% end %>
-      <script>
-        document.getElementById("bitacora-trix-editor").addEventListener("trix-file-accept", function (event) {
-          event.preventDefault();
-        });
-      </script>
     <% end %>
     <ul class="list-group list-group-flush">
       <% @project.log_entries.includes(:user, :log_entry_type).order(created_at: :desc).each do |entry| %>

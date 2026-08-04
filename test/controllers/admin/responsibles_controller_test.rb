@@ -106,6 +106,6 @@ class Admin::ResponsiblesControllerTest < ActionDispatch::IntegrationTest
   test "new shows the Usuario vinculado select marked for TomSelect" do
     get new_admin_responsible_path
     assert_response :success
-    assert_select "select.js-tomselect#responsible_user_id"
+    assert_select "select[data-controller=?]#responsible_user_id", "tom-select"
   end
 end
