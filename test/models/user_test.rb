@@ -43,7 +43,7 @@ class UserTest < ActiveSupport::TestCase
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     visor = User.create!(email: "visor-instalador@example.com", password: "password123", role: "visor")
     responsible = Responsible.create!(name: "Visor Instalador", user: visor)
-    ResponsibleProjectType.create!(responsible: responsible, project_type: project_types(:instalaciones))
+    ResponsibleProjectType.create!(responsible: responsible, project_type: project_types(:instalaciones), responsible_type: responsible_types(:instalador))
     ProjectResponsible.create!(project: project, responsible: responsible, responsible_type: responsible_types(:instalador))
 
     assert visor.can_view_project?(project)
@@ -54,7 +54,7 @@ class UserTest < ActiveSupport::TestCase
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     visor = User.create!(email: "visor-etapa@example.com", password: "password123", role: "visor")
     responsible = Responsible.create!(name: "Visor Etapa", user: visor)
-    ResponsibleProjectType.create!(responsible: responsible, project_type: project_types(:instalaciones))
+    ResponsibleProjectType.create!(responsible: responsible, project_type: project_types(:instalaciones), responsible_type: responsible_types(:instalador))
     ProjectResponsible.create!(
       project: project, responsible: responsible, responsible_type: responsible_types(:instalador),
       project_stage: project.project_stages.first

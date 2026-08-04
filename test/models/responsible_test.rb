@@ -33,7 +33,7 @@ class ResponsibleTest < ActiveSupport::TestCase
     project_type = project_types(:instalaciones)
     responsible_type = ResponsibleType.create!(project_type: project_type, name: "Instalador")
     responsible = Responsible.create!(name: "Ana Gómez")
-    ResponsibleProjectType.create!(responsible: responsible, project_type: project_type)
+    ResponsibleProjectType.create!(responsible: responsible, project_type: project_type, responsible_type: responsible_type)
     project = Project.create!(project_type: project_type, name: "Torre Norte", custom_fields: {})
     pr = ProjectResponsible.create!(project: project, responsible: responsible, responsible_type: responsible_type)
 

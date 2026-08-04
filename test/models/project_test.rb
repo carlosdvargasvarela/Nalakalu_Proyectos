@@ -192,7 +192,7 @@ class ProjectTest < ActiveSupport::TestCase
     unassigned = Project.create!(project_type: project_types(:instalaciones), name: "Torre Sur", custom_fields: {})
     visor = User.create!(email: "visor-instalador@example.com", password: "password123", role: "visor")
     responsible = Responsible.create!(name: "Visor Instalador", user: visor)
-    ResponsibleProjectType.create!(responsible: responsible, project_type: project_types(:instalaciones))
+    ResponsibleProjectType.create!(responsible: responsible, project_type: project_types(:instalaciones), responsible_type: responsible_types(:instalador))
     ProjectResponsible.create!(project: assigned, responsible: responsible, responsible_type: responsible_types(:instalador))
 
     visible = Project.visible_to(visor)
@@ -205,7 +205,7 @@ class ProjectTest < ActiveSupport::TestCase
     via_responsible = Project.create!(project_type: project_types(:instalaciones), name: "Torre Sur", custom_fields: {})
     visor = User.create!(email: "visor-ambos@example.com", password: "password123", role: "visor")
     responsible = Responsible.create!(name: "Visor Ambos", user: visor)
-    ResponsibleProjectType.create!(responsible: responsible, project_type: project_types(:instalaciones))
+    ResponsibleProjectType.create!(responsible: responsible, project_type: project_types(:instalaciones), responsible_type: responsible_types(:instalador))
     ProjectAccess.create!(user: visor, project: via_access)
     ProjectResponsible.create!(project: via_responsible, responsible: responsible, responsible_type: responsible_types(:instalador))
 

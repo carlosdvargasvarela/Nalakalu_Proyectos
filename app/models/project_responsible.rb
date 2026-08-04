@@ -34,6 +34,9 @@ class ProjectResponsible < ApplicationRecord
 
   def responsible_enabled_for_project_type
     return if responsible.nil? || project.nil?
-    errors.add(:responsible, "no está habilitado para este tipo de proyecto") unless responsible.project_types.include?(project.project_type)
+    link = responsible.responsible_project_types.find_by(project_type_id: project.project_type_id)
+    return errors.add(:responsible, "no está habilitado para este tipo de proyecto") if link.nil?
+    return if responsible_type_id.nil? || link.responsible_type_id == responsible_type_id
+    errors.add(:responsible, "no es del tipo de responsable configurado para este tipo de proyecto")
   end
 end

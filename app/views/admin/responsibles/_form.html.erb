@@ -26,13 +26,16 @@
     </div>
 
     <div class="mb-3">
-      <%= form.label :project_type_ids, "Tipos de proyecto habilitados", class: "form-label d-block" %>
-      <%= hidden_field_tag "responsible[project_type_ids][]", "" %>
-      <% ProjectType.order(:name).each do |project_type| %>
-        <div class="form-check">
-          <%= check_box_tag "responsible[project_type_ids][]", project_type.id,
-                responsible.project_type_ids.include?(project_type.id), class: "form-check-input", id: "project_type_ids_#{project_type.id}" %>
-          <%= label_tag "project_type_ids_#{project_type.id}", project_type.name, class: "form-check-label" %>
+      <%= form.label :responsible_project_types, "Tipo de responsable por tipo de proyecto", class: "form-label d-block" %>
+      <%= form.fields_for :responsible_project_types, responsible.responsible_project_types.sort_by { |rpt| rpt.project_type.name } do |rpt_form| %>
+        <div class="row align-items-center mb-2">
+          <div class="col-4"><%= rpt_form.object.project_type.name %></div>
+          <div class="col-8">
+            <%= rpt_form.hidden_field :project_type_id %>
+            <%= rpt_form.select :responsible_type_id,
+                  rpt_form.object.project_type.responsible_types.order(:name).pluck(:name, :id),
+                  { include_blank: "No habilitado" }, class: "form-select" %>
+          </div>
         </div>
       <% end %>
     </div>

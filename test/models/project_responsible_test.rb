@@ -5,7 +5,7 @@ class ProjectResponsibleTest < ActiveSupport::TestCase
     @project_type = project_types(:instalaciones)
     @responsible_type = ResponsibleType.create!(project_type: @project_type, name: "Instalador")
     @responsible = Responsible.create!(name: "Ana Gómez")
-    ResponsibleProjectType.create!(responsible: @responsible, project_type: @project_type)
+    ResponsibleProjectType.create!(responsible: @responsible, project_type: @project_type, responsible_type: @responsible_type)
     @project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
   end
 
@@ -63,6 +63,23 @@ class ProjectResponsibleTest < ActiveSupport::TestCase
     foreign_responsible_type = ResponsibleType.create!(project_type: other_type, name: "Instalador")
     pr = ProjectResponsible.new(project: @project, responsible: @responsible, responsible_type: foreign_responsible_type)
     assert_not pr.valid?
+  end
+
+  test "invalid when the responsible is configured with a different responsible_type for this project_type" do
+    supervisor_type = ResponsibleType.create!(project_type: @project_type, name: "Supervisor")
+    pr = ProjectResponsible.new(project: @project, responsible: @responsible, responsible_type: supervisor_type)
+    assert_not pr.valid?
+    assert_includes pr.errors[:responsible].join, "tipo de responsable"
+  end
+
+  test "a responsible can be a different type in a different project_type" do
+    other_project_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    other_responsible_type = ResponsibleType.create!(project_type: other_project_type, name: "Supervisor")
+    ResponsibleProjectType.create!(responsible: @responsible, project_type: other_project_type, responsible_type: other_responsible_type)
+    other_project = Project.create!(project_type: other_project_type, name: "Planta Sur", custom_fields: {})
+
+    pr = ProjectResponsible.new(project: other_project, responsible: @responsible, responsible_type: other_responsible_type)
+    assert pr.valid?
   end
 
   test "creating an assignment snapshots the responsible's name and color" do

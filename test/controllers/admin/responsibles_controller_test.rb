@@ -66,10 +66,17 @@ class Admin::ResponsiblesControllerTest < ActionDispatch::IntegrationTest
     assert_select "select#responsible_user_id option[value=?]", linked_elsewhere.id.to_s, count: 0
   end
 
-  test "create with project_type_ids enables the responsible for those types" do
+  test "create with responsible_project_types_attributes enables the responsible for those types" do
     other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    other_responsible_type = ResponsibleType.create!(project_type: other_type, name: "Supervisor")
     post admin_responsibles_path, params: {
-      responsible: { name: "Nuevo", project_type_ids: [project_types(:instalaciones).id, other_type.id] }
+      responsible: {
+        name: "Nuevo",
+        responsible_project_types_attributes: {
+          "0" => { project_type_id: project_types(:instalaciones).id, responsible_type_id: responsible_types(:instalador).id },
+          "1" => { project_type_id: other_type.id, responsible_type_id: other_responsible_type.id },
+        },
+      },
     }
     created = Responsible.order(:id).last
     assert_equal [project_types(:instalaciones), other_type].sort_by(&:id), created.project_types.sort_by(&:id)
@@ -77,18 +84,23 @@ class Admin::ResponsiblesControllerTest < ActionDispatch::IntegrationTest
 
   test "update can unenable every project type, leaving none" do
     responsible = responsibles(:ana_gomez)
+    link = responsible.responsible_project_types.first
 
     patch admin_responsible_path(responsible), params: {
-      responsible: { name: responsible.name, project_type_ids: [""] }
+      responsible: {
+        name: responsible.name,
+        responsible_project_types_attributes: { "0" => { id: link.id, project_type_id: link.project_type_id, responsible_type_id: "" } },
+      },
     }
 
     assert_equal [], responsible.reload.project_types
   end
 
-  test "edit shows a checkbox per project type, checked for the ones already enabled" do
+  test "edit shows a select per project type, pre-filled for the ones already enabled" do
     get edit_admin_responsible_path(responsibles(:ana_gomez))
     assert_response :success
-    assert_select "input[type=checkbox][name='responsible[project_type_ids][]'][value=?][checked=checked]", project_types(:instalaciones).id.to_s
+    assert_select "select[name=?] option[selected][value=?]",
+      "responsible[responsible_project_types_attributes][0][responsible_type_id]", responsible_types(:instalador).id.to_s
   end
 
   test "new shows the Usuario vinculado select marked for TomSelect" do

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_08_03_160000) do
+ActiveRecord::Schema[7.2].define(version: 2026_08_04_191636) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -186,9 +186,11 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_03_160000) do
     t.bigint "project_type_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "responsible_type_id"
     t.index ["project_type_id"], name: "index_responsible_project_types_on_project_type_id"
     t.index ["responsible_id", "project_type_id"], name: "index_responsible_project_types_on_pair", unique: true
     t.index ["responsible_id"], name: "index_responsible_project_types_on_responsible_id"
+    t.index ["responsible_type_id"], name: "index_responsible_project_types_on_responsible_type_id"
   end
 
   create_table "responsible_types", force: :cascade do |t|
@@ -270,6 +272,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_03_160000) do
   add_foreign_key "project_type_associations", "project_types", column: "to_project_type_id"
   add_foreign_key "projects", "project_types"
   add_foreign_key "responsible_project_types", "project_types"
+  add_foreign_key "responsible_project_types", "responsible_types"
   add_foreign_key "responsible_project_types", "responsibles"
   add_foreign_key "responsible_types", "project_types"
   add_foreign_key "responsibles", "users"

@@ -40,8 +40,9 @@ class Admin::ResponsibleTypesControllerTest < ActionDispatch::IntegrationTest
 
   test "destroy cascades to its project_responsibles" do
     project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
-    responsible = responsibles(:ana_gomez)
     type = responsible_types(:disenador)
+    responsible = Responsible.create!(name: "Diseñador")
+    ResponsibleProjectType.create!(responsible: responsible, project_type: @project_type, responsible_type: type)
     ProjectResponsible.create!(project: project, responsible: responsible, responsible_type: type)
 
     assert_difference("ProjectResponsible.count", -1) do

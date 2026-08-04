@@ -116,10 +116,11 @@ class Admin::ProjectTypesControllerTest < ActionDispatch::IntegrationTest
 
   test "show lists only the Responsible catalog entries enabled for this project type" do
     enabled = Responsible.create!(name: "Ana Gómez", color: "#ff0000")
-    ResponsibleProjectType.create!(responsible: enabled, project_type: project_types(:instalaciones))
+    ResponsibleProjectType.create!(responsible: enabled, project_type: project_types(:instalaciones), responsible_type: responsible_types(:instalador))
     other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    other_responsible_type = ResponsibleType.create!(project_type: other_type, name: "Supervisor")
     not_enabled = Responsible.create!(name: "No Habilitado")
-    ResponsibleProjectType.create!(responsible: not_enabled, project_type: other_type)
+    ResponsibleProjectType.create!(responsible: not_enabled, project_type: other_type, responsible_type: other_responsible_type)
 
     get admin_project_type_path(project_types(:instalaciones))
     assert_response :success

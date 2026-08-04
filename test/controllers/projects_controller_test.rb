@@ -327,7 +327,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
     not_enabled = Responsible.create!(name: "No Habilitado")
-    ResponsibleProjectType.create!(responsible: not_enabled, project_type: other_type)
+    other_responsible_type = ResponsibleType.create!(project_type: other_type, name: "Supervisor")
+    ResponsibleProjectType.create!(responsible: not_enabled, project_type: other_type, responsible_type: other_responsible_type)
 
     get project_path(project)
     assert_response :success
@@ -367,8 +368,10 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
   test "index's Gantt tasks include status, progress, and every responsible for the hover popup" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {}, status: "active")
+    disenador = Responsible.create!(name: "Diana Diseñadora")
+    ResponsibleProjectType.create!(responsible: disenador, project_type: project_types(:instalaciones), responsible_type: responsible_types(:disenador))
     ProjectResponsible.create!(project: project, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
-    ProjectResponsible.create!(project: project, responsible: responsibles(:pedro_responsable), responsible_type: responsible_types(:disenador))
+    ProjectResponsible.create!(project: project, responsible: disenador, responsible_type: responsible_types(:disenador))
     slug = project_types(:instalaciones).slug
 
     get project_type_projects_path(slug)
@@ -379,7 +382,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       assert_equal "Sin iniciar", task["progress_status_label"]
       names = task["responsibles"].map { |r| [r["type"], r["name"]] }
       assert_includes names, ["Instalador Fixture", "Ana Gómez"]
-      assert_includes names, ["Diseñador Fixture", "Pedro Instalador"]
+      assert_includes names, ["Diseñador Fixture", "Diana Diseñadora"]
     end
   end
 
@@ -549,7 +552,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     con_ana = Project.create!(project_type: project_types(:instalaciones), name: "Con Ana", custom_fields: {})
     ProjectResponsible.create!(project: con_ana, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
     otro_responsable = Responsible.create!(name: "Otro")
-    ResponsibleProjectType.create!(responsible: otro_responsable, project_type: project_types(:instalaciones))
+    ResponsibleProjectType.create!(responsible: otro_responsable, project_type: project_types(:instalaciones), responsible_type: responsible_types(:instalador))
     con_otro = Project.create!(project_type: project_types(:instalaciones), name: "Con Otro", custom_fields: {})
     ProjectResponsible.create!(project: con_otro, responsible: otro_responsable, responsible_type: responsible_types(:instalador))
 
@@ -784,7 +787,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     con_ana = Project.create!(project_type: project_types(:instalaciones), name: "Con Ana", custom_fields: {})
     ProjectResponsible.create!(project: con_ana, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
     otro_responsable = Responsible.create!(name: "Otro")
-    ResponsibleProjectType.create!(responsible: otro_responsable, project_type: project_types(:instalaciones))
+    ResponsibleProjectType.create!(responsible: otro_responsable, project_type: project_types(:instalaciones), responsible_type: responsible_types(:instalador))
     con_otro = Project.create!(project_type: project_types(:instalaciones), name: "Con Otro", custom_fields: {})
     ProjectResponsible.create!(project: con_otro, responsible: otro_responsable, responsible_type: responsible_types(:instalador))
 
@@ -1003,7 +1006,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     project = Project.create!(project_type: project_types(:instalaciones), name: "Proyecto A", custom_fields: {})
     ProjectResponsible.create!(project: project, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
     otro_responsable = Responsible.create!(name: "Otro")
-    ResponsibleProjectType.create!(responsible: otro_responsable, project_type: project_types(:instalaciones))
+    ResponsibleProjectType.create!(responsible: otro_responsable, project_type: project_types(:instalaciones), responsible_type: responsible_types(:instalador))
 
     patch bulk_assign_responsible_projects_path, params: {
       responsible_type_id: responsible_types(:instalador).id, responsible_id: otro_responsable.id, project_ids: [project.id]
@@ -1045,7 +1048,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     other_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
     not_enabled = Responsible.create!(name: "No Habilitado")
-    ResponsibleProjectType.create!(responsible: not_enabled, project_type: other_type)
+    other_responsible_type = ResponsibleType.create!(project_type: other_type, name: "Supervisor")
+    ResponsibleProjectType.create!(responsible: not_enabled, project_type: other_type, responsible_type: other_responsible_type)
 
     get project_type_projects_path(project_types(:instalaciones).slug)
     assert_response :success
@@ -1631,7 +1635,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     project_type = project_types(:instalaciones)
     responsible_type = ResponsibleType.create!(project_type: project_type, name: "Instalador")
     responsible = Responsible.create!(name: "Ana Gómez")
-    ResponsibleProjectType.create!(responsible: responsible, project_type: project_type)
+    ResponsibleProjectType.create!(responsible: responsible, project_type: project_type, responsible_type: responsible_type)
     project = Project.create!(project_type: project_type, name: "Torre Norte", custom_fields: {})
     ProjectResponsible.create!(project: project, responsible: responsible, responsible_type: responsible_type)
     responsible.destroy
@@ -1646,7 +1650,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     project_type = project_types(:instalaciones)
     responsible_type = ResponsibleType.create!(project_type: project_type, name: "Instalador")
     responsible = Responsible.create!(name: "Ana Gómez")
-    ResponsibleProjectType.create!(responsible: responsible, project_type: project_type)
+    ResponsibleProjectType.create!(responsible: responsible, project_type: project_type, responsible_type: responsible_type)
     project = Project.create!(project_type: project_type, name: "Torre Norte", custom_fields: {})
     ProjectResponsible.create!(project: project, responsible: responsible, responsible_type: responsible_type)
 

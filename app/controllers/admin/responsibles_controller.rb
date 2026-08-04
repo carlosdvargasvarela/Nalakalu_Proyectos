@@ -7,6 +7,7 @@ class Admin::ResponsiblesController < Admin::BaseController
 
   def new
     @responsible = Responsible.new
+    build_responsible_project_type_rows
   end
 
   def create
@@ -14,17 +15,20 @@ class Admin::ResponsiblesController < Admin::BaseController
     if @responsible.save
       redirect_to admin_responsibles_path
     else
+      build_responsible_project_type_rows
       render :new, status: :unprocessable_entity
     end
   end
 
   def edit
+    build_responsible_project_type_rows
   end
 
   def update
     if @responsible.update(responsible_params)
       redirect_to admin_responsibles_path
     else
+      build_responsible_project_type_rows
       render :edit, status: :unprocessable_entity
     end
   end
@@ -45,7 +49,16 @@ class Admin::ResponsiblesController < Admin::BaseController
   end
   helper_method :unlinked_users
 
+  # Ensures every ProjectType has a (possibly unsaved) row to render a select for.
+  def build_responsible_project_type_rows
+    linked_project_type_ids = @responsible.responsible_project_types.map(&:project_type_id)
+    ProjectType.where.not(id: linked_project_type_ids).order(:name).each do |project_type|
+      @responsible.responsible_project_types.build(project_type_id: project_type.id)
+    end
+  end
+
   def responsible_params
-    params.require(:responsible).permit(:name, :color, :user_id, project_type_ids: [])
+    params.require(:responsible).permit(:name, :color, :user_id,
+      responsible_project_types_attributes: [:id, :project_type_id, :responsible_type_id])
   end
 end
