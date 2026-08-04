@@ -213,20 +213,34 @@
         .group_by { |rpt| rpt.responsible_type_id.to_s }
         .transform_values { |rows| rows.map { |rpt| [rpt.responsible_id, rpt.responsible.name] }.sort_by { |_, name| name } }
     %>
-    <%= form_with url: bulk_assign_responsible_projects_path(request.query_parameters), method: :patch, local: true,
-          id: "bulk-assign-form-#{slug}", class: "d-flex gap-2 align-items-end mb-3" do |f| %>
-      <%= hidden_field_tag :project_type_slug, slug %>
-      <div>
-        <%= f.label :responsible_type_id, "Tipo", for: "bulk-assign-type-select-#{slug}", class: "form-label" %>
-        <%= f.select :responsible_type_id, project_type.responsible_types.order(:name).collect { |t| [t.name, t.id] },
-              { include_blank: "Elegí un tipo", selected: section_params[:responsible_type_id] }, class: "form-select", id: "bulk-assign-type-select-#{slug}" %>
+    <div class="card mb-4">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-people-fill"></i> Asignación masiva
       </div>
-      <div>
-        <%= f.label :responsible_id, "Asignar a los seleccionados", for: "bulk-assign-responsible-select-#{slug}", class: "form-label" %>
-        <%= f.select :responsible_id, [], { include_blank: "Elegí un responsable" }, class: "form-select js-tomselect", id: "bulk-assign-responsible-select-#{slug}" %>
+      <div class="card-body">
+        <%= form_with url: bulk_assign_responsible_projects_path(request.query_parameters), method: :patch, local: true,
+              id: "bulk-assign-form-#{slug}", class: "row g-3 align-items-end" do |f| %>
+          <%= hidden_field_tag :project_type_slug, slug %>
+          <div class="col-auto">
+            <%= f.label :responsible_type_id, "Tipo", for: "bulk-assign-type-select-#{slug}", class: "form-label" %>
+            <%= f.select :responsible_type_id, project_type.responsible_types.order(:name).collect { |t| [t.name, t.id] },
+                  { include_blank: "Elegí un tipo", selected: section_params[:responsible_type_id] }, class: "form-select", id: "bulk-assign-type-select-#{slug}" %>
+          </div>
+          <div class="col-auto">
+            <%= f.label :responsible_id, "Responsable", for: "bulk-assign-responsible-select-#{slug}", class: "form-label" %>
+            <%= f.select :responsible_id, [], { include_blank: "Elegí un responsable" }, class: "form-select js-tomselect", id: "bulk-assign-responsible-select-#{slug}" %>
+          </div>
+          <div class="col-auto">
+            <%= f.submit "Asignar", class: "btn btn-primary", disabled: true, id: "bulk-assign-submit-#{slug}" %>
+          </div>
+          <div class="col-auto ms-auto">
+            <span class="badge rounded-pill text-bg-secondary-subtle text-secondary-emphasis fw-normal" id="bulk-assign-count-<%= slug %>">
+              0 seleccionados
+            </span>
+          </div>
+        <% end %>
       </div>
-      <%= f.submit "Asignar", class: "btn btn-primary" %>
-    <% end %>
+    </div>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         var responsiblesByType = <%= raw responsibles_by_type.to_json %>;
@@ -312,8 +326,24 @@
 
   <% if current_user.admin? || current_user.gerente? %>
     <script>
-      document.getElementById("select-all-projects-<%= slug %>").addEventListener("change", function (e) {
-        document.querySelectorAll('input[form="bulk-assign-form-<%= slug %>"]').forEach(function (cb) { cb.checked = e.target.checked; });
+      document.addEventListener("DOMContentLoaded", function () {
+        var selectAll = document.getElementById("select-all-projects-<%= slug %>");
+        var countBadge = document.getElementById("bulk-assign-count-<%= slug %>");
+        var submitBtn = document.getElementById("bulk-assign-submit-<%= slug %>");
+        var projectCheckboxes = function () { return document.querySelectorAll('input[form="bulk-assign-form-<%= slug %>"]'); };
+
+        function updateCount() {
+          var count = document.querySelectorAll('input[form="bulk-assign-form-<%= slug %>"]:checked').length;
+          countBadge.textContent = count + (count === 1 ? " seleccionado" : " seleccionados");
+          submitBtn.disabled = count === 0;
+        }
+
+        selectAll.addEventListener("change", function (e) {
+          projectCheckboxes().forEach(function (cb) { cb.checked = e.target.checked; });
+          updateCount();
+        });
+        projectCheckboxes().forEach(function (cb) { cb.addEventListener("change", updateCount); });
+        updateCount();
       });
     </script>
   <% end %>
