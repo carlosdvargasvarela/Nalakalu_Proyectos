@@ -233,9 +233,15 @@
         var typeSelect = document.getElementById("bulk-assign-type-select-<%= slug %>");
         var responsibleSelect = document.getElementById("bulk-assign-responsible-select-<%= slug %>");
 
+        // Initialize TomSelect here instead of relying on the layout's own
+        // DOMContentLoaded listener - that one is registered after this
+        // script in the DOM, so it hasn't run yet when this fires.
+        if (!responsibleSelect.tomselect) {
+          new TomSelect(responsibleSelect, { create: false, allowEmptyOption: true });
+        }
+        var ts = responsibleSelect.tomselect;
+
         function applyOptions() {
-          var ts = responsibleSelect.tomselect;
-          if (!ts) return;
           ts.clear(true);
           ts.clearOptions();
           (responsiblesByType[typeSelect.value] || []).forEach(function (pair) {
