@@ -3,6 +3,12 @@
     <%= link_to "Nalakalu Proyectos", root_path, class: "navbar-brand" %>
     <div class="navbar-nav me-auto">
       <%= link_to "Proyectos", projects_path, class: "nav-link" %>
+      <% if user_signed_in? %>
+        <% pending_count = pending_stage_dates_count(current_user) %>
+        <% if pending_count > 0 %>
+          <span class="badge bg-danger"><%= pending_count %></span>
+        <% end %>
+      <% end %>
       <%= link_to "Seguimiento", tracker_projects_path, class: "nav-link" %>
       <% if user_signed_in? && (current_user.admin? || current_user.gerente?) %>
         <%= link_to "Importar", new_import_path, class: "nav-link" %>

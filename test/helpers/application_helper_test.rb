@@ -35,4 +35,19 @@ class ApplicationHelperTest < ActionView::TestCase
     assert_match(/badge bg-danger/, overdue_badge)
     assert_match(/Vencido/, overdue_badge)
   end
+
+  test "pending_stage_dates_count counts visible projects with an undated stage, only for types that require dates" do
+    project_types(:instalaciones).update!(require_stage_dates: true)
+    pending = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    complete = Project.create!(project_type: project_types(:instalaciones), name: "Torre Sur", custom_fields: {})
+    complete.project_stages.each { |stage| stage.update!(start_date: Date.new(2026, 1, 1), end_date: Date.new(2026, 1, 10)) }
+
+    assert_equal 1, pending_stage_dates_count(users(:juan))
+  end
+
+  test "pending_stage_dates_count ignores project types that don't require dates" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+
+    assert_equal 0, pending_stage_dates_count(users(:juan))
+  end
 end

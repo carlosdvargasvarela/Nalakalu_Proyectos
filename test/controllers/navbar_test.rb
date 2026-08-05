@@ -66,4 +66,23 @@ class NavbarTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "nav button[data-action=?]", "click->theme#toggle"
   end
+
+  test "navbar shows a badge with the pending stage dates count next to Proyectos" do
+    project_types(:instalaciones).update!(require_stage_dates: true)
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+
+    sign_in users(:juan)
+    get root_path
+    follow_redirect!
+    assert_response :success
+    assert_select "nav a[href=?] + .badge", projects_path, "1"
+  end
+
+  test "navbar shows no badge when there are no pending projects" do
+    sign_in users(:juan)
+    get root_path
+    follow_redirect!
+    assert_response :success
+    assert_select "nav a[href=?] + .badge", projects_path, count: 0
+  end
 end
