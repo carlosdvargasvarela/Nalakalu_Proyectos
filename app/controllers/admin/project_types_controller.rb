@@ -44,6 +44,6 @@ class Admin::ProjectTypesController < Admin::BaseController
   end
 
   def project_type_params
-    params.require(:project_type).permit(:name, :slug)
+    params.require(:project_type).permit(:name, :slug, :require_stage_dates)
   end
 end

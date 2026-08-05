@@ -131,4 +131,15 @@ class Admin::ProjectTypesControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/No Habilitado/, response.body)
     assert_select "a[href=?]", admin_responsibles_path, text: "Administrar responsables"
   end
+
+  test "new form includes the require_stage_dates checkbox" do
+    get new_admin_project_type_path
+    assert_response :success
+    assert_select "input[type=checkbox][name=?]", "project_type[require_stage_dates]"
+  end
+
+  test "create persists require_stage_dates when checked" do
+    post admin_project_types_path, params: { project_type: { name: "Mantenimiento", slug: "mantenimiento", require_stage_dates: "1" } }
+    assert_equal true, ProjectType.last.require_stage_dates
+  end
 end

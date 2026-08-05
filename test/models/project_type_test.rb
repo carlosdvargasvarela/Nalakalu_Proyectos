@@ -21,4 +21,9 @@ class ProjectTypeTest < ActiveSupport::TestCase
     project_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
     assert_equal ["Nota", "Incidencia", "Cambio"], project_type.log_entry_types.order(:id).pluck(:name)
   end
+
+  test "require_stage_dates defaults to false" do
+    project_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    assert_equal false, project_type.require_stage_dates
+  end
 end

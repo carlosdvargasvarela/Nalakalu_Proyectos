@@ -18,6 +18,10 @@
       <%= form.label :slug, class: "form-label" %>
       <%= form.text_field :slug, class: "form-control" %>
     </div>
+    <div class="mb-3 form-check">
+      <%= form.check_box :require_stage_dates, class: "form-check-input" %>
+      <%= form.label :require_stage_dates, "Exigir fechas en las etapas", class: "form-check-label" %>
+    </div>
     <%= form.submit class: "btn btn-primary" %>
   <% end %>
 <% end %>
