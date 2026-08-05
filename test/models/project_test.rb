@@ -230,4 +230,23 @@ class ProjectTest < ActiveSupport::TestCase
 
     assert_equal [], Project.visible_to(unlinked).to_a
   end
+
+  test "stages_missing_dates returns only stages without both dates set" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    dated, undated = project.project_stages.order(:id).first(2)
+    dated.update!(start_date: Date.new(2026, 1, 1), end_date: Date.new(2026, 1, 10))
+
+    missing = project.stages_missing_dates
+
+    assert_includes missing, undated
+    assert_not_includes missing, dated
+  end
+
+  test "stages_missing_dates treats a stage with only one date set as missing" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.order(:id).first
+    stage.update!(start_date: Date.new(2026, 1, 1), end_date: nil)
+
+    assert_includes project.stages_missing_dates, stage
+  end
 end

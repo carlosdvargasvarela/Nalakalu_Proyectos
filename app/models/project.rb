@@ -32,6 +32,10 @@ class Project < ApplicationRecord
     project_stages.map(&:end_date).compact.max
   end
 
+  def stages_missing_dates
+    project_stages.select { |stage| stage.start_date.blank? || stage.end_date.blank? }
+  end
+
   def gantt_window
     first = start_date || created_at.to_date
     last = end_date || (first + 7.days)
