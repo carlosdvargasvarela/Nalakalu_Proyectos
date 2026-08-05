@@ -14,7 +14,10 @@
         <%= link_to "Usuarios", admin_users_path, class: "nav-link" %>
       <% end %>
     </div>
-    <div class="navbar-nav">
+    <div class="navbar-nav" data-controller="theme">
+      <button type="button" class="btn btn-outline-secondary btn-sm me-2" data-action="click->theme#toggle" aria-label="Cambiar tema claro/oscuro">
+        <span data-theme-target="icon">☾</span>
+      </button>
       <% if user_signed_in? %>
         <span class="navbar-text me-3"><%= current_user.email %></span>
         <%= button_to "Cerrar sesión", destroy_user_session_path, method: :delete, class: "btn btn-outline-secondary btn-sm" %>

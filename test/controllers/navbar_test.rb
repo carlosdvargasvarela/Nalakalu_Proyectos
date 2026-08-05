@@ -58,4 +58,12 @@ class NavbarTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "nav a[href=?]", admin_project_type_associations_path, count: 0
   end
+
+  test "navbar includes the theme toggle button" do
+    sign_in users(:juan)
+    get root_path
+    follow_redirect!
+    assert_response :success
+    assert_select "nav button[data-action=?]", "click->theme#toggle"
+  end
 end
