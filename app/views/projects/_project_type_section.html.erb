@@ -125,6 +125,30 @@
     end
   %>
 
+  <% if project_type.require_stage_dates? %>
+    <%
+      pending_projects = projects_list.filter_map do |project|
+        missing = project.stages_missing_dates
+        [project, missing] if missing.any?
+      end
+    %>
+    <% if pending_projects.any? %>
+      <div class="card mb-4">
+        <div class="card-header">Pendientes de fecha</div>
+        <div class="card-body p-0">
+          <ul class="list-group list-group-flush">
+            <% pending_projects.each do |project, missing| %>
+              <li class="list-group-item">
+                <%= link_to project.name, project_path(project) %>
+                — falta fecha en: <%= missing.map(&:name).join(", ") %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+
   <div class="card mb-4">
     <div class="card-header">Cronograma</div>
     <div class="card-body" data-controller="gantt-project-list"
