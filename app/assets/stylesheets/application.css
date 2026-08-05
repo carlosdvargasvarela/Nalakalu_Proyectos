@@ -14,17 +14,20 @@
  *= require_self
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 :root {
   --bs-primary: #2563EB;
   --bs-primary-rgb: 37, 99, 235;
   --bs-success: #059669;
+  --bs-success-rgb: 5, 150, 105;
   --bs-danger: #DC2626;
+  --bs-danger-rgb: 220, 38, 38;
   --bs-body-bg: #F8FAFC;
+  --bs-body-bg-rgb: 248, 250, 252;
   --bs-body-color: #1E293B;
+  --bs-body-color-rgb: 30, 41, 59;
   --bs-border-color: #E2E8F0;
   --bs-tertiary-bg: #E9EFF8;
+  --bs-tertiary-bg-rgb: 233, 239, 248;
   --bs-body-font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --bs-link-color: var(--bs-primary);
   --bs-link-hover-color: #1E40AF;
@@ -37,13 +40,23 @@
   --bs-primary: #3B82F6;
   --bs-primary-rgb: 59, 130, 246;
   --bs-success: #10B981;
+  --bs-success-rgb: 16, 185, 129;
   --bs-danger: #EF4444;
+  --bs-danger-rgb: 239, 68, 68;
   --bs-body-bg: #0F172A;
+  --bs-body-bg-rgb: 15, 23, 42;
   --bs-body-color: #F1F5F9;
+  --bs-body-color-rgb: 241, 245, 249;
   --bs-border-color: #334155;
-  --bs-tertiary-bg: #334155;
+  --bs-tertiary-bg: #1E293B;
+  --bs-tertiary-bg-rgb: 30, 41, 59;
   --bs-link-color: var(--bs-primary);
   --bs-link-hover-color: #93C5FD;
+}
+
+[data-bs-theme="dark"] .btn-primary {
+  --bs-btn-color: #0F172A;
+  --bs-btn-hover-color: #0F172A;
 }
 
 .btn-primary {
@@ -61,7 +74,7 @@
 .avance-input {
   width: 4.5rem;
   text-align: center;
-  background-color: #f1f1f1;
+  background-color: var(--bs-tertiary-bg);
   border-radius: 999px;
 }
 
