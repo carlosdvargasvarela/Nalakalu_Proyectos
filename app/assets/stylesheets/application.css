@@ -14,11 +14,20 @@
  *= require_self
  */
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 :root {
-  --bs-primary: #2c3e50;
-  --bs-primary-rgb: 44, 62, 80;
-  --bs-link-color: #2c3e50;
-  --bs-link-hover-color: #1a252f;
+  --bs-primary: #2563EB;
+  --bs-primary-rgb: 37, 99, 235;
+  --bs-success: #059669;
+  --bs-danger: #DC2626;
+  --bs-body-bg: #F8FAFC;
+  --bs-body-color: #1E293B;
+  --bs-border-color: #E2E8F0;
+  --bs-tertiary-bg: #E9EFF8;
+  --bs-body-font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --bs-link-color: var(--bs-primary);
+  --bs-link-hover-color: #1E40AF;
   --bs-border-radius: 0.5rem;
   --bs-border-radius-sm: 0.35rem;
   --bs-border-radius-lg: 0.65rem;
@@ -27,8 +36,8 @@
 .btn-primary {
   --bs-btn-bg: var(--bs-primary);
   --bs-btn-border-color: var(--bs-primary);
-  --bs-btn-hover-bg: #1a252f;
-  --bs-btn-hover-border-color: #1a252f;
+  --bs-btn-hover-bg: #1E40AF;
+  --bs-btn-hover-border-color: #1E40AF;
 }
 
 .navbar-brand {
