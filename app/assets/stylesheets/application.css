@@ -66,6 +66,55 @@
   --bs-btn-hover-border-color: #1E40AF;
 }
 
+.btn-outline-primary {
+  --bs-btn-color: var(--bs-primary);
+  --bs-btn-border-color: var(--bs-primary);
+  --bs-btn-hover-bg: var(--bs-primary);
+  --bs-btn-hover-border-color: var(--bs-primary);
+  --bs-btn-active-bg: var(--bs-primary);
+  --bs-btn-active-border-color: var(--bs-primary);
+}
+
+/* Bootstrap hardcodes .btn-outline-* colors from its own build-time SCSS
+   variables, not var(--bs-*) - without this override they keep Bootstrap's
+   default gray/red, which drops under 4.5:1 against our darker dark-mode
+   surfaces. Tie color+border to body-color so it always matches the theme;
+   hover inverts to body-bg for the same contrast in both directions. */
+.btn-outline-secondary {
+  --bs-btn-color: var(--bs-body-color);
+  --bs-btn-border-color: var(--bs-border-color);
+  --bs-btn-hover-color: var(--bs-body-bg);
+  --bs-btn-hover-bg: var(--bs-body-color);
+  --bs-btn-hover-border-color: var(--bs-body-color);
+  --bs-btn-active-color: var(--bs-body-bg);
+  --bs-btn-active-bg: var(--bs-body-color);
+  --bs-btn-active-border-color: var(--bs-body-color);
+}
+
+.btn-outline-danger {
+  --bs-btn-color: var(--bs-danger);
+  --bs-btn-border-color: var(--bs-danger);
+  --bs-btn-hover-bg: var(--bs-danger);
+  --bs-btn-hover-border-color: var(--bs-danger);
+  --bs-btn-active-bg: var(--bs-danger);
+  --bs-btn-active-border-color: var(--bs-danger);
+}
+
+/* Bright dark-mode danger red under white hover text falls to ~3.8:1;
+   dark text on that same red clears 4.5:1 (mirrors the dark .btn-primary fix below). */
+[data-bs-theme="dark"] .btn-outline-danger {
+  --bs-btn-hover-color: #0F172A;
+  --bs-btn-active-color: #0F172A;
+}
+
+/* Bootstrap's navbar-nav hover is opacity-only (.65 -> .8) on already-legible
+   text - the state change is real but barely perceptible. Add a visible
+   background so hover actually reads as hover. */
+.navbar-nav .nav-link:hover {
+  background-color: var(--bs-tertiary-bg);
+  border-radius: var(--bs-border-radius-sm);
+}
+
 .navbar-brand {
   font-weight: 600;
   letter-spacing: 0.01em;
