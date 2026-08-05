@@ -271,6 +271,31 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert(tasks.any? { |t| t["name"] == project.project_stages.first.name })
   end
 
+  test "show omits stages without dates from the Gantt when the project type requires stage dates" do
+    project_types(:instalaciones).update!(require_stage_dates: true)
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    dated, undated = project.project_stages.order(:id).first(2)
+    dated.update!(start_date: Date.new(2026, 1, 1), end_date: Date.new(2026, 1, 10))
+
+    get project_path(project)
+    assert_response :success
+    tasks = json_data_attribute('[data-controller="gantt-stage-editor"]', "data-gantt-stage-editor-tasks-value")
+
+    assert(tasks.any? { |t| t["id"] == dated.id.to_s })
+    assert_nil tasks.find { |t| t["id"] == undated.id.to_s }
+  end
+
+  test "show still applies the placeholder date for undated stages when the project type doesn't require dates" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.order(:id).first
+
+    get project_path(project)
+    assert_response :success
+    tasks = json_data_attribute('[data-controller="gantt-stage-editor"]', "data-gantt-stage-editor-tasks-value")
+
+    assert(tasks.any? { |t| t["id"] == stage.id.to_s })
+  end
+
   test "show renders the bitácora with existing entries and an add form" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     LogEntry.create!(project: project, user: users(:juan), log_entry_type: log_entry_types(:nota), body: "Nota visible en la bitácora")

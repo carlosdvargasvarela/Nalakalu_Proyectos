@@ -28,8 +28,12 @@
   # ponytail: a stage with no dates gets a one-week placeholder window starting at
   # the project's creation date, so the chart always has something to draw. This is
   # a visual approximation, not real data — real dates come from editing the stage.
+  # Project types with require_stage_dates skip that placeholder entirely instead:
+  # an undated stage just doesn't appear on this Gantt until it has real dates.
   stages = @project.project_stages.includes(:stage_template).order(:id)
-  gantt_tasks = stages.map do |stage|
+  require_dates = @project.project_type.require_stage_dates?
+  visible_stages = require_dates ? stages - @project.stages_missing_dates : stages
+  gantt_tasks = visible_stages.map do |stage|
     stage_start = stage.start_date || @project.created_at.to_date
     stage_end = stage.end_date || (stage_start + 7.days)
     {
