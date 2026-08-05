@@ -484,6 +484,27 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "2026-09-10", task["end"]
   end
 
+  test "index's stage-filtered Gantt omits a project whose filtered stage has no dates, when the type requires dates" do
+    project_types(:instalaciones).update!(require_stage_dates: true)
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    slug = project_types(:instalaciones).slug
+
+    get project_type_projects_path(slug), params: { stage_name: "Instalación", status: "" }
+    assert_response :success
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    assert_nil tasks.find { |t| t["id"] == project.id.to_s }
+  end
+
+  test "index's stage-filtered Gantt still applies the placeholder when the type doesn't require dates" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    slug = project_types(:instalaciones).slug
+
+    get project_type_projects_path(slug), params: { stage_name: "Instalación", status: "" }
+    assert_response :success
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    assert(tasks.any? { |t| t["id"] == project.id.to_s })
+  end
+
   test "index's Gantt section omits every project when the filtered stage doesn't exist for that type" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     slug = project_types(:instalaciones).slug
