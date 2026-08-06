@@ -17,4 +17,8 @@ class ProjectStage < ApplicationRecord
   def overdue?
     end_date.present? && end_date < Date.current && progress_percent < 100
   end
+
+  def dates_missing?
+    start_date.blank? || end_date.blank?
+  end
 end

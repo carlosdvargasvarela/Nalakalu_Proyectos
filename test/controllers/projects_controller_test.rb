@@ -547,6 +547,17 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".card-header", text: "Pendientes de fecha", count: 0
   end
 
+  test "index's unfiltered Gantt omits a project whose stages are all undated, when the type requires dates" do
+    project_types(:instalaciones).update!(require_stage_dates: true)
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    slug = project_types(:instalaciones).slug
+
+    get project_type_projects_path(slug)
+    assert_response :success
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    assert_nil tasks.find { |t| t["id"] == project.id.to_s }
+  end
+
   test "index's Gantt without a stage filter still shows each project's full range" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     slug = project_types(:instalaciones).slug

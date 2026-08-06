@@ -52,9 +52,14 @@ etapas con fecha se muestran normalmente. La tabla de etapas debajo del Gantt
 (`_stage_table.html.erb`) no cambia — la etapa sigue editable ahí aunque no
 aparezca en el gráfico.
 
-**Gantt de listado por tipo** (`_project_type_section.html.erb`): sin cambios en
-el caso general (usa `gantt_window`, que ya ignora etapas sin fecha). Cuando hay
-un filtro de etapa activo (`section[:stage_name].present?`) y
+**Gantt de listado por tipo** (`_project_type_section.html.erb`): en el caso
+general (usa `gantt_window`) se omite el proyecto por completo cuando
+`project_type.require_stage_dates?` es verdadero y TODAS sus etapas están sin
+fecha — de lo contrario `gantt_window` cae al placeholder de una semana
+(`created_at..created_at+7.days`) y el proyecto aparecería como barra en el
+Cronograma a la vez que en el panel "Pendientes de fecha", contradiciendo esa
+sección. Si al menos una etapa tiene fecha, `gantt_window` sigue usándose sin
+cambios. Cuando hay un filtro de etapa activo (`section[:stage_name].present?`) y
 `project_type.require_stage_dates?` es verdadero, se omite el proyecto de
 `gantt_tasks` si la etapa filtrada no tiene `start_date`/`end_date` (en vez de
 aplicarle el placeholder de 7 días).

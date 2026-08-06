@@ -89,11 +89,12 @@
       if section[:stage_name].present?
         stage = project.project_stages.find { |s| s.name == section[:stage_name] }
         next if stage.nil?
-        next if project_type.require_stage_dates? && (stage.start_date.blank? || stage.end_date.blank?)
+        next if project_type.require_stage_dates? && stage.dates_missing?
         stage_start = stage.start_date || project.created_at.to_date
         stage_end = stage.end_date || (stage_start + 7.days)
         first, last = stage_start, stage_end
       else
+        next if project_type.require_stage_dates? && project.project_stages.all?(&:dates_missing?)
         first, last = project.gantt_window
       end
       progress_values = project.project_stages.map(&:progress_percent)

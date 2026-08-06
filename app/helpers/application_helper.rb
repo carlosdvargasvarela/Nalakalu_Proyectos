@@ -36,6 +36,7 @@ module ApplicationHelper
 
   def pending_stage_dates_count(user)
     Project.visible_to(user)
+      .where.not(status: "archived")
       .joins(:project_type, :project_stages)
       .where(project_types: { require_stage_dates: true })
       .where("project_stages.start_date IS NULL OR project_stages.end_date IS NULL")

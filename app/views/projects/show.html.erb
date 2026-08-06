@@ -32,7 +32,7 @@
   # an undated stage just doesn't appear on this Gantt until it has real dates.
   stages = @project.project_stages.includes(:stage_template).order(:id)
   require_dates = @project.project_type.require_stage_dates?
-  visible_stages = require_dates ? stages - @project.stages_missing_dates : stages
+  visible_stages = require_dates ? stages.reject(&:dates_missing?) : stages
   gantt_tasks = visible_stages.map do |stage|
     stage_start = stage.start_date || @project.created_at.to_date
     stage_end = stage.end_date || (stage_start + 7.days)

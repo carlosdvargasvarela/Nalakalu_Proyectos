@@ -33,7 +33,7 @@ class Project < ApplicationRecord
   end
 
   def stages_missing_dates
-    project_stages.select { |stage| stage.start_date.blank? || stage.end_date.blank? }
+    project_stages.select(&:dates_missing?)
   end
 
   def gantt_window
