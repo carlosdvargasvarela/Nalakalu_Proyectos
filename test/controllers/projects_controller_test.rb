@@ -385,6 +385,20 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert(tasks.any? { |t| t["name"] == project.name })
   end
 
+  test "index's Gantt tasks are ordered by start date ascending, not by project name" do
+    slug = project_types(:instalaciones).slug
+    z_project = Project.create!(project_type: project_types(:instalaciones), name: "Zeta", custom_fields: {})
+    z_project.project_stages.order(:id).first.update!(start_date: Date.new(2026, 1, 1), end_date: Date.new(2026, 1, 5))
+    a_project = Project.create!(project_type: project_types(:instalaciones), name: "Alpha", custom_fields: {})
+    a_project.project_stages.order(:id).first.update!(start_date: Date.new(2026, 6, 1), end_date: Date.new(2026, 6, 5))
+
+    get project_type_projects_path(slug)
+    assert_response :success
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    ids_in_order = tasks.map { |t| t["id"] }
+    assert_operator ids_in_order.index(z_project.id.to_s), :<, ids_in_order.index(a_project.id.to_s)
+  end
+
   test "index configures the Gantt in Spanish with native readonly options" do
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_type_projects_path(project_types(:instalaciones).slug)

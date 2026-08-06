@@ -118,6 +118,7 @@
         date_range_label: "#{l(first, format: :long)} – #{l(last, format: :long)}"
       }
     end
+    gantt_tasks = gantt_tasks.sort_by { |task| task[:start] }
     selected_type = ResponsibleType.find_by(id: section_params[:responsible_type_id])
     gantt_colors = if selected_type
       projects_list.map { |project| project.responsible_for(selected_type) }.compact.uniq.map { |r| [r.id, r.name, r.color] }
