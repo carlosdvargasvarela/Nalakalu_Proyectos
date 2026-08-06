@@ -399,6 +399,24 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_operator ids_in_order.index(z_project.id.to_s), :<, ids_in_order.index(a_project.id.to_s)
   end
 
+  test "index's Gantt shows a sort-direction toggle button" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    slug = project_types(:instalaciones).slug
+
+    get project_type_projects_path(slug)
+    assert_response :success
+    assert_select "#view-mode-#{slug} button[data-action=?]", "click->gantt-project-list#toggleSort"
+  end
+
+  test "index's Gantt controller JS reverses tasks and refreshes the chart on toggle" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_type_projects_path(project_types(:instalaciones).slug)
+    assert_response :success
+    source = Rails.root.join("app/javascript/controllers/gantt_project_list_controller.js").read
+    assert_match(/toggleSort\(/, source)
+    assert_match(/this\.gantt\.refresh\(/, source)
+  end
+
   test "index configures the Gantt in Spanish with native readonly options" do
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_type_projects_path(project_types(:instalaciones).slug)

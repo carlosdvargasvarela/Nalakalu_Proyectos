@@ -7,12 +7,13 @@ function escapeHtml(text) {
 // Read-only Gantt chart for a list of projects (one project per bar) - clicking
 // a bar navigates to the project, hovering shows a popup with its responsibles.
 export default class extends Controller {
-  static targets = ["chart", "viewModeButton"]
+  static targets = ["chart", "viewModeButton", "sortButton"]
   static values = { tasks: Array, colors: Array }
 
   connect() {
     if (this.tasksValue.length === 0) return
 
+    this.ascending = true
     this.gantt = new Gantt(this.chartTarget, this.tasksValue, {
       language: "es",
       readonly_dates: true,
@@ -32,6 +33,16 @@ export default class extends Controller {
     this.viewModeButtonTargets.forEach((btn) => btn.classList.remove("active"))
     event.currentTarget.classList.add("active")
     this.applyColors()
+  }
+
+  toggleSort() {
+    this.ascending = !this.ascending
+    const ordered = this.ascending ? this.tasksValue : [...this.tasksValue].reverse()
+    this.gantt.refresh(ordered)
+    this.applyColors()
+    if (this.hasSortButtonTarget) {
+      this.sortButtonTarget.querySelector("i").className = this.ascending ? "bi bi-sort-down" : "bi bi-sort-up"
+    }
   }
 
   applyColors() {

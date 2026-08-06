@@ -163,6 +163,10 @@
                 data-gantt-project-list-target="viewModeButton" data-action="click->gantt-project-list#changeViewMode">Semana</button>
         <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Month"
                 data-gantt-project-list-target="viewModeButton" data-action="click->gantt-project-list#changeViewMode">Mes</button>
+        <button type="button" class="btn btn-outline-secondary" data-gantt-project-list-target="sortButton"
+                data-action="click->gantt-project-list#toggleSort" title="Invertir orden">
+          <i class="bi bi-sort-down"></i>
+        </button>
       </div>
       <% if selected_type && gantt_colors.any? %>
         <%= render "gantt_legend", entries: gantt_colors.map { |_, name, color| [name, color] } %>
