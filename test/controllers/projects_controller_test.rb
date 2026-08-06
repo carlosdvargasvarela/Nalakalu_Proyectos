@@ -478,7 +478,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     get project_type_projects_path(project_types(:instalaciones).slug)
     assert_response :success
     gantt_css = Rails.root.join("app/assets/stylesheets/gantt.css").read
-    assert_match(/\[data-bs-theme="dark"\]\s*\.bar-progress\s*\{\s*\n\s*fill:\s*rgba\(255,\s*255,\s*255,\s*0\.25\);?\s*\n\s*\}/, gantt_css)
+    assert_match(/\[data-bs-theme="dark"\]\s*\.gantt\s*\.bar-progress\s*\{\s*\n\s*fill:\s*rgba\(255,\s*255,\s*255,\s*0\.25\);?\s*\n\s*\}/, gantt_css)
   end
 
   test "index configures the Gantt with a fixed container height instead of manual scroll CSS" do
