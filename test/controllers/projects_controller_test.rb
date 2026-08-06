@@ -473,6 +473,14 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/\.bar-progress \{\s*\n\s*fill:\s*rgba\(0,\s*0,\s*0,\s*0\.25\);?\s*\n\s*\}/, gantt_css)
   end
 
+  test "index's Gantt progress overlay switches to a light fill in dark mode for contrast" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_type_projects_path(project_types(:instalaciones).slug)
+    assert_response :success
+    gantt_css = Rails.root.join("app/assets/stylesheets/gantt.css").read
+    assert_match(/\[data-bs-theme="dark"\]\s*\.bar-progress\s*\{\s*\n\s*fill:\s*rgba\(255,\s*255,\s*255,\s*0\.25\);?\s*\n\s*\}/, gantt_css)
+  end
+
   test "index configures the Gantt with a fixed container height instead of manual scroll CSS" do
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_type_projects_path(project_types(:instalaciones).slug)
