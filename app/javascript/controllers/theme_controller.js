@@ -23,6 +23,7 @@ export default class extends Controller {
 
   apply(theme) {
     document.documentElement.setAttribute("data-bs-theme", theme)
+    document.documentElement.setAttribute("data-theme", theme)
     if (this.hasIconTarget) {
       this.iconTarget.textContent = theme === "dark" ? "☀" : "☾"
     }

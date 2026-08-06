@@ -9,7 +9,7 @@
 
     <%= yield :head %>
 
-    <script>document.documentElement.dataset.bsTheme = localStorage.getItem("theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")</script>
+    <script>document.documentElement.dataset.bsTheme = document.documentElement.dataset.theme = (localStorage.getItem("theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"))</script>
 
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="/icon.png" type="image/png">

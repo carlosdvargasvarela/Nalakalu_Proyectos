@@ -85,4 +85,17 @@ class NavbarTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "nav a[href=?] + .badge", projects_path, count: 0
   end
+
+  test "layout's anti-flash script sets data-theme alongside data-bs-theme, for frappe-gantt" do
+    sign_in users(:juan)
+    get root_path
+    follow_redirect!
+    assert_response :success
+    assert_match(/document\.documentElement\.dataset\.bsTheme = document\.documentElement\.dataset\.theme = /, response.body)
+  end
+
+  test "theme controller sets data-theme alongside data-bs-theme, for frappe-gantt" do
+    source = Rails.root.join("app/javascript/controllers/theme_controller.js").read
+    assert_match(/setAttribute\("data-theme",\s*theme\)/, source)
+  end
 end
