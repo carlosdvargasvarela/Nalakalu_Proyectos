@@ -142,4 +142,35 @@ class Admin::ProjectTypesControllerTest < ActionDispatch::IntegrationTest
     post admin_project_types_path, params: { project_type: { name: "Mantenimiento", slug: "mantenimiento", require_stage_dates: "1" } }
     assert_equal true, ProjectType.last.require_stage_dates
   end
+
+  test "show displays the Cálculo automático de duración card" do
+    get admin_project_type_path(project_types(:instalaciones))
+    assert_response :success
+    assert_select ".card-header", "Cálculo automático de duración"
+  end
+
+  test "show's auto-duration form only lists numeric field definitions as reference options" do
+    project_type = project_types(:instalaciones)
+    FieldDefinition.create!(project_type: project_type, key: "cantidad", label: "Cantidad de Unidades", data_type: "number", position: 10)
+    FieldDefinition.create!(project_type: project_type, key: "notas", label: "Notas", data_type: "textarea", position: 11)
+
+    get admin_project_type_path(project_type)
+    assert_response :success
+    assert_select "select[name=?] option", "project_type[duration_reference_field_definition_id]", text: "Cantidad de Unidades"
+    assert_select "select[name=?] option", "project_type[duration_reference_field_definition_id]", text: "Notas", count: 0
+  end
+
+  test "update persists auto_stage_duration_enabled and duration_reference_field_definition_id" do
+    project_type = project_types(:instalaciones)
+    field = FieldDefinition.create!(project_type: project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+
+    patch admin_project_type_path(project_type), params: {
+      project_type: { name: project_type.name, slug: project_type.slug, auto_stage_duration_enabled: "1", duration_reference_field_definition_id: field.id }
+    }
+
+    assert_redirected_to admin_project_type_path(project_type)
+    project_type.reload
+    assert_equal true, project_type.auto_stage_duration_enabled
+    assert_equal field.id, project_type.duration_reference_field_definition_id
+  end
 end

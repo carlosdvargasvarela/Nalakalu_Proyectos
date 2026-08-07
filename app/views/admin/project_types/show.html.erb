@@ -50,6 +50,25 @@
 </div>
 
 <div class="card mb-4">
+  <div class="card-header">Cálculo automático de duración</div>
+  <div class="card-body">
+    <%= form_with model: [:admin, @project_type], method: :patch do |form| %>
+      <div class="mb-3 form-check">
+        <%= form.check_box :auto_stage_duration_enabled, class: "form-check-input" %>
+        <%= form.label :auto_stage_duration_enabled, "Calcular duración automáticamente", class: "form-check-label" %>
+      </div>
+      <div class="mb-3">
+        <%= form.label :duration_reference_field_definition_id, "Campo numérico de referencia", class: "form-label" %>
+        <%= form.collection_select :duration_reference_field_definition_id,
+              @project_type.field_definitions.where(data_type: %w[number currency percent]),
+              :id, :label, { include_blank: "Ninguno" }, class: "form-select" %>
+      </div>
+      <%= form.submit "Guardar", class: "btn btn-primary btn-sm" %>
+    <% end %>
+  </div>
+</div>
+
+<div class="card mb-4">
   <div class="card-header">Tipos de Bitácora</div>
   <div class="card-body">
     <%= link_to "Nuevo tipo", new_admin_project_type_log_entry_type_path(@project_type), class: "btn btn-primary btn-sm mb-2" %>
