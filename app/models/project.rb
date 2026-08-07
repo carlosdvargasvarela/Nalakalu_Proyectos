@@ -8,6 +8,7 @@ class Project < ApplicationRecord
   has_many :outgoing_project_associations, class_name: "ProjectAssociation", foreign_key: :from_project_id, dependent: :destroy
   has_many :incoming_project_associations, class_name: "ProjectAssociation", foreign_key: :to_project_id, dependent: :destroy
   accepts_nested_attributes_for :project_stages, update_only: true
+  attr_accessor :auto_duration_start_date
 
   validates :name, presence: true
   validate :custom_fields_match_definitions
@@ -34,6 +35,45 @@ class Project < ApplicationRecord
 
   def stages_missing_dates
     project_stages.select(&:dates_missing?)
+  end
+
+  def matching_duration_profile
+    field = project_type.duration_reference_field_definition
+    return nil unless field
+    raw = custom_fields[field.key]
+    return nil if raw.blank?
+    value = Float(raw)
+    project_type.duration_profiles.detect { |profile| profile.matches?(value) }
+  rescue ArgumentError, TypeError
+    nil
+  end
+
+  def apply_auto_duration!(start_date)
+    parsed_start = start_date.is_a?(Date) ? start_date : Date.parse(start_date.to_s)
+    profile = matching_duration_profile
+    return false unless profile
+
+    cursor = parsed_start
+    project_type.stage_templates.each do |template|
+      days = profile.durations[template.id.to_s]
+      next if days.blank?
+      stage = project_stages.find_by(stage_template_id: template.id)
+      next unless stage
+      stage_end = cursor + (days.to_i - 1).days
+      stage.update!(start_date: cursor, end_date: stage_end)
+      cursor = stage_end + 1.day
+    end
+    true
+  rescue ArgumentError, TypeError
+    false
+  end
+
+  def pending_auto_duration_start_date?
+    return false unless project_type.auto_stage_duration_enabled?
+    first_template = project_type.stage_templates.min_by(&:position)
+    return false unless first_template
+    stage = project_stages.find { |s| s.stage_template_id == first_template.id }
+    stage.present? && stage.start_date.blank?
   end
 
   def gantt_window
@@ -66,6 +106,7 @@ class Project < ApplicationRecord
     project_type.stage_templates.each do |template|
       project_stages.create!(stage_template: template, name: template.name)
     end
+    apply_auto_duration!(auto_duration_start_date) if project_type.auto_stage_duration_enabled? && auto_duration_start_date.present?
   end
 
   def custom_fields_match_definitions

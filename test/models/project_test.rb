@@ -249,4 +249,108 @@ class ProjectTest < ActiveSupport::TestCase
 
     assert_includes project.stages_missing_dates, stage
   end
+
+  test "apply_auto_duration! sets sequential dates per stage_template when a profile matches" do
+    field = FieldDefinition.create!(project_type: @project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    @project_type.update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    diseno = stage_templates(:diseno_aprobacion)
+    revision = stage_templates(:revision_inicial)
+    DurationProfile.create!(
+      project_type: @project_type, operator: "between", min_value: 100, max_value: 500,
+      durations: { diseno.id.to_s => 5, revision.id.to_s => 3 }
+    )
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: { "cantidad" => "300" })
+
+    assert project.apply_auto_duration!(Date.new(2026, 1, 1))
+
+    diseno_stage = project.project_stages.find_by(stage_template: diseno)
+    revision_stage = project.project_stages.find_by(stage_template: revision)
+    assert_equal Date.new(2026, 1, 1), diseno_stage.start_date
+    assert_equal Date.new(2026, 1, 5), diseno_stage.end_date
+    assert_equal Date.new(2026, 1, 6), revision_stage.start_date
+    assert_equal Date.new(2026, 1, 8), revision_stage.end_date
+  end
+
+  test "apply_auto_duration! leaves a stage without dates when the profile has no duration for it" do
+    field = FieldDefinition.create!(project_type: @project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    @project_type.update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    diseno = stage_templates(:diseno_aprobacion)
+    revision = stage_templates(:revision_inicial)
+    DurationProfile.create!(project_type: @project_type, operator: "between", min_value: 100, max_value: 500, durations: { diseno.id.to_s => 5 })
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: { "cantidad" => "300" })
+
+    project.apply_auto_duration!(Date.new(2026, 1, 1))
+
+    revision_stage = project.project_stages.find_by(stage_template: revision)
+    assert_nil revision_stage.start_date
+  end
+
+  test "apply_auto_duration! returns false when no profile matches" do
+    field = FieldDefinition.create!(project_type: @project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    @project_type.update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    DurationProfile.create!(project_type: @project_type, operator: "greater_than", min_value: 1000)
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: { "cantidad" => "5" })
+
+    assert_not project.apply_auto_duration!(Date.new(2026, 1, 1))
+    assert_nil project.project_stages.first.start_date
+  end
+
+  test "matching_duration_profile respects priority order (position ascending)" do
+    field = FieldDefinition.create!(project_type: @project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    @project_type.update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    broad = DurationProfile.create!(project_type: @project_type, operator: "greater_than", min_value: 100, position: 1)
+    narrow = DurationProfile.create!(project_type: @project_type, operator: "between", min_value: 100, max_value: 200, position: 0)
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: { "cantidad" => "150" })
+
+    assert_equal narrow, project.matching_duration_profile
+  end
+
+  test "creating a project with auto_duration_start_date computes stage dates via build_stages_from_template" do
+    field = FieldDefinition.create!(project_type: @project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    @project_type.update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    diseno = stage_templates(:diseno_aprobacion)
+    DurationProfile.create!(project_type: @project_type, operator: "greater_than", min_value: 1, durations: { diseno.id.to_s => 4 })
+
+    project = Project.new(project_type: @project_type, name: "Torre Norte", custom_fields: { "cantidad" => "10" })
+    project.auto_duration_start_date = "2026-02-01"
+    project.save!
+
+    diseno_stage = project.project_stages.find_by(stage_template: diseno)
+    assert_equal Date.new(2026, 2, 1), diseno_stage.start_date
+    assert_equal Date.new(2026, 2, 4), diseno_stage.end_date
+  end
+
+  test "creating a project without auto_duration_start_date leaves stages undated even when the type has auto duration enabled" do
+    field = FieldDefinition.create!(project_type: @project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    @project_type.update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    diseno = stage_templates(:diseno_aprobacion)
+    DurationProfile.create!(project_type: @project_type, operator: "greater_than", min_value: 1, durations: { diseno.id.to_s => 4 })
+
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: { "cantidad" => "10" })
+
+    assert_nil project.project_stages.find_by(stage_template: diseno).start_date
+  end
+
+  test "pending_auto_duration_start_date? is true when the first stage_template's stage has no start_date" do
+    field = FieldDefinition.create!(project_type: @project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    @project_type.update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+
+    assert project.pending_auto_duration_start_date?
+  end
+
+  test "pending_auto_duration_start_date? is false when the type doesn't have auto duration enabled" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    assert_not project.pending_auto_duration_start_date?
+  end
+
+  test "pending_auto_duration_start_date? is false once the first stage already has a start_date" do
+    field = FieldDefinition.create!(project_type: @project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    @project_type.update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    first_template = @project_type.stage_templates.min_by(&:position)
+    project.project_stages.find_by(stage_template: first_template).update!(start_date: Date.new(2026, 1, 1))
+
+    assert_not project.pending_auto_duration_start_date?
+  end
 end
