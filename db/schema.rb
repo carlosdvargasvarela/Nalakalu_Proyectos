@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_08_07_165548) do
+ActiveRecord::Schema[7.2].define(version: 2026_08_07_171754) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -287,7 +287,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_07_165548) do
   add_foreign_key "project_type_accesses", "users"
   add_foreign_key "project_type_associations", "project_types", column: "from_project_type_id"
   add_foreign_key "project_type_associations", "project_types", column: "to_project_type_id"
-  add_foreign_key "project_types", "field_definitions", column: "duration_reference_field_definition_id"
+  add_foreign_key "project_types", "field_definitions", column: "duration_reference_field_definition_id", on_delete: :nullify
   add_foreign_key "projects", "project_types"
   add_foreign_key "responsible_project_types", "project_types"
   add_foreign_key "responsible_project_types", "responsible_types"
