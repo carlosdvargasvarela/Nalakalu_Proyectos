@@ -65,6 +65,25 @@
       </div>
       <%= form.submit "Guardar", class: "btn btn-primary btn-sm" %>
     <% end %>
+    <hr>
+    <%= link_to "Nuevo perfil", new_admin_project_type_duration_profile_path(@project_type), class: "btn btn-primary btn-sm mb-2" %>
+    <ol class="list-group list-group-numbered list-group-flush" id="duration-profiles-list" data-controller="drag-reorder"
+        data-drag-reorder-url-value="<%= reorder_admin_project_type_duration_profiles_path(@project_type) %>"
+        data-action="dragstart->drag-reorder#start dragend->drag-reorder#end dragover->drag-reorder#over drop->drag-reorder#drop">
+      <% @project_type.duration_profiles.each do |profile| %>
+        <li class="list-group-item d-flex justify-content-between align-items-center" data-id="<%= profile.id %>">
+          <span>
+            <span class="drag-handle me-2" draggable="true" style="cursor: grab;">⠿</span>
+            <%= profile.operator %> <%= profile.min_value %><%= " - #{profile.max_value}" if profile.operator == "between" %>
+          </span>
+          <span>
+            <%= link_to "Editar", edit_admin_project_type_duration_profile_path(@project_type, profile), class: "btn btn-outline-secondary btn-sm" %>
+            <%= button_to "Eliminar", admin_project_type_duration_profile_path(@project_type, profile), method: :delete,
+                  class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar perfil?')" } %>
+          </span>
+        </li>
+      <% end %>
+    </ol>
   </div>
 </div>
 

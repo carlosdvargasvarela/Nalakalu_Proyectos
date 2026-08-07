@@ -36,6 +36,7 @@ es:
       project_type: "Tipo de proyecto"
       field_definition: "Campo"
       stage_template: "Subproceso"
+      duration_profile: "Perfil de duración"
       responsible_type: "Tipo de responsable"
       responsible: "Responsable"
       project_responsible: "Responsable de proyecto"
@@ -61,6 +62,11 @@ es:
         name: "Nombre"
         color: "Color"
         position: "Posición"
+      duration_profile:
+        min_value: "Valor mínimo"
+        max_value: "Valor máximo"
+        position: "Posición"
+        durations: "Duraciones"
       project:
         name: "Nombre"
         status: "Estado"

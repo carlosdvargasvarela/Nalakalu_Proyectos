@@ -13,6 +13,9 @@ Rails.application.routes.draw do
       resources :stage_templates, except: [:index, :show] do
         patch :reorder, on: :collection
       end
+      resources :duration_profiles, except: [:index, :show] do
+        patch :reorder, on: :collection
+      end
       resources :log_entry_types, except: [:index, :show]
       resources :responsible_types, except: [:index, :show]
     end

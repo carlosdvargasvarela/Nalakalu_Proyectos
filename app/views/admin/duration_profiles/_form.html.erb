@@ -1,0 +1,42 @@
+<%= panel_card("#{duration_profile.persisted? ? 'Editar' : 'Nuevo'} perfil de duración — #{project_type.name}") do %>
+  <%= form_with model: [:admin, project_type, duration_profile] do |form| %>
+    <% if duration_profile.errors.any? %>
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          <% duration_profile.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="mb-3">
+      <%= form.label :operator, "Comparación", class: "form-label" %>
+      <%= form.select :operator,
+            [["Mayor que", "greater_than"], ["Menor que", "less_than"], ["Entre", "between"], ["Igual a", "equal_to"]],
+            { include_blank: false }, class: "form-select" %>
+    </div>
+    <div class="mb-3">
+      <%= form.label :min_value, "Valor mínimo (o exacto, para \"Igual a\")", class: "form-label" %>
+      <%= form.number_field :min_value, step: "any", class: "form-control" %>
+    </div>
+    <div class="mb-3">
+      <%= form.label :max_value, "Valor máximo", class: "form-label" %>
+      <%= form.number_field :max_value, step: "any", class: "form-control" %>
+    </div>
+    <div class="mb-3">
+      <%= form.label :position, class: "form-label" %>
+      <%= form.number_field :position, class: "form-control" %>
+    </div>
+
+    <h6>Duración por etapa (días)</h6>
+    <% project_type.stage_templates.each do |stage| %>
+      <div class="mb-2">
+        <%= label_tag "duration_profile_durations_#{stage.id}", stage.name, class: "form-label" %>
+        <%= number_field_tag "duration_profile[durations][#{stage.id}]", duration_profile.durations[stage.id.to_s], min: 1, class: "form-control" %>
+      </div>
+    <% end %>
+
+    <%= form.submit class: "btn btn-primary" %>
+  <% end %>
+<% end %>
