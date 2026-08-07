@@ -327,6 +327,21 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert(tasks.any? { |t| t["id"] == stage.id.to_s })
   end
 
+  test "show omits stages without dates from the Gantt when the project type has auto duration enabled" do
+    field = FieldDefinition.create!(project_type: project_types(:instalaciones), key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    project_types(:instalaciones).update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { cantidad: "10" })
+    dated, undated = project.project_stages.order(:id).first(2)
+    dated.update!(start_date: Date.new(2026, 1, 1), end_date: Date.new(2026, 1, 10))
+
+    get project_path(project)
+    assert_response :success
+    tasks = json_data_attribute('[data-controller="gantt-stage-editor"]', "data-gantt-stage-editor-tasks-value")
+
+    assert(tasks.any? { |t| t["id"] == dated.id.to_s })
+    assert_nil tasks.find { |t| t["id"] == undated.id.to_s }
+  end
+
   test "show renders the bitácora with existing entries and an add form" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     LogEntry.create!(project: project, user: users(:juan), log_entry_type: log_entry_types(:nota), body: "Nota visible en la bitácora")
@@ -576,6 +591,18 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert(tasks.any? { |t| t["id"] == project.id.to_s })
   end
 
+  test "index's stage-filtered Gantt omits a project whose filtered stage has no dates, when the type has auto duration enabled" do
+    field = FieldDefinition.create!(project_type: project_types(:instalaciones), key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    project_types(:instalaciones).update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { cantidad: "10" })
+    slug = project_types(:instalaciones).slug
+
+    get project_type_projects_path(slug), params: { stage_name: "Instalación", status: "" }
+    assert_response :success
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    assert_nil tasks.find { |t| t["id"] == project.id.to_s }
+  end
+
   test "index's Gantt section omits every project when the filtered stage doesn't exist for that type" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     slug = project_types(:instalaciones).slug
@@ -693,6 +720,18 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
   test "index's unfiltered Gantt omits a project whose stages are all undated, when the type requires dates" do
     project_types(:instalaciones).update!(require_stage_dates: true)
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    slug = project_types(:instalaciones).slug
+
+    get project_type_projects_path(slug)
+    assert_response :success
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    assert_nil tasks.find { |t| t["id"] == project.id.to_s }
+  end
+
+  test "index's unfiltered Gantt omits a project whose stages are all undated, when the type has auto duration enabled" do
+    field = FieldDefinition.create!(project_type: project_types(:instalaciones), key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    project_types(:instalaciones).update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { cantidad: "10" })
     slug = project_types(:instalaciones).slug
 
     get project_type_projects_path(slug)
