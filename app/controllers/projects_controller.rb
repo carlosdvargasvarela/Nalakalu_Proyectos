@@ -57,6 +57,7 @@ class ProjectsController < ApplicationController
 
   def create
     @project = Project.new(project_params)
+    @project.auto_duration_start_date = params[:auto_duration_start_date] if params[:auto_duration_start_date].present?
     @project_type = @project.project_type
     fill_missing_shared_fields
     if @project.save

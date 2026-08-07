@@ -18,6 +18,14 @@
     <%= form.text_field :name, class: "form-control" %>
   </div>
 
+  <% if !project.persisted? && project_type.auto_stage_duration_enabled? %>
+    <div class="mb-3">
+      <%= label_tag :auto_duration_start_date, "Fecha de inicio", class: "form-label" %>
+      <%= date_field_tag :auto_duration_start_date, nil, class: "form-control", required: true %>
+      <div class="form-text">Este tipo de proyecto calcula automáticamente la duración de cada etapa a partir de esta fecha.</div>
+    </div>
+  <% end %>
+
   <% project_type.field_definitions.each do |field| %>
     <%= render "field_input", form: form, field: field, project: project %>
   <% end %>

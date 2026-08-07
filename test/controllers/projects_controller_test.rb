@@ -186,6 +186,37 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[name=?][value]", "project[custom_fields][cliente]", count: 0
   end
 
+  test "new shows a required Fecha de inicio field when the project type has auto duration enabled" do
+    project_types(:instalaciones).update!(auto_stage_duration_enabled: true)
+    get new_project_path(project_type_id: project_types(:instalaciones).id)
+    assert_response :success
+    assert_select "input[name=?][type=date][required]", "auto_duration_start_date"
+  end
+
+  test "new does not show the Fecha de inicio field when auto duration is off" do
+    get new_project_path(project_type_id: project_types(:instalaciones).id)
+    assert_response :success
+    assert_select "input[name=?]", "auto_duration_start_date", count: 0
+  end
+
+  test "create with auto_duration_start_date computes stage dates" do
+    field = FieldDefinition.create!(project_type: project_types(:instalaciones), key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    project_types(:instalaciones).update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    diseno = stage_templates(:diseno_aprobacion)
+    DurationProfile.create!(project_type: project_types(:instalaciones), operator: "greater_than", min_value: 1, durations: { diseno.id.to_s => 3 })
+
+    post projects_path, params: {
+      project: { project_type_id: project_types(:instalaciones).id, name: "Torre Sur", custom_fields: { cliente: "Acme S.A.", cantidad: "10" } },
+      auto_duration_start_date: "2026-03-01"
+    }
+
+    project = Project.order(:id).last
+    assert_redirected_to project_path(project)
+    diseno_stage = project.project_stages.find_by(stage_template: diseno)
+    assert_equal Date.new(2026, 3, 1), diseno_stage.start_date
+    assert_equal Date.new(2026, 3, 3), diseno_stage.end_date
+  end
+
   test "show displays custom fields and the stage table" do
     project = Project.create!(
       project_type: project_types(:instalaciones), name: "Torre Norte",
