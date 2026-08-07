@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_08_05_234322) do
+ActiveRecord::Schema[7.2].define(version: 2026_08_07_165548) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -50,6 +50,18 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_05_234322) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "duration_profiles", force: :cascade do |t|
+    t.bigint "project_type_id", null: false
+    t.string "operator", null: false
+    t.decimal "min_value"
+    t.decimal "max_value"
+    t.integer "position", default: 0, null: false
+    t.jsonb "durations", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["project_type_id"], name: "index_duration_profiles_on_project_type_id"
   end
 
   create_table "field_definitions", force: :cascade do |t|
@@ -169,6 +181,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_05_234322) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "require_stage_dates", default: false, null: false
+    t.boolean "auto_stage_duration_enabled", default: false, null: false
+    t.bigint "duration_reference_field_definition_id"
+    t.index ["duration_reference_field_definition_id"], name: "index_project_types_on_duration_reference_field_definition_id"
     t.index ["slug"], name: "index_project_types_on_slug", unique: true
   end
 
@@ -250,6 +265,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_05_234322) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "duration_profiles", "project_types"
   add_foreign_key "field_definitions", "project_types"
   add_foreign_key "log_entries", "log_entry_types"
   add_foreign_key "log_entries", "projects"
@@ -271,6 +287,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_05_234322) do
   add_foreign_key "project_type_accesses", "users"
   add_foreign_key "project_type_associations", "project_types", column: "from_project_type_id"
   add_foreign_key "project_type_associations", "project_types", column: "to_project_type_id"
+  add_foreign_key "project_types", "field_definitions", column: "duration_reference_field_definition_id"
   add_foreign_key "projects", "project_types"
   add_foreign_key "responsible_project_types", "project_types"
   add_foreign_key "responsible_project_types", "responsible_types"
