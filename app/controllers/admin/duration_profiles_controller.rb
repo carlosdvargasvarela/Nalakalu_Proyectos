@@ -49,6 +49,8 @@ class Admin::DurationProfilesController < Admin::BaseController
   end
 
   def duration_profile_params
-    params.require(:duration_profile).permit(:operator, :min_value, :max_value, :position, durations: {})
+    permitted = params.require(:duration_profile).permit(:operator, :min_value, :max_value, :position, durations: {})
+    permitted[:durations] = permitted[:durations].to_h.compact_blank if permitted[:durations]
+    permitted
   end
 end

@@ -42,6 +42,7 @@ class DurationProfile < ApplicationRecord
         errors.add(:durations, "hace referencia a un subproceso inválido")
         next
       end
+      next if days.blank?
       unless days.to_s.match?(/\A\d+\z/) && days.to_i.positive?
         errors.add(:durations, "debe ser un número de días positivo")
       end

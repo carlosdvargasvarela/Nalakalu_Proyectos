@@ -15,6 +15,38 @@ class Admin::DurationProfilesControllerTest < ActionDispatch::IntegrationTest
     assert_equal 5, @project_type.duration_profiles.last.durations[entrega.id.to_s].to_i
   end
 
+  test "create saves a profile that omits a stage's duration, like the real form submits" do
+    diseno = stage_templates(:diseno_aprobacion)
+    revision = stage_templates(:revision_inicial)
+    produccion = stage_templates(:produccion)
+    entrega = stage_templates(:entrega)
+    instalacion = stage_templates(:instalacion)
+
+    assert_difference("@project_type.duration_profiles.count", 1) do
+      post admin_project_type_duration_profiles_path(@project_type), params: {
+        duration_profile: {
+          operator: "greater_than",
+          min_value: "100",
+          max_value: "",
+          position: "0",
+          durations: {
+            diseno.id.to_s => "3",
+            revision.id.to_s => "",
+            produccion.id.to_s => "5",
+            entrega.id.to_s => "2",
+            instalacion.id.to_s => "10"
+          }
+        }
+      }
+    end
+    assert_redirected_to admin_project_type_path(@project_type)
+
+    profile = @project_type.duration_profiles.last
+    assert_equal "3", profile.durations[diseno.id.to_s]
+    assert_not profile.durations.key?(revision.id.to_s)
+    assert_equal "5", profile.durations[produccion.id.to_s]
+  end
+
   test "create with invalid operator re-renders form with error" do
     assert_no_difference("@project_type.duration_profiles.count") do
       post admin_project_type_duration_profiles_path(@project_type), params: {
