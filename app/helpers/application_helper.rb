@@ -38,7 +38,7 @@ module ApplicationHelper
     Project.visible_to(user)
       .where.not(status: "archived")
       .joins(:project_type, :project_stages)
-      .where(project_types: { require_stage_dates: true })
+      .where("project_types.require_stage_dates = TRUE OR project_types.auto_stage_duration_enabled = TRUE")
       .where("project_stages.start_date IS NULL OR project_stages.end_date IS NULL")
       .distinct
       .count

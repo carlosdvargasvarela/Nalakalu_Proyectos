@@ -45,6 +45,16 @@ class ApplicationHelperTest < ActionView::TestCase
     assert_equal 1, pending_stage_dates_count(users(:juan))
   end
 
+  test "pending_stage_dates_count counts visible projects with an undated stage, for types with auto duration enabled too" do
+    field = FieldDefinition.create!(project_type: project_types(:instalaciones), key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    project_types(:instalaciones).update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    pending = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { cantidad: "10" })
+    complete = Project.create!(project_type: project_types(:instalaciones), name: "Torre Sur", custom_fields: { cantidad: "10" })
+    complete.project_stages.each { |stage| stage.update!(start_date: Date.new(2026, 1, 1), end_date: Date.new(2026, 1, 10)) }
+
+    assert_equal 1, pending_stage_dates_count(users(:juan))
+  end
+
   test "pending_stage_dates_count ignores project types that don't require dates" do
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
 
