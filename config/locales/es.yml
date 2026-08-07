@@ -63,6 +63,7 @@ es:
         color: "Color"
         position: "Posición"
       duration_profile:
+        operator: "Comparación"
         min_value: "Valor mínimo"
         max_value: "Valor máximo"
         position: "Posición"
