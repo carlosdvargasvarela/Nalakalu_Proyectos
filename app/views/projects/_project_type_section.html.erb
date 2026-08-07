@@ -130,9 +130,15 @@
   <% if project_type.require_stage_dates? || project_type.auto_stage_duration_enabled? %>
     <%
       pending_projects = projects_list.filter_map do |project|
-        missing = project.stages_missing_dates
-        needs_start = project.pending_auto_duration_start_date?
-        [project, missing, needs_start] if missing.any? || needs_start
+        if section[:stage_name].present?
+          stage = project.project_stages.find { |s| s.name == section[:stage_name] }
+          next if stage.nil? || !stage.dates_missing?
+          [project, [stage], project.pending_auto_duration_start_date?]
+        else
+          missing = project.stages_missing_dates
+          needs_start = project.pending_auto_duration_start_date?
+          [project, missing, needs_start] if missing.any? || needs_start
+        end
       end
     %>
     <% if pending_projects.any? %>

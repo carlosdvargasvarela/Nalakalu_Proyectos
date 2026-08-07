@@ -665,6 +665,31 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".card-header", text: "Pendientes de fecha", count: 0
   end
 
+  test "index's pendientes de fecha panel, with a stage filter active, shows a project only if THAT stage lacks a date" do
+    project_types(:instalaciones).update!(require_stage_dates: true)
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    project.project_stages.where.not(name: "Instalación").each { |stage| stage.update!(start_date: Date.new(2026, 1, 1), end_date: Date.new(2026, 1, 10)) }
+    slug = project_types(:instalaciones).slug
+
+    get project_type_projects_path(slug), params: { stage_name: "Instalación", status: "" }
+    assert_response :success
+    assert_select ".card-header", "Pendientes de fecha"
+    assert_select "body", /Torre Norte/
+  end
+
+  test "index's pendientes de fecha panel, with a stage filter active, hides a project whose filtered stage already has a date" do
+    project_types(:instalaciones).update!(require_stage_dates: true)
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    instalacion = project.project_stages.find_by(name: "Instalación")
+    instalacion.update!(start_date: Date.new(2026, 1, 1), end_date: Date.new(2026, 1, 10))
+    # every OTHER stage stays undated on purpose
+    slug = project_types(:instalaciones).slug
+
+    get project_type_projects_path(slug), params: { stage_name: "Instalación", status: "" }
+    assert_response :success
+    assert_select ".card-header", text: "Pendientes de fecha", count: 0
+  end
+
   test "index's unfiltered Gantt omits a project whose stages are all undated, when the type requires dates" do
     project_types(:instalaciones).update!(require_stage_dates: true)
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
