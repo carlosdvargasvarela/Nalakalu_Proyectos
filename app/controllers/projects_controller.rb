@@ -1,9 +1,9 @@
 class ProjectsController < ApplicationController
-  before_action :set_project, only: [:show, :edit, :update]
+  before_action :set_project, only: [:show, :edit, :update, :apply_auto_duration]
   before_action :require_admin_or_gerente!, only: [:bulk_assign_responsible]
   before_action :authorize_new!, only: [:new, :create]
   before_action :authorize_view!, only: [:show]
-  before_action :authorize_edit!, only: [:edit]
+  before_action :authorize_edit!, only: [:edit, :apply_auto_duration]
   before_action :authorize_update!, only: [:update]
 
   def index
@@ -106,6 +106,14 @@ class ProjectsController < ApplicationController
           render json: { errors: @project.errors.full_messages }, status: :unprocessable_entity
         end
       end
+    end
+  end
+
+  def apply_auto_duration
+    if @project.apply_auto_duration!(params[:start_date])
+      redirect_back fallback_location: projects_path, notice: "Fechas calculadas automáticamente."
+    else
+      redirect_back fallback_location: projects_path, alert: "No se pudo calcular la duración: revisá el valor de referencia y los perfiles configurados."
     end
   end
 

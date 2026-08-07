@@ -607,6 +607,53 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".card-header", text: "Pendientes de fecha", count: 0
   end
 
+  test "index shows a pending-start-date row with a date form, for auto-duration types" do
+    field = FieldDefinition.create!(project_type: project_types(:instalaciones), key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    project_types(:instalaciones).update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { cantidad: "10" })
+    slug = project_types(:instalaciones).slug
+
+    get project_type_projects_path(slug)
+    assert_response :success
+    assert_select ".card-header", "Pendientes de fecha"
+    assert_select "form[action=?]", apply_auto_duration_project_path(project) do
+      assert_select "input[type=date]"
+    end
+  end
+
+  test "index's pendientes de fecha panel is hidden when neither require_stage_dates nor auto_stage_duration_enabled are on" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_type_projects_path(project_types(:instalaciones).slug)
+    assert_response :success
+    assert_select ".card-header", text: "Pendientes de fecha", count: 0
+  end
+
+  test "apply_auto_duration computes and persists stage dates" do
+    field = FieldDefinition.create!(project_type: project_types(:instalaciones), key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    project_types(:instalaciones).update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    diseno = stage_templates(:diseno_aprobacion)
+    DurationProfile.create!(project_type: project_types(:instalaciones), operator: "greater_than", min_value: 1, durations: { diseno.id.to_s => 6 })
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { cantidad: "10" })
+
+    post apply_auto_duration_project_path(project), params: { start_date: "2026-04-01" }
+
+    diseno_stage = project.project_stages.find_by(stage_template: diseno)
+    assert_equal Date.new(2026, 4, 1), diseno_stage.reload.start_date
+    assert_equal Date.new(2026, 4, 6), diseno_stage.end_date
+  end
+
+  test "apply_auto_duration redirects with an alert when no profile matches" do
+    field = FieldDefinition.create!(project_type: project_types(:instalaciones), key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    project_types(:instalaciones).update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    DurationProfile.create!(project_type: project_types(:instalaciones), operator: "greater_than", min_value: 1000)
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: { cantidad: "5" })
+
+    post apply_auto_duration_project_path(project), params: { start_date: "2026-04-01" }
+    follow_redirect! while response.redirect?
+
+    assert_match(/No se pudo calcular/, response.body)
+  end
+
   test "index hides the pendientes de fecha panel when every stage has dates" do
     project_types(:instalaciones).update!(require_stage_dates: true)
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})

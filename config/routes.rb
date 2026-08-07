@@ -27,6 +27,7 @@ Rails.application.routes.draw do
   patch "projects/bulk_assign_responsible", to: "projects#bulk_assign_responsible", as: :bulk_assign_responsible_projects
   get "projects/tipo/:slug", to: "projects#index", as: :project_type_projects
   resources :projects do
+    member { post :apply_auto_duration }
     resources :log_entries, only: [:create, :destroy]
     resources :project_responsibles, only: [:create, :destroy]
     resources :project_associations, only: [:create, :destroy]
