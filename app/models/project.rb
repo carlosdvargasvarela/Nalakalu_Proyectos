@@ -49,6 +49,7 @@ class Project < ApplicationRecord
   end
 
   def apply_auto_duration!(start_date)
+    return false unless project_type.auto_stage_duration_enabled?
     parsed_start = start_date.is_a?(Date) ? start_date : Date.parse(start_date.to_s)
     profile = matching_duration_profile
     return false unless profile
@@ -106,7 +107,7 @@ class Project < ApplicationRecord
     project_type.stage_templates.each do |template|
       project_stages.create!(stage_template: template, name: template.name)
     end
-    apply_auto_duration!(auto_duration_start_date) if project_type.auto_stage_duration_enabled? && auto_duration_start_date.present?
+    apply_auto_duration!(auto_duration_start_date) if auto_duration_start_date.present?
   end
 
   def custom_fields_match_definitions
