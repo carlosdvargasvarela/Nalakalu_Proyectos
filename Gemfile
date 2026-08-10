@@ -68,6 +68,9 @@ gem "roo"
 # Writes the .xlsx import template (CSV template uses the stdlib csv gem above).
 gem "caxlsx"
 
+# Renders the Markdown tutorial files under docs/help/ for the in-app help modal.
+gem "redcarpet"
+
 # Rails 7.2's test runner (railties/line_filtering) is incompatible with minitest 6.x's
 # changed Runnable.run signature; pin to the last 5.x until Rails supports minitest 6.
 gem "minitest", "~> 5.25"

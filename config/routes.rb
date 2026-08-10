@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   devise_for :users, skip: [:registerable]
+  get "help/*topic", to: "help#show", as: :help_topic
   get "up" => "rails/health#show", as: :rails_health_check
   get "manifest.json" => "rails/pwa#manifest", as: :pwa_manifest
   get "service-worker.js" => "rails/pwa#service_worker", as: :pwa_service_worker
