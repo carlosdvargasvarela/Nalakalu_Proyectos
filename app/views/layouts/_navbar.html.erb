@@ -21,6 +21,9 @@
       <% end %>
     </div>
     <div class="navbar-nav" data-controller="theme">
+      <button type="button" class="btn btn-outline-secondary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#help-menu-modal" aria-label="Ayuda">
+        <i class="bi bi-question-circle"></i>
+      </button>
       <button type="button" class="btn btn-outline-secondary btn-sm me-2" data-action="click->theme#toggle" aria-label="Cambiar tema claro/oscuro">
         <span data-theme-target="icon">☾</span>
       </button>
@@ -33,3 +36,26 @@
     </div>
   </div>
 </nav>
+
+<div class="modal fade" id="help-menu-modal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Ayuda</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <% ApplicationHelper::HELP_MENU.each do |group| %>
+          <h6 class="text-muted text-uppercase small mt-2 mb-2"><%= group[:section] %></h6>
+          <div class="list-group mb-3">
+            <% group[:items].each do |label, topic| %>
+              <button type="button" class="list-group-item list-group-item-action" data-bs-dismiss="modal" data-controller="help" data-action="click->help#open" data-help-topic-value="<%= topic %>">
+                <%= label %>
+              </button>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

@@ -98,4 +98,13 @@ class NavbarTest < ActionDispatch::IntegrationTest
     source = Rails.root.join("app/javascript/controllers/theme_controller.js").read
     assert_match(/setAttribute\("data-theme",\s*theme\)/, source)
   end
+
+  test "navbar includes the help menu with every topic" do
+    sign_in users(:juan)
+    get root_path
+    follow_redirect!
+    assert_response :success
+    assert_select "#help-menu-modal button[data-help-topic-value=?]", "projects"
+    assert_select "#help-menu-modal button[data-help-topic-value=?]", "admin/users"
+  end
 end

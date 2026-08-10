@@ -11,6 +11,6 @@ class HelpButtonTest < ActionDispatch::IntegrationTest
   test "a page without a doc file does not show the contextual help button" do
     get new_user_session_path
     assert_response :success
-    assert_select "button[data-controller=?]", "help", count: 0
+    assert_select ".text-end.mb-2 button[data-controller=?]", "help", count: 0
   end
 end

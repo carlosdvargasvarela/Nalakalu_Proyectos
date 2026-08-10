@@ -1,4 +1,19 @@
 module ApplicationHelper
+  HELP_MENU = [
+    { section: "Proyectos", items: [["Proyectos", "projects"], ["Importar", "imports"]] },
+    { section: "Administración", items: [
+      ["Tipos de proyecto", "admin/project_types"],
+      ["Campos", "admin/field_definitions"],
+      ["Subprocesos", "admin/stage_templates"],
+      ["Perfiles de duración", "admin/duration_profiles"],
+      ["Tipos de bitácora", "admin/log_entry_types"],
+      ["Tipos de responsable", "admin/responsible_types"],
+      ["Responsables", "admin/responsibles"],
+      ["Tipos de asociación", "admin/project_type_associations"],
+      ["Usuarios", "admin/users"],
+    ] },
+  ].freeze
+
   STATUS_LABELS = { "active" => "Activo", "archived" => "Archivado" }.freeze
   STATUS_BADGE_CLASSES = { "active" => "bg-success", "archived" => "bg-secondary" }.freeze
   PROGRESS_STATUS_LABELS = { "sin_iniciar" => "Sin iniciar", "iniciado" => "Iniciado", "finalizado" => "Finalizado" }.freeze
