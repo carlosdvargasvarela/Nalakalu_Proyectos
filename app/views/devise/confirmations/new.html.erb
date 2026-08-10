@@ -1,0 +1,27 @@
+<div class="row justify-content-center">
+  <div class="col-md-5 col-lg-4">
+    <div class="card shadow-sm mt-5">
+      <div class="card-body p-4">
+        <div class="text-center mb-4">
+          <i class="bi bi-envelope-check" style="font-size: 2.5rem; color: var(--bs-primary);"></i>
+          <h2 class="h4 mt-2 mb-0">Reenviar confirmación</h2>
+        </div>
+
+        <%= form_for(resource, as: resource_name, url: confirmation_path(resource_name), html: { method: :post }) do |f| %>
+          <%= render "devise/shared/error_messages", resource: resource %>
+
+          <div class="mb-3">
+            <%= f.label :email, "Correo electrónico", class: "form-label" %>
+            <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "form-control" %>
+          </div>
+
+          <%= f.submit "Reenviar instrucciones", class: "btn btn-primary w-100" %>
+        <% end %>
+
+        <div class="text-center mt-3 small">
+          <%= render "devise/shared/links" %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
