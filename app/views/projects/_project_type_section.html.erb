@@ -205,7 +205,7 @@
           <i class="bi bi-people-fill"></i> Asignación masiva
         </div>
         <div class="card-body">
-          <%= form_with url: bulk_assign_responsible_projects_path(request.query_parameters), method: :patch, local: true,
+          <%= form_with url: bulk_assign_responsible_projects_path(request.query_parameters.except("responsible_type_id", "responsible_id")), method: :patch, local: true,
                 id: "bulk-assign-form-#{slug}", class: "row g-3 align-items-end",
                 data: { controller: "dependent-select", dependent_select_options_value: responsibles_by_type.to_json } do |f| %>
             <%= hidden_field_tag :project_type_slug, slug %>

@@ -1291,6 +1291,45 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_equal [otro_responsable], project.reload.project_responsibles.where(responsible_type: responsible_types(:instalador), project_stage: nil).map(&:responsible)
   end
 
+  test "the bulk-assign form's action doesn't carry a responsible_type_id/responsible_id from the page's own filters" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Proyecto A", custom_fields: {})
+    slug = project_types(:instalaciones).slug
+    get project_type_projects_path(slug, responsible_type_id: responsible_types(:instalador).id, q: "Proyecto")
+    assert_response :success
+
+    doc = Nokogiri::HTML5(response.body)
+    form_action = doc.at_css("#bulk-assign-form-#{slug}")["action"]
+    assert_no_match(/responsible_type_id=/, form_action)
+    assert_no_match(/responsible_id=/, form_action)
+    assert_match(/q=Proyecto/, form_action, "other filters (unrelated to the form's own fields) should still round-trip")
+  end
+
+  test "bulk_assign_responsible succeeds even when the page's own responsible_type_id filter differs from the type chosen in the form" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Proyecto A", custom_fields: {})
+    disenador = Responsible.create!(name: "Diana Diseñadora")
+    ResponsibleProjectType.create!(responsible: disenador, project_type: project_types(:instalaciones), responsible_type: responsible_types(:disenador))
+    slug = project_types(:instalaciones).slug
+
+    # Simulates a real browser exactly: fetch the page filtered by
+    # responsible_type_id=disenador (query string), submit to the bulk-assign
+    # form's OWN rendered action - not a hand-built URL - with a DIFFERENT
+    # type (instalador) chosen in the form itself. Before the fix, the
+    # form's action baked the filter's responsible_type_id into its own URL,
+    # so the query-string value silently won over the form field with the
+    # same name and this was rejected as "not the chosen type".
+    get project_type_projects_path(slug, responsible_type_id: responsible_types(:disenador).id)
+    form_action = Nokogiri::HTML5(response.body).at_css("#bulk-assign-form-#{slug}")["action"]
+
+    patch form_action, params: {
+      responsible_type_id: responsible_types(:instalador).id, responsible_id: responsibles(:ana_gomez).id,
+      project_ids: [project.id], project_type_slug: slug
+    }
+
+    assert project.reload.project_responsibles.exists?(responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
+    follow_redirect!
+    assert_match(/Responsable asignado a 1 proyecto\(s\)/, response.body)
+  end
+
   test "bulk_assign_responsible skips projects when the responsible isn't configured with the chosen type" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Proyecto A", custom_fields: {})
     disenador = Responsible.create!(name: "Diana Diseñadora")
