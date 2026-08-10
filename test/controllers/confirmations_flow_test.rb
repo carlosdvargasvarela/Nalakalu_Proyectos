@@ -2,7 +2,7 @@ require "test_helper"
 
 class ConfirmationsFlowTest < ActionDispatch::IntegrationTest
   test "unconfirmed user must confirm before signing in" do
-    user = User.create!(email: "nuevo@example.com", password: "password123", password_confirmation: "password123", role: "visor")
+    user = perform_enqueued_jobs { User.create!(email: "nuevo@example.com", password: "password123", password_confirmation: "password123", role: "visor") }
     assert_not user.confirmed?
 
     post user_session_path, params: { user: { email: user.email, password: "password123" } }

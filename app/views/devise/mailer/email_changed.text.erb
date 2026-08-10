@@ -1,7 +1,7 @@
 Hola,
 
-<% if @resource.try(:unconfirmed_email?) %>
+<% if @resource.try(:unconfirmed_email?) -%>
 Te avisamos que se pidió cambiar el correo electrónico de tu cuenta a <%= @resource.unconfirmed_email %>. El cambio no se aplica hasta confirmar el nuevo correo. Si no fuiste vos, contactá al administrador de inmediato.
-<% else %>
+<% else -%>
 Te avisamos que el correo electrónico de tu cuenta cambió a <%= @resource.email %>. Si no fuiste vos, contactá al administrador de inmediato.
-<% end %>
+<% end -%>

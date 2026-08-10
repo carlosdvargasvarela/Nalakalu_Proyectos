@@ -26,6 +26,7 @@ class Admin::UsersController < Admin::BaseController
   def update
     attrs = user_params
     attrs = attrs.except(:password, :password_confirmation) if attrs[:password].blank?
+    @user.skip_reconfirmation! if attrs[:email].present? && attrs[:email] != @user.email
     if @user.update(attrs)
       sync_access_grants!
       redirect_to admin_users_path

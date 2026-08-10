@@ -3,6 +3,10 @@ class User < ApplicationRecord
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :rememberable, :validatable, :recoverable, :confirmable
 
+  def send_devise_notification(notification, *args)
+    devise_mailer.send(notification, self, *args).deliver_later
+  end
+
   enum :role, { admin: "admin", gerente: "gerente", visor: "visor", responsable: "responsable" }, default: "visor"
 
   has_many :project_accesses, dependent: :destroy

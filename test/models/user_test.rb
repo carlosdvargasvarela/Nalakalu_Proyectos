@@ -18,6 +18,13 @@ class UserTest < ActiveSupport::TestCase
     assert_respond_to user, :send_reset_password_instructions
   end
 
+  test "devise notifications are delivered via deliver_later, not deliver_now" do
+    user = users(:juan)
+    assert_enqueued_emails 1 do
+      user.send_confirmation_instructions
+    end
+  end
+
   test "admin can view and edit any project" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     assert users(:juan).can_view_project?(project)

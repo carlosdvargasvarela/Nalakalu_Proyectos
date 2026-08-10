@@ -40,6 +40,14 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert users(:maria).reload.valid_password?("nuevapass123")
   end
 
+  test "update applies an email change immediately without requiring reconfirmation" do
+    user = users(:maria)
+    patch admin_user_path(user), params: { user: { email: "maria-nueva@example.com", role: user.role } }
+    user.reload
+    assert_equal "maria-nueva@example.com", user.email
+    assert_nil user.unconfirmed_email
+  end
+
   test "update assigns project access from the checkboxes" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     patch admin_user_path(users(:carla)), params: {
