@@ -12,6 +12,12 @@ class UserTest < ActiveSupport::TestCase
     assert User.new(role: "visor").visor?
   end
 
+  test "supports devise recoverable and confirmable" do
+    user = users(:juan)
+    assert_respond_to user, :confirmed?
+    assert_respond_to user, :send_reset_password_instructions
+  end
+
   test "admin can view and edit any project" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     assert users(:juan).can_view_project?(project)
