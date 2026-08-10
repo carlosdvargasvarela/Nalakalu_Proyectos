@@ -1,0 +1,9 @@
+<h1 style="margin:0 0 16px; font-size:20px; color:#0F172A;">Confirmá tu cuenta</h1>
+<p style="margin:0 0 16px; font-size:15px; line-height:1.5; color:#334155;">Hola <%= @resource.email %>,</p>
+<p style="margin:0 0 16px; font-size:15px; line-height:1.5; color:#334155;">
+  Creamos una cuenta para vos en Nalakalu Proyectos. Confirmá tu correo electrónico para poder iniciar sesión.
+</p>
+<%= render "devise/mailer/button", url: confirmation_url(@resource, confirmation_token: @token), label: "Confirmar mi cuenta" %>
+<p style="margin:16px 0 0; font-size:13px; line-height:1.5; color:#64748B;">
+  Si no esperabas este correo, podés ignorarlo.
+</p>
