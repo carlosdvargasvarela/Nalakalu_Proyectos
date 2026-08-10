@@ -22,6 +22,12 @@ export default class extends Controller {
       today_button: false,
       container_height: 630,
       view_mode_select: false,
+      // frappe-gantt defaults infinite_padding to true, which wipes and
+      // redraws every bar (this.clear() + this.render()) when the user
+      // scrolls near an edge - that loses the --bar-fill custom property
+      // applyColors() set on the old nodes. We don't need scroll-driven
+      // date-range extension (tasksValue is already the full, fixed set).
+      infinite_padding: false,
       on_click: (task) => { window.location.hash = `stage-${task.id}` },
       on_date_change: (task, start, end) => {
         this.saveStage(task.id, { start_date: toDateInputValue(start), end_date: toDateInputValue(end) })
