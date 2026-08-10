@@ -52,7 +52,7 @@ class LogEntriesControllerTest < ActionDispatch::IntegrationTest
 
   test "create succeeds for a visor with view access via their linked responsible" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
-    visor = User.create!(email: "visor-bitacora@example.com", password: "password123", role: "visor")
+    visor = User.create!(email: "visor-bitacora@example.com", password: "password123", role: "visor", confirmed_at: Time.current)
     responsible = Responsible.create!(name: "Visor Bitácora", user: visor)
     ResponsibleProjectType.create!(responsible: responsible, project_type: project_types(:instalaciones), responsible_type: responsible_types(:instalador))
     ProjectResponsible.create!(project: project, responsible: responsible, responsible_type: responsible_types(:instalador))
