@@ -73,6 +73,9 @@ Rails.application.configure do
   # Use a real queuing backend for Active Job (and separate queues per environment).
   # config.active_job.queue_adapter = :resque
   # config.active_job.queue_name_prefix = "feature_project_types_dinamicos_production"
+  # ponytail: no queue gem installed, so deliver_later runs on Rails' default :async
+  # in-process adapter (one Heroku web dyno). Swap to solid_queue/sidekiq if mail
+  # volume or dyno restarts start dropping queued deliveries.
 
   # Disable caching for Action Mailer templates even if Action Controller
   # caching is enabled.
@@ -80,7 +83,23 @@ Rails.application.configure do
 
   # Ignore bad email addresses and do not raise email delivery errors.
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.
-  # config.action_mailer.raise_delivery_errors = false
+  config.action_mailer.raise_delivery_errors = true
+
+  config.action_mailer.default_url_options = { host: ENV.fetch("APP_HOST", "nalakalu.com") }
+
+  config.action_mailer.delivery_method = :smtp
+
+  config.action_mailer.smtp_settings = {
+    address: "correo.nalakalu.com",
+    port: 465,
+    domain: "nalakalu.com",
+    user_name: ENV["SMTP_USERNAME"],
+    password: ENV["SMTP_PASSWORD"],
+    authentication: :login,
+    ssl: true,
+    tls: true,
+    enable_starttls_auto: true
+  }
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).
