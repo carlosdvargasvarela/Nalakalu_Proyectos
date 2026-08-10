@@ -166,3 +166,20 @@
   border-color: var(--bs-primary);
   box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
 }
+
+.modal-body h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 0;
+}
+
+.modal-body h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--bs-primary);
+  margin-top: 1.25rem;
+}
+
+.modal-body :last-child {
+  margin-bottom: 0;
+}

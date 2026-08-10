@@ -60,4 +60,16 @@ class ApplicationHelperTest < ActionView::TestCase
 
     assert_equal 0, pending_stage_dates_count(users(:juan))
   end
+
+  test "help_topic_path_if_exists returns the controller path when a doc file exists" do
+    @controller.stub(:controller_path, "projects") do
+      assert_equal "projects", help_topic_path_if_exists
+    end
+  end
+
+  test "help_topic_path_if_exists returns nil when no doc file exists for the controller" do
+    @controller.stub(:controller_path, "devise/sessions") do
+      assert_nil help_topic_path_if_exists
+    end
+  end
 end

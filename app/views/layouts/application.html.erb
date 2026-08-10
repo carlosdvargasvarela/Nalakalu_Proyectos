@@ -33,8 +33,30 @@
       <% if alert %>
         <div class="alert alert-danger"><%= alert %></div>
       <% end %>
+      <% if (topic = help_topic_path_if_exists) %>
+        <div class="text-end mb-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-controller="help" data-action="click->help#open" data-help-topic-value="<%= topic %>">
+            <i class="bi bi-question-circle"></i> Ayuda
+          </button>
+        </div>
+      <% end %>
       <%= yield %>
     </div>
+
+    <div class="modal fade" id="help-modal" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Ayuda</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body" data-help-target="body">
+            <div class="text-center text-muted py-4">Cargando…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
   </body>

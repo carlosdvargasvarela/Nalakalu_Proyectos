@@ -50,6 +50,10 @@ module ApplicationHelper
     value.to_s
   end
 
+  def help_topic_path_if_exists
+    Rails.root.join("docs", "help", "#{controller_path}.md").exist? ? controller_path : nil
+  end
+
   def panel_card(title, &block)
     content_tag(:div, class: "card mb-4") do
       content_tag(:div, title, class: "card-header fw-semibold") +
