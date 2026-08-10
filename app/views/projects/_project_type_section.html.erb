@@ -114,7 +114,7 @@
         progress_status_label: progress_status_label(project.progress_status),
         progress_status_badge_class: ApplicationHelper::PROGRESS_STATUS_BADGE_CLASSES.fetch(project.progress_status, "bg-light text-dark"),
         overdue: project.overdue?,
-        responsibles: project.project_responsibles.includes(:responsible_type).map { |pr| { type: pr.responsible_type.name, name: pr.responsible_name, color: pr.responsible_color } },
+        responsibles: project.project_responsibles.map { |pr| { type: pr.responsible_type.name, name: pr.responsible_name, color: pr.responsible_color } },
         date_range_label: "#{l(first, format: :long)} – #{l(last, format: :long)}"
       }
     end
@@ -240,7 +240,7 @@
           <thead>
             <tr>
               <% if show_bulk_controls %><th><input type="checkbox" data-bulk-select-target="selectAll" data-action="change->bulk-select#toggleAll"></th><% end %>
-              <th>Nombre</th><th>Estado</th><th>Avance</th><th></th>
+              <th>Nombre</th><th>Estado</th><th>Responsables</th><th>Avance</th><th></th>
             </tr>
           </thead>
           <tbody>
@@ -252,6 +252,14 @@
                 <% end %>
                 <td><%= link_to project.name, project_path(project) %></td>
                 <td><%= status_badge(project.status) %></td>
+                <td>
+                  <% project.project_responsibles.select(&:project_wide?).sort_by { |pr| pr.responsible_type_id == selected_type&.id ? 0 : 1 }.each do |pr| %>
+                    <div class="d-flex align-items-center gap-1<%= " fw-bold" if pr.responsible_type_id == selected_type&.id %>">
+                      <span class="rounded-circle d-inline-block" style="width: 0.65rem; height: 0.65rem; background-color: <%= pr.responsible_color %>;"></span>
+                      <small><%= pr.responsible_type.name %>: <%= pr.responsible_name %></small>
+                    </div>
+                  <% end %>
+                </td>
                 <td>
                   <%= progress_status_badge(project.progress_status) %>
                   <%= overdue_badge if project.overdue? %>

@@ -286,7 +286,7 @@ class ProjectsController < ApplicationController
       params[:responsible_type_id].presence || project_type.responsible_types.find_by(default_in_filter: true)&.id&.to_s
     end
 
-    projects = Project.visible_to(current_user).where(project_type: project_type).includes(:project_type, project_stages: :stage_template).order(:name)
+    projects = Project.visible_to(current_user).where(project_type: project_type).includes(:project_type, project_stages: :stage_template, project_responsibles: :responsible_type).order(:name)
     projects = params[:status].present? ? projects.where(status: params[:status]) : projects.where.not(status: "archived")
     projects = filter_by_responsible(projects, responsible_type_id, params[:responsible_id])
     projects = filter_by_date_range(projects, params[:from_date], params[:to_date])

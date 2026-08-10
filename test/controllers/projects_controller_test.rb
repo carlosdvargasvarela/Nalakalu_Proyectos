@@ -423,6 +423,70 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".gantt-legend span", text: /Ana Gómez/
   end
 
+  test "index's Listado table shows each project's project-wide responsibles" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    ProjectResponsible.create!(project: project, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
+
+    get project_type_projects_path(project_types(:instalaciones).slug)
+    assert_response :success
+    assert_select "td", text: /Instalador Fixture: Ana Gómez/
+  end
+
+  test "index's Listado table omits a responsible assigned to a specific stage, not the whole project" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.first # instalaciones' stage_templates fixtures auto-create these on save
+    ProjectResponsible.create!(project: project, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador), project_stage: stage)
+
+    get project_type_projects_path(project_types(:instalaciones).slug)
+    assert_response :success
+    assert_select "td", text: /Ana Gómez/, count: 0
+  end
+
+  test "index's Listado table bolds the responsible matching the active type filter, not others" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    disenador = Responsible.create!(name: "Diana Diseñadora")
+    ResponsibleProjectType.create!(responsible: disenador, project_type: project_types(:instalaciones), responsible_type: responsible_types(:disenador))
+    ProjectResponsible.create!(project: project, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
+    ProjectResponsible.create!(project: project, responsible: disenador, responsible_type: responsible_types(:disenador))
+
+    get project_type_projects_path(project_types(:instalaciones).slug, responsible_type_id: responsible_types(:instalador).id)
+    assert_response :success
+
+    doc = Nokogiri::HTML5(response.body)
+    bold_cell = doc.css("td .fw-bold").text
+    assert_match(/Ana Gómez/, bold_cell)
+    assert_no_match(/Diana Diseñadora/, bold_cell)
+  end
+
+  test "index's Listado table renders an empty cell for a project with no responsibles" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_type_projects_path(project_types(:instalaciones).slug)
+    assert_response :success # no error rendering the new column with zero responsibles
+  end
+
+  test "index's Listado table doesn't add an extra query per project for responsibles" do
+    # Warm up one-time class-loading queries before creating any test data or
+    # measuring, so neither measurement below benefits from AR's query cache
+    # (which would otherwise serve repeated identical binds from a prior request).
+    get project_type_projects_path(project_types(:instalaciones).slug)
+
+    3.times do |i|
+      project = Project.create!(project_type: project_types(:instalaciones), name: "Torre #{i}", custom_fields: {})
+      ProjectResponsible.create!(project: project, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
+    end
+
+    queries_for_three = count_sql_queries { get project_type_projects_path(project_types(:instalaciones).slug) }
+
+    2.times do |i|
+      project = Project.create!(project_type: project_types(:instalaciones), name: "Otra #{i}", custom_fields: {})
+      ProjectResponsible.create!(project: project, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador))
+    end
+
+    queries_for_five = count_sql_queries { get project_type_projects_path(project_types(:instalaciones).slug) }
+
+    assert_equal queries_for_three, queries_for_five, "adding more projects/responsibles must not add more queries (no N+1)"
+  end
+
   test "index shows one Gantt task per project by default" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_type_projects_path(project_types(:instalaciones).slug)
@@ -2004,5 +2068,15 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
   def json_data_attribute(selector, attribute)
     el = Nokogiri::HTML5(response.body).at_css(selector)
     JSON.parse(el[attribute])
+  end
+
+  # assert_queries_count returns the block's result, not the query count, so it can't
+  # be used to compare counts across two calls — count queries directly instead.
+  def count_sql_queries
+    ActiveRecord::Base.lease_connection.materialize_transactions
+    count = 0
+    callback = lambda { |*, payload| count += 1 unless payload[:cached] || payload[:name] == "SCHEMA" }
+    ActiveSupport::Notifications.subscribed(callback, "sql.active_record") { yield }
+    count
   end
 end
