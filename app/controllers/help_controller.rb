@@ -1,6 +1,11 @@
 class HelpController < ApplicationController
   def show
     base = Rails.root.join("docs", "help")
+
+    if params[:topic].to_s.include?("\0")
+      head :not_found and return
+    end
+
     path = base.join("#{params[:topic]}.md").expand_path
 
     unless path.to_s.start_with?("#{base}/") && path.exist?

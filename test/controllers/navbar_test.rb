@@ -107,4 +107,11 @@ class NavbarTest < ActionDispatch::IntegrationTest
     assert_select "#help-menu-modal button[data-help-topic-value=?]", "projects"
     assert_select "#help-menu-modal button[data-help-topic-value=?]", "admin/users"
   end
+
+  test "navbar does not show the help menu to anonymous visitors" do
+    get new_user_session_path
+    assert_response :success
+    assert_select "#help-menu-modal", count: 0
+    assert_select "button[data-bs-target=?]", "#help-menu-modal", count: 0
+  end
 end

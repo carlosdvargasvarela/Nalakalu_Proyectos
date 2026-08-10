@@ -12,7 +12,7 @@ export default class extends Controller {
     bootstrap.Modal.getOrCreateInstance(modalEl).show()
 
     const response = await fetch(`/help/${this.topicValue}`)
-    body.innerHTML = response.ok
+    body.innerHTML = (response.ok && !response.redirected)
       ? await response.text()
       : '<p class="text-danger">No se encontró este tutorial.</p>'
   }

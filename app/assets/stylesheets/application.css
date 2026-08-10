@@ -180,6 +180,6 @@
   margin-top: 1.25rem;
 }
 
-.modal-body :last-child {
+.modal-body > :last-child {
   margin-bottom: 0;
 }
