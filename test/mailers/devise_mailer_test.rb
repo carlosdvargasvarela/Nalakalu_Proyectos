@@ -27,4 +27,22 @@ class DeviseMailerTest < ActionMailer::TestCase
     assert_match "reset_password_token=faketoken", body
     assert_match "faketoken", mail.text_part.body.to_s
   end
+
+  test "password_change notifies with no CTA link" do
+    mail = Devise::Mailer.password_change(@user)
+    assert_equal "Contraseña modificada", mail.subject
+    body = mail.html_part.body.to_s
+    assert_match @user.email, body
+    assert_no_match "href=", body
+  end
+
+  test "email_changed notifies about a pending reconfirmation" do
+    # reconfirmable's postpone-and-set-unconfirmed_email logic is a before_save
+    # callback, so it only runs on save/update, not on a bare assignment.
+    @user.update!(email: "nuevo@example.com")
+    mail = Devise::Mailer.email_changed(@user)
+    assert_equal "Correo electrónico modificado", mail.subject
+    body = mail.html_part.body.to_s
+    assert_match "nuevo@example.com", body
+  end
 end

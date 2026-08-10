@@ -1,0 +1,11 @@
+<h1 style="margin:0 0 16px; font-size:20px; color:#0F172A;">Se solicitó un cambio de correo electrónico</h1>
+<p style="margin:0 0 16px; font-size:15px; line-height:1.5; color:#334155;">Hola,</p>
+<% if @resource.try(:unconfirmed_email?) %>
+  <p style="margin:0; font-size:15px; line-height:1.5; color:#334155;">
+    Te avisamos que se pidió cambiar el correo electrónico de tu cuenta a <strong><%= @resource.unconfirmed_email %></strong>. El cambio no se aplica hasta confirmar el nuevo correo. Si no fuiste vos, contactá al administrador de inmediato.
+  </p>
+<% else %>
+  <p style="margin:0; font-size:15px; line-height:1.5; color:#334155;">
+    Te avisamos que el correo electrónico de tu cuenta cambió a <strong><%= @resource.email %></strong>. Si no fuiste vos, contactá al administrador de inmediato.
+  </p>
+<% end %>
