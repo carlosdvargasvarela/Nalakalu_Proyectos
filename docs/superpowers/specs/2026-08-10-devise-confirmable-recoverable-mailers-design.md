@@ -108,9 +108,13 @@ Vistas de contenido nuevas, en español, todas sobre ese layout, versión
 ## Testing
 
 - `test/fixtures/users.yml`: agregar `confirmed_at: <%= Time.current %>` a
-  las 4 filas (juan, carla, maria, pedro). Sin esto, `:confirmable` bloquea
-  el login y toda la suite que usa `sign_in`/`log_in_as` con estos fixtures
-  rompe de inmediato.
+  las 4 filas (juan, carla, maria, pedro). El helper `sign_in` de
+  `Devise::Test::IntegrationHelpers` bypasea la autenticación real (setea
+  la sesión de Warden directo), así que la suite existente no se rompe sin
+  esto — pero los tests nuevos de este plan sí necesitan usuarios
+  confirmados para loguearse por el flujo real (POST a
+  `user_session_path`) después de un reset de contraseña o una
+  confirmación.
 - Test de modelo: `User` con `:recoverable`/`:confirmable` responde a
   `confirmed?` / `send_reset_password_instructions` (ya cubierto por los
   tests que Devise agrega vía `Devise::Test::Mailer`/`ActionMailer::TestHelper`
