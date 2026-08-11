@@ -2030,6 +2030,25 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "select#project_association_other_project_id[data-dependent-select-target=?]", "select"
   end
 
+  test "the associations form's dependent-select options exclude project types with no linking association" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    linked_type = ProjectType.create!(name: "Mantenimiento", slug: "mantenimiento")
+    ProjectTypeAssociation.create!(from_project_type: project_types(:instalaciones), to_project_type: linked_type, label: "Mantenimiento")
+    Project.create!(project_type: linked_type, name: "Proyecto vinculable", custom_fields: {})
+
+    unrelated_type = ProjectType.create!(name: "Sin relación", slug: "sin-relacion")
+    Project.create!(project_type: unrelated_type, name: "Proyecto no vinculable", custom_fields: {})
+
+    get project_path(project)
+    assert_response :success
+
+    options = json_data_attribute('[data-controller="dependent-select"]', "data-dependent-select-options-value")
+    project_names = options.values.flatten(1).map { |_id, name| name }
+
+    assert_includes project_names, "Proyecto vinculable"
+    assert_not_includes project_names, "Proyecto no vinculable"
+  end
+
   test "show marks a historical (deleted) responsible assignment" do
     project_type = project_types(:instalaciones)
     responsible_type = ResponsibleType.create!(project_type: project_type, name: "Instalador")
