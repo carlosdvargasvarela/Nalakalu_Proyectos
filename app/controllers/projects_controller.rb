@@ -40,6 +40,7 @@ class ProjectsController < ApplicationController
       .or(PaperTrail::Version.where(item_type: "ProjectStage", item_id: @project.project_stage_ids))
       .order(created_at: :desc)
       .limit(50)
+      .includes(:item)
 
     whodunnit_ids = @project_change_versions.map(&:whodunnit).compact
     @version_authors = User.where(id: whodunnit_ids).index_by { |u| u.id.to_s }

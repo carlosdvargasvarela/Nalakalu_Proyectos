@@ -409,6 +409,34 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "select[name=?] option", "project_responsible[responsible_id]", text: "No Habilitado", count: 0
   end
 
+  test "show doesn't add a query per PaperTrail history version (item N+1)" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+
+    get project_path(project) # warm up one-time class-loading queries before measuring
+
+    # Each round creates new ProjectStage records (not updates to existing ones) so every
+    # round adds genuinely new item ids — reusing the same id would get masked by Rails'
+    # per-request query cache regardless of whether version.item is eager-loaded.
+    2.times { |i| project.project_stages.create!(name: "Extra #{i}", progress_percent: 0) }
+    queries_for_two_versions = count_sql_queries { get project_path(project) }
+
+    3.times { |i| project.project_stages.create!(name: "Extra2 #{i}", progress_percent: 0) }
+    queries_for_five_versions = count_sql_queries { get project_path(project) }
+
+    assert_equal queries_for_two_versions, queries_for_five_versions,
+      "more PaperTrail history must not add more queries (no N+1 on version.item)"
+  end
+
+  test "show's Historial still displays the stage name for a ProjectStage version" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.first
+    stage.update!(progress_percent: 50)
+
+    get project_path(project)
+    assert_response :success
+    assert_select "body", /Etapa: #{Regexp.escape(stage.name)}/
+  end
+
   test "index's Gantt legend appears only when a responsible type is selected" do
     slug = project_types(:instalaciones).slug
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
