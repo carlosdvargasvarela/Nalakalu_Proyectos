@@ -141,7 +141,8 @@
             other_type_id = a.from_project_type_id == @project.project_type_id ? a.to_project_type_id : a.from_project_type_id
             [a.label, a.id, { data: { key: other_type_id } }]
           end
-          projects_by_other_type = Project.where.not(id: @project.id).order(:name).group_by(&:project_type_id)
+          relevant_type_ids = association_options.map { |_, _, opts| opts[:data][:key] }.uniq
+          projects_by_other_type = Project.where.not(id: @project.id).where(project_type_id: relevant_type_ids).order(:name).group_by(&:project_type_id)
             .transform_values { |projects| projects.map { |p| [p.id, p.name] } }
         %>
         <%= form_with url: project_project_associations_path(@project), method: :post, scope: :project_association, class: "row g-2 mb-3",
