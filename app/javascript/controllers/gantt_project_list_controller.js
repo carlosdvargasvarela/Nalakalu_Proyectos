@@ -68,11 +68,15 @@ export default class extends Controller {
     const responsiblesHtml = (task.responsibles || []).map((r) =>
       `<div class="small mt-1"><span class="badge me-1" style="background-color: ${r.color}">&nbsp;</span>${escapeHtml(r.type)}: ${escapeHtml(r.name)}</div>`
     ).join("")
+    const fieldsHtml = (task.custom_fields || []).map((f) =>
+      `<div class="small mt-1">${escapeHtml(f.label)}: ${escapeHtml(f.value)}</div>`
+    ).join("")
     return `<div class="p-2">
       <div class="fw-bold mb-1">${escapeHtml(task.name)}</div>
       <div class="d-flex gap-1 flex-wrap">${rows.join("")}</div>
-      ${responsiblesHtml}
       <div class="small text-white-50 mt-1">${escapeHtml(task.date_range_label)}</div>
+      ${responsiblesHtml}
+      ${fieldsHtml}
     </div>`
   }
 }
