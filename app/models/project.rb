@@ -88,7 +88,19 @@ class Project < ApplicationRecord
   end
 
   def responsible_for(responsible_type)
-    project_responsibles.find { |pr| pr.responsible_type_id == responsible_type.id && pr.project_wide? }&.responsible
+    representative_responsible_for(responsible_type)&.responsible
+  end
+
+  # The project_responsible that best represents a project for a given type: the
+  # project-wide assignment if there is one, otherwise falling back to whichever
+  # stage-scoped assignment exists (preferring the current stage) so a project
+  # only ever assigned per-stage still shows up in the Gantt color/legend and
+  # the Listado table instead of looking unassigned.
+  def representative_responsible_for(responsible_type)
+    candidates = project_responsibles.select { |pr| pr.responsible_type_id == responsible_type.id }
+    candidates.find(&:project_wide?) ||
+      candidates.find { |pr| pr.project_stage_id == current_stage&.id } ||
+      candidates.first
   end
 
   def progress_status

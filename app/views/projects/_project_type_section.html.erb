@@ -255,7 +255,7 @@
                 <td><%= link_to project.name, project_path(project) %></td>
                 <td><%= status_badge(project.status) %></td>
                 <td>
-                  <% project.project_responsibles.select(&:project_wide?).sort_by { |pr| pr.responsible_type_id == selected_type&.id ? 0 : 1 }.each do |pr| %>
+                  <% project_type.responsible_types.filter_map { |rt| project.representative_responsible_for(rt) }.sort_by { |pr| pr.responsible_type_id == selected_type&.id ? 0 : 1 }.each do |pr| %>
                     <div class="d-flex align-items-center gap-1<%= " fw-bold" if pr.responsible_type_id == selected_type&.id %>">
                       <span class="rounded-circle d-inline-block" style="width: 0.65rem; height: 0.65rem; background-color: <%= pr.responsible_color %>;"></span>
                       <small><%= pr.responsible_type.name %>: <%= pr.responsible_name %></small>

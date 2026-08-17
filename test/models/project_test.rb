@@ -70,6 +70,30 @@ class ProjectTest < ActiveSupport::TestCase
     assert_equal stages[1], project.reload.current_stage
   end
 
+  test "representative_responsible_for prefers the project-wide assignment over a stage-scoped one" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.first
+    instalador = responsible_types(:instalador)
+    ProjectResponsible.create!(project: project, responsible: responsibles(:ana_gomez), responsible_type: instalador, project_stage: stage)
+    ProjectResponsible.create!(project: project, responsible: responsibles(:pedro_responsable), responsible_type: instalador)
+
+    assert_equal responsibles(:pedro_responsable), project.responsible_for(instalador)
+  end
+
+  test "representative_responsible_for falls back to a stage-scoped assignment when there is no project-wide one" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.first
+    instalador = responsible_types(:instalador)
+    ProjectResponsible.create!(project: project, responsible: responsibles(:ana_gomez), responsible_type: instalador, project_stage: stage)
+
+    assert_equal responsibles(:ana_gomez), project.responsible_for(instalador)
+  end
+
+  test "representative_responsible_for returns nil when the project has no assignment of that type" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    assert_nil project.responsible_for(responsible_types(:instalador))
+  end
+
   test "project_stages_attributes updates existing stages without creating or destroying any" do
     project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
     stage = project.project_stages.order(:id).first

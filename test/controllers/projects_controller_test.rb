@@ -460,14 +460,14 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "td", text: /Instalador Fixture: Ana Gómez/
   end
 
-  test "index's Listado table omits a responsible assigned to a specific stage, not the whole project" do
+  test "index's Listado table falls back to a stage-scoped responsible when the project has no project-wide one" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     stage = project.project_stages.first # instalaciones' stage_templates fixtures auto-create these on save
     ProjectResponsible.create!(project: project, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador), project_stage: stage)
 
     get project_type_projects_path(project_types(:instalaciones).slug)
     assert_response :success
-    assert_select "td", text: /Ana Gómez/, count: 0
+    assert_select "td", text: /Ana Gómez/, count: 1
   end
 
   test "index's Listado table bolds the responsible matching the active type filter, not others" do
