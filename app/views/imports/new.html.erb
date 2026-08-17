@@ -43,6 +43,9 @@
           <tr>
             <th>Fila</th>
             <th>Nombre</th>
+            <% @preview[:fields].each do |field| %>
+              <th><%= field.label %></th>
+            <% end %>
             <th>Error</th>
           </tr>
         </thead>
@@ -51,6 +54,9 @@
             <tr class="<%= "table-danger" if row[:error] %>">
               <td><%= row[:row] %></td>
               <td><%= row[:name] %></td>
+              <% @preview[:fields].each do |field| %>
+                <td><%= row[:custom_fields][field.key] %></td>
+              <% end %>
               <td><%= row[:error] %></td>
             </tr>
           <% end %>

@@ -75,15 +75,15 @@ class ImportsController < ApplicationController
   end
 
   def build_preview(project_type, file)
-    return { rows: [{ row: 0, name: nil, custom_fields: {}, error: "No se subió ningún archivo" }], valid_rows_json: "[]" } if file.blank?
-
     fields = project_type.field_definitions.order(:position).to_a
+    return { rows: [{ row: 0, name: nil, custom_fields: {}, error: "No se subió ningún archivo" }], valid_rows_json: "[]", fields: fields } if file.blank?
+
     parsed_rows = begin
       parse_rows(file, fields)
     rescue ArgumentError
-      return { rows: [{ row: 0, name: nil, custom_fields: {}, error: "Formato no soportado, subí un .csv o .xlsx" }], valid_rows_json: "[]" }
+      return { rows: [{ row: 0, name: nil, custom_fields: {}, error: "Formato no soportado, subí un .csv o .xlsx" }], valid_rows_json: "[]", fields: fields }
     rescue StandardError
-      return { rows: [{ row: 0, name: nil, custom_fields: {}, error: "No se pudo leer el archivo" }], valid_rows_json: "[]" }
+      return { rows: [{ row: 0, name: nil, custom_fields: {}, error: "No se pudo leer el archivo" }], valid_rows_json: "[]", fields: fields }
     end
     rows = []
     valid_rows = []
@@ -99,7 +99,7 @@ class ImportsController < ApplicationController
       end
     end
 
-    { rows: rows, valid_rows_json: valid_rows.to_json }
+    { rows: rows, valid_rows_json: valid_rows.to_json, fields: fields }
   end
 
   def parse_rows(file, fields)
@@ -107,25 +107,69 @@ class ImportsController < ApplicationController
 
     case extension
     when ".csv"
-      CSV.parse(file.read.force_encoding("UTF-8").sub("﻿", ""), headers: true).map do |row|
-        [row["Nombre"], fields.each_with_object({}) { |f, h| h[f.key] = resolve_field_value(f, row[f.label]) }]
-      end
+      csv = CSV.parse(file.read.force_encoding("UTF-8").sub("﻿", ""), headers: true)
+      header_map = header_map_for(csv.headers)
+      csv.map { |row| extract_row(row.to_h, header_map, fields) }
     when ".xlsx"
       sheet = Roo::Spreadsheet.open(file.path, extension: extension.delete(".").to_sym).sheet(0)
-      header = sheet.row(1)
-      (2..sheet.last_row).map do |i|
-        row = header.zip(sheet.row(i)).to_h
-        [row["Nombre"], fields.each_with_object({}) { |f, h| h[f.key] = resolve_field_value(f, row[f.label]) }]
-      end
+      raw_headers = sheet.row(1)
+      header_map = header_map_for(raw_headers)
+      (2..sheet.last_row).map { |i| extract_row(raw_headers.zip(sheet.row(i)).to_h, header_map, fields) }
     else
       raise ArgumentError, "unsupported extension"
     end
   end
 
-  def resolve_field_value(field, raw_value)
-    return raw_value if raw_value.blank? || field.data_type != "reference"
+  # Matches file headers to "Nombre"/field labels ignoring case and surrounding spaces,
+  # so "nombre ", "NOMBRE" or " Cliente " line up with the plantilla's exact labels.
+  def header_map_for(headers)
+    headers.each_with_object({}) { |h, map| map[h.to_s.strip.downcase] = h }
+  end
 
-    record = field.reference_table.classify.constantize.find_by(name: raw_value.strip)
-    record ? record.id : "#{raw_value} (no encontrado)"
+  def extract_row(raw_row, header_map, fields)
+    name_header = header_map[normalize_header("Nombre")]
+    custom_fields = fields.each_with_object({}) do |f, h|
+      value_header = header_map[normalize_header(f.label)]
+      h[f.key] = resolve_field_value(f, value_header ? raw_row[value_header] : nil)
+    end
+    [name_header ? raw_row[name_header] : nil, custom_fields]
+  end
+
+  def normalize_header(value)
+    value.to_s.strip.downcase
+  end
+
+  NUMERIC_FIELD_TYPES = %w[number currency percent].freeze
+
+  def resolve_field_value(field, raw_value)
+    return raw_value if raw_value.blank?
+
+    if field.data_type == "reference"
+      record = field.reference_table.classify.constantize.find_by(name: raw_value.to_s.strip)
+      record ? record.id : "#{raw_value} (no encontrado)"
+    elsif NUMERIC_FIELD_TYPES.include?(field.data_type)
+      normalize_number(raw_value)
+    else
+      raw_value
+    end
+  end
+
+  # Excel exports numbers with currency symbols ("₡1.234,56") or a comma decimal
+  # separator ("12,50") that Float() rejects outright - strip symbols and pick the
+  # rightmost of "," / "." as the decimal separator, discarding the other as a
+  # thousands separator.
+  def normalize_number(raw_value)
+    cleaned = raw_value.to_s.strip.gsub(/[^\d,.\-]/, "")
+    return raw_value if cleaned.blank?
+
+    last_comma = cleaned.rindex(",")
+    last_dot = cleaned.rindex(".")
+    if last_comma && last_dot
+      decimal, thousands = last_comma > last_dot ? [",", "."] : [".", ","]
+      cleaned = cleaned.delete(thousands).sub(decimal, ".")
+    elsif last_comma
+      cleaned = cleaned.tr(",", ".")
+    end
+    cleaned
   end
 end

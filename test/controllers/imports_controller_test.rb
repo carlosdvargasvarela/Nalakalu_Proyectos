@@ -232,6 +232,37 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
     assert_select "body", /Formato no soportado/
   end
 
+  test "preview normalizes currency symbols and comma decimals on numeric fields" do
+    project_type = project_types(:instalaciones)
+    field = project_type.field_definitions.create!(key: "monto", label: "Monto", data_type: "currency", position: 3)
+    csv = "Nombre,Cliente,Dirección,#{field.label}\nTorre Norte,Acme S.A.,Av. Siempre Viva 123,\"₡1.234,56\"\n"
+
+    post preview_imports_path, params: {
+      project_type_id: project_type.id,
+      file: Rack::Test::UploadedFile.new(StringIO.new(csv), "text/csv", original_filename: "plantilla.csv")
+    }
+
+    assert_response :success
+    assert_select "input[name='valid_rows']"
+    valid_rows = JSON.parse(css_select("input[name='valid_rows']").first["value"])
+    assert_equal "1234.56", valid_rows.first["custom_fields"][field.key]
+  end
+
+  test "preview matches column headers ignoring case and surrounding spaces" do
+    project_type = project_types(:instalaciones)
+    csv = " nombre , CLIENTE ,dirección\nTorre Norte,Acme S.A.,Av. Siempre Viva 123\n"
+
+    post preview_imports_path, params: {
+      project_type_id: project_type.id,
+      file: Rack::Test::UploadedFile.new(StringIO.new(csv), "text/csv", original_filename: "plantilla.csv")
+    }
+
+    assert_response :success
+    valid_rows = JSON.parse(css_select("input[name='valid_rows']").first["value"])
+    assert_equal "Torre Norte", valid_rows.first["name"]
+    assert_equal "Acme S.A.", valid_rows.first["custom_fields"]["cliente"]
+  end
+
   test "preview shows a friendly error instead of crashing on a corrupt xlsx file" do
     project_type = project_types(:instalaciones)
 
