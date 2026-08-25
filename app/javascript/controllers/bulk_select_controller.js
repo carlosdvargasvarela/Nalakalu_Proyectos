@@ -5,11 +5,20 @@ import { Controller } from "@hotwired/stimulus"
 // Also highlights, per row, the existing assignment matching the chosen
 // responsible type (typeSelect), and warns before overwriting one.
 export default class extends Controller {
-  static targets = ["selectAll", "checkbox", "count", "submit", "typeSelect", "row"]
+  static targets = ["selectAll", "checkbox", "count", "submit", "typeSelect", "row", "search"]
 
   connect() {
     this.updateCount()
     this.highlightType()
+  }
+
+  // Client-side filter over the rows already on the page (one page's worth of
+  // projects, so no need for a server round-trip) - matches anywhere in the name.
+  filterRows() {
+    const query = this.searchTarget.value.trim().toLowerCase()
+    this.rowTargets.forEach((row) => {
+      row.hidden = query !== "" && !row.dataset.projectName.toLowerCase().includes(query)
+    })
   }
 
   toggleAll() {

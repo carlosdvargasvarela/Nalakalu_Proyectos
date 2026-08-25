@@ -289,6 +289,8 @@
                   </div>
                 </div>
                 <p class="text-muted small mb-2">Elegí a qué proyectos se les asigna:</p>
+                <input type="text" class="form-control form-control-sm mb-2" placeholder="Buscar proyecto por nombre..."
+                       data-bulk-select-target="search" data-action="input->bulk-select#filterRows">
                 <div class="table-responsive">
                 <table class="table table-sm table-striped mb-0" id="bulk-assign-projects-<%= slug %>">
                   <thead>
