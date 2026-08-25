@@ -1,86 +1,129 @@
 <h1 class="mb-3"><i class="bi bi-binoculars"></i> Seguimiento</h1>
 
-<%= panel_card("Filtros") do %>
-  <%= form_with url: tracker_projects_path, method: :get, local: true, class: "row g-3 align-items-end" do |form| %>
-    <div class="col-12 col-sm-6 col-md-3">
-      <%= form.label :project_type_id, "Tipo", class: "form-label" %>
-      <%= form.select :project_type_id, @project_types.collect { |pt| [pt.name, pt.id] },
-            { selected: @project_type&.id }, class: "form-select" %>
-    </div>
-    <div class="col-12 col-sm-6 col-md-3">
-      <%= form.label :responsible_type_id, "Tipo de responsable", class: "form-label" %>
-      <%= form.select :responsible_type_id, @responsible_types.collect { |t| [t.name, t.id] },
-            { include_blank: "Todos", selected: @responsible_type_id }, class: "form-select" %>
-    </div>
-    <div class="col-12 col-sm-6 col-md-3">
-      <%= form.label :responsible_id, "Responsable", class: "form-label" %>
-      <%= form.select :responsible_id,
-            [["Sin asignar", "none"]] + Responsible.joins(:project_responsibles).where(project_responsibles: { responsible_type_id: @responsible_type_id }).distinct.collect { |r| [r.name, r.id] },
-            { include_blank: "Todos", selected: params[:responsible_id] }, class: "form-select", data: { controller: "tom-select" } %>
-    </div>
-    <div class="col-12 col-sm-6 col-md-3">
-      <%= form.submit "Ver", class: "btn btn-primary w-100" %>
-    </div>
-  <% end %>
-<% end %>
-
 <% if @project_type.nil? %>
   <p class="text-muted">No hay tipos de proyecto configurados todavía.</p>
-<% elsif @projects.none? %>
-  <div class="text-center text-muted py-5">
-    <i class="bi bi-binoculars display-4 d-block mb-2"></i>
-    No hay proyectos que coincidan con estos filtros.
-  </div>
 <% else %>
+  <ul class="nav nav-tabs mb-4">
+    <% @project_types.each do |project_type| %>
+      <li class="nav-item">
+        <%= link_to project_type.name, tracker_projects_path(project_type_id: project_type.id),
+              class: "nav-link #{"active" if project_type == @project_type}" %>
+      </li>
+    <% end %>
+  </ul>
+
   <% projects_list = @projects.to_a %>
-  <div class="row g-3 mb-4">
-    <div class="col-sm-4">
-      <div class="card text-center">
+  <div class="row g-3">
+    <div class="col-12 col-lg-4">
+      <div class="card mb-3">
+        <div class="card-header fw-semibold">Filtros</div>
         <div class="card-body">
-          <div class="display-6"><%= projects_list.size %></div>
-          <div class="text-muted">Proyectos</div>
+          <%= form_with url: tracker_projects_path, method: :get, local: true do |form| %>
+            <%= hidden_field_tag :project_type_id, @project_type.id %>
+            <div class="mb-2">
+              <%= form.label :responsible_type_id, "Tipo de responsable", class: "form-label small mb-1" %>
+              <%= form.select :responsible_type_id, @responsible_types.collect { |t| [t.name, t.id] },
+                    { include_blank: "Todos", selected: @responsible_type_id }, class: "form-select form-select-sm" %>
+            </div>
+            <div class="mb-3">
+              <%= form.label :responsible_id, "Responsable", class: "form-label small mb-1" %>
+              <%= form.select :responsible_id,
+                    [["Sin asignar", "none"]] + Responsible.joins(:project_responsibles).where(project_responsibles: { responsible_type_id: @responsible_type_id }).distinct.collect { |r| [r.name, r.id] },
+                    { include_blank: "Todos", selected: params[:responsible_id] }, class: "form-select form-select-sm", data: { controller: "tom-select" } %>
+            </div>
+            <div class="d-flex gap-2">
+              <%= form.submit "Filtrar", class: "btn btn-primary btn-sm flex-fill" %>
+              <%= link_to "Limpiar", tracker_projects_path(project_type_id: @project_type.id), class: "btn btn-outline-secondary btn-sm flex-fill" %>
+            </div>
+          <% end %>
         </div>
       </div>
+
+      <% if projects_list.empty? %>
+        <div class="text-center text-muted py-5">
+          <i class="bi bi-binoculars display-4 d-block mb-2"></i>
+          No hay proyectos que coincidan con estos filtros.
+        </div>
+      <% else %>
+        <div class="row g-2 mb-3 text-center">
+          <div class="col-4">
+            <div class="border rounded py-2">
+              <div class="fs-5 fw-bold"><%= projects_list.size %></div>
+              <div class="small text-muted">Proyectos</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="border rounded py-2">
+              <div class="fs-5 fw-bold text-danger"><%= projects_list.count(&:overdue?) %></div>
+              <div class="small text-muted">Vencidos</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="border rounded py-2">
+              <div class="fs-5 fw-bold text-success"><%= projects_list.count { |p| p.progress_status == "finalizado" } %></div>
+              <div class="small text-muted">Finalizados</div>
+            </div>
+          </div>
+        </div>
+
+        <div data-controller="list-search">
+          <input type="text" class="form-control form-control-sm mb-2" placeholder="Buscar por nombre..."
+                 data-list-search-target="search" data-action="input->list-search#filter">
+          <div class="list-group" id="tracker-project-list" role="tablist" style="max-height: 65vh; overflow-y: auto;">
+            <% projects_list.each_with_index do |project, i| %>
+              <a class="list-group-item list-group-item-action <%= "active" if i.zero? %>"
+                 data-bs-toggle="list" href="#tracker-panel-<%= project.id %>" role="tab"
+                 data-list-search-target="item" data-name="<%= project.name %>">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                  <strong><%= project.name %></strong>
+                  <%= status_badge(project.status) %>
+                </div>
+                <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
+                  <%= progress_status_badge(project.progress_status) %>
+                  <%= overdue_badge if project.overdue? %>
+                </div>
+              </a>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
     </div>
-    <div class="col-sm-4">
-      <div class="card text-center">
-        <div class="card-body">
-          <div class="display-6 text-danger"><%= projects_list.count(&:overdue?) %></div>
-          <div class="text-muted">Vencidos</div>
+
+    <div class="col-12 col-lg-8">
+      <% if projects_list.any? %>
+        <% gantt_fields = @project_type.field_definitions.where(show_in_gantt: true).order(:position) %>
+        <% selected_type = ResponsibleType.find_by(id: @responsible_type_id) %>
+        <div class="tab-content">
+          <% projects_list.each_with_index do |project, i| %>
+            <div class="tab-pane fade <%= "show active" if i.zero? %>" id="tracker-panel-<%= project.id %>" role="tabpanel">
+              <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <%= link_to project.name, project_path(project), class: "fw-bold text-decoration-none fs-5 text-body" %>
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <%= status_badge(project.status) %>
+                    <%= progress_status_badge(project.progress_status) %>
+                    <%= overdue_badge if project.overdue? %>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <% if gantt_fields.any? %>
+                    <%= render "data_band", project: project, fields: gantt_fields %>
+                  <% end %>
+                  <%= render "responsibles_summary", project: project, project_type: @project_type, selected_type: selected_type %>
+                  <div class="table-responsive mt-3">
+                    <%= render "stage_table", project: project %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% end %>
         </div>
-      </div>
-    </div>
-    <div class="col-sm-4">
-      <div class="card text-center">
-        <div class="card-body">
-          <div class="display-6 text-success"><%= projects_list.count { |p| p.progress_status == "finalizado" } %></div>
-          <div class="text-muted">Finalizados</div>
+      <% else %>
+        <div class="d-flex flex-column align-items-center justify-content-center text-muted h-100 py-5">
+          <i class="bi bi-clipboard-data display-4 mb-2"></i>
+          Seleccioná un proyecto de la lista para ver el detalle.
         </div>
-      </div>
+      <% end %>
     </div>
   </div>
-
-  <% gantt_fields = @project_type.field_definitions.where(show_in_gantt: true).order(:position) %>
-  <% selected_type = ResponsibleType.find_by(id: @responsible_type_id) %>
-  <% projects_list.each do |project| %>
-    <div class="card shadow-sm mb-4">
-      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <%= link_to project.name, project_path(project), class: "fw-bold text-decoration-none fs-5 text-body" %>
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-          <%= status_badge(project.status) %>
-          <%= progress_status_badge(project.progress_status) %>
-          <%= overdue_badge if project.overdue? %>
-        </div>
-      </div>
-      <div class="card-body">
-        <% if gantt_fields.any? %>
-          <%= render "data_band", project: project, fields: gantt_fields %>
-        <% end %>
-        <%= render "responsibles_summary", project: project, project_type: @project_type, selected_type: selected_type %>
-        <div class="table-responsive mt-3">
-          <%= render "stage_table", project: project %>
-        </div>
-      </div>
-    </div>
-  <% end %>
 <% end %>
