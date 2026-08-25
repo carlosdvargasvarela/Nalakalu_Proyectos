@@ -1,10 +1,10 @@
 import { Controller } from "@hotwired/stimulus"
 
 // Repopulates a TomSelect-enhanced "select" target with the options relevant
-// to whatever's chosen in a "control" select, driven by a server-provided
-// { key: [[value, text], ...] } map. If the control's selected <option> has a
-// data-key attribute, that's used as the lookup key; otherwise the control's
-// own value is used directly.
+// to whatever's chosen in one or more "control" selects, driven by a
+// server-provided { key: [[value, text], ...] } map. Each control contributes
+// its data-key (if the selected <option> has one) or its own value; with
+// multiple controls the key is their values joined with "_", in DOM order.
 export default class extends Controller {
   static targets = ["control", "select"]
   static values = { options: Object }
@@ -15,8 +15,10 @@ export default class extends Controller {
   }
 
   apply() {
-    const selectedOption = this.controlTarget.selectedOptions[0]
-    const key = (selectedOption && selectedOption.dataset.key) || this.controlTarget.value
+    const key = this.controlTargets.map(control => {
+      const selectedOption = control.selectedOptions[0]
+      return (selectedOption && selectedOption.dataset.key) || control.value
+    }).join("_")
     const ts = this.selectTarget.tomselect
     ts.clear(true)
     ts.clearOptions()

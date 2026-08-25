@@ -75,38 +75,85 @@
 </div>
 
 <% if current_user.can_edit_project?(@project) %>
+  <%
+    responsibles_by_type = @project.project_type.responsible_project_types.includes(:responsible)
+      .group_by { |rpt| rpt.responsible_type_id.to_s }
+      .transform_values { |rows| rows.map { |rpt| [rpt.responsible_id, rpt.responsible.name] }.sort_by { |_, name| name } }
+    grouped_responsibles = @project.project_responsibles.includes(:responsible, :responsible_type, :project_stage)
+      .group_by(&:project_stage_id)
+    stage_groups = [[nil, "Todo el proyecto"]] + @project.project_stages.map { |s| [s.id, s.name] }
+    taken_by_type_and_stage = @project.project_responsibles.pluck(:responsible_type_id, :project_stage_id, :responsible_id)
+      .each_with_object(Hash.new { |h, k| h[k] = [] }) { |(type_id, stage_id, resp_id), h| h["#{type_id}_#{stage_id}"] << resp_id }
+    responsibles_by_type_and_stage = responsibles_by_type.each_with_object({}) do |(type_id, options), memo|
+      stage_groups.each do |stage_id, _|
+        memo["#{type_id}_#{stage_id}"] = options.reject { |resp_id, _| taken_by_type_and_stage["#{type_id}_#{stage_id}"].include?(resp_id) }
+      end
+    end
+  %>
   <div class="card mb-4">
-    <div class="card-header">Responsables</div>
+    <div class="card-header d-flex justify-content-between align-items-center">
+      Responsables
+      <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#add-responsible-modal">
+        <i class="bi bi-plus-lg"></i> Agregar
+      </button>
+    </div>
     <div class="card-body">
-      <ul class="list-group list-group-flush mb-3">
-        <% @project.project_responsibles.includes(:responsible, :responsible_type, :project_stage).each do |pr| %>
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span>
-              <span class="badge me-2" style="background-color: <%= pr.responsible_color %>">&nbsp;</span>
-              <%= pr.responsible_name %><%= " (eliminado)" if pr.responsible_id.nil? %> — <%= pr.responsible_type.name %>
-              (<%= pr.project_stage&.name || "Todo el proyecto" %>)
-            </span>
-            <%= button_to "Quitar", project_project_responsible_path(@project, pr), method: :delete,
-                  class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Quitar responsable?')" } %>
-          </li>
-        <% end %>
-      </ul>
-      <%= form_with model: ProjectResponsible.new, url: project_project_responsibles_path(@project) do |form| %>
-        <div class="row g-2">
-          <div class="col-auto">
-            <%= form.collection_select :responsible_id, @project.project_type.responsibles.order(:name), :id, :name, { include_blank: "Responsable" }, class: "form-select", data: { controller: "tom-select" } %>
+      <% if grouped_responsibles.empty? %>
+        <p class="text-muted mb-0">Todavía no hay responsables asignados.</p>
+      <% end %>
+      <% stage_groups.each do |stage_id, stage_name| %>
+        <% prs = grouped_responsibles[stage_id] || [] %>
+        <% next if prs.empty? %>
+        <h6 class="text-muted mt-2"><%= stage_name %></h6>
+        <ul class="list-group list-group-flush mb-3">
+          <% prs.each do |pr| %>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>
+                <span class="badge me-2" style="background-color: <%= pr.responsible_color %>">&nbsp;</span>
+                <%= pr.responsible_name %><%= " (eliminado)" if pr.responsible_id.nil? %> — <%= pr.responsible_type.name %>
+              </span>
+              <%= button_to "Quitar", project_project_responsible_path(@project, pr), method: :delete,
+                    class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Quitar responsable?')" } %>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="modal fade" id="add-responsible-modal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <%= form_with model: ProjectResponsible.new, url: project_project_responsibles_path(@project),
+              data: { controller: "dependent-select", dependent_select_options_value: responsibles_by_type_and_stage.to_json } do |form| %>
+          <div class="modal-header">
+            <h5 class="modal-title">Agregar responsable</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-          <div class="col-auto">
-            <%= form.collection_select :responsible_type_id, @project.project_type.responsible_types.order(:name), :id, :name, { include_blank: "Tipo" }, class: "form-select" %>
+          <div class="modal-body">
+            <div class="mb-3">
+              <%= form.label :responsible_type_id, "1. Tipo", class: "form-label" %>
+              <%= form.collection_select :responsible_type_id, @project.project_type.responsible_types.order(:name), :id, :name,
+                    { include_blank: "Elegí un tipo" }, class: "form-select",
+                    data: { dependent_select_target: "control", action: "change->dependent-select#apply" } %>
+            </div>
+            <div class="mb-3">
+              <%= form.label :project_stage_id, "2. Etapa", class: "form-label" %>
+              <%= form.collection_select :project_stage_id, @project.project_stages, :id, :name, { include_blank: "Todo el proyecto" }, class: "form-select",
+                    data: { dependent_select_target: "control", action: "change->dependent-select#apply" } %>
+            </div>
+            <div class="mb-0">
+              <%= form.label :responsible_id, "3. Responsable", class: "form-label" %>
+              <%= form.select :responsible_id, [], { include_blank: "Elegí un tipo primero" }, class: "form-select",
+                    data: { dependent_select_target: "select" } %>
+            </div>
           </div>
-          <div class="col-auto">
-            <%= form.collection_select :project_stage_id, @project.project_stages, :id, :name, { include_blank: "Todo el proyecto" }, class: "form-select" %>
-          </div>
-          <div class="col-auto">
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
             <%= form.submit "Agregar", class: "btn btn-primary" %>
           </div>
-        </div>
-      <% end %>
+        <% end %>
+      </div>
     </div>
   </div>
 <% end %>
