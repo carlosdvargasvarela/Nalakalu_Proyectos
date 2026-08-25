@@ -8,7 +8,7 @@ class ConfirmationsFlowTest < ActionDispatch::IntegrationTest
     post user_session_path, params: { user: { email: user.email, password: "password123" } }
     assert_redirected_to new_user_session_path
     follow_redirect!
-    assert_select ".alert", /confirmar tu correo/
+    assert_select "#flash-toasts .toast", /confirmar tu correo/
 
     mail = ActionMailer::Base.deliveries.find { |m| m.to == [user.email] && m.subject == "Instrucciones de confirmación" }
     token = mail.html_part.body.to_s[/confirmation_token=([^"&]+)/, 1]

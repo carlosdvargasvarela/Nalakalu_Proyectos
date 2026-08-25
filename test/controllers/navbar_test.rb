@@ -114,4 +114,26 @@ class NavbarTest < ActionDispatch::IntegrationTest
     assert_select "#help-menu-modal", count: 0
     assert_select "button[data-bs-target=?]", "#help-menu-modal", count: 0
   end
+
+  test "flash notice renders as a dismissible success toast" do
+    sign_in users(:juan)
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    patch bulk_assign_responsible_projects_path, params: {
+      project_type_slug: project.project_type.slug,
+      project_ids: [ project.id ],
+      responsible_type_id: responsible_types(:instalador).id,
+      responsible_id: responsibles(:ana_gomez).id
+    }
+    follow_redirect!
+    assert_response :success
+    assert_select "#flash-toasts .toast.text-bg-success[data-controller=?]", "toast"
+  end
+
+  test "flash alert renders as a dismissible danger toast" do
+    sign_in users(:juan)
+    patch bulk_assign_responsible_projects_path, params: { project_type_slug: project_types(:instalaciones).slug }
+    follow_redirect!
+    assert_response :success
+    assert_select "#flash-toasts .toast.text-bg-danger[data-controller=?]", "toast"
+  end
 end

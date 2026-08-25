@@ -26,13 +26,25 @@
 
   <body>
     <%= render "layouts/navbar" %>
-    <div class="container py-4">
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080" id="flash-toasts">
       <% if notice %>
-        <div class="alert alert-success"><%= notice %></div>
+        <div class="toast align-items-center text-bg-success border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true" data-controller="toast">
+          <div class="d-flex">
+            <div class="toast-body"><i class="bi bi-check-circle-fill me-2"></i><%= notice %></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+          </div>
+        </div>
       <% end %>
       <% if alert %>
-        <div class="alert alert-danger"><%= alert %></div>
+        <div class="toast align-items-center text-bg-danger border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true" data-controller="toast">
+          <div class="d-flex">
+            <div class="toast-body"><i class="bi bi-exclamation-triangle-fill me-2"></i><%= alert %></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+          </div>
+        </div>
       <% end %>
+    </div>
+    <div class="container py-4">
       <% if (topic = help_topic_path_if_exists) %>
         <div class="text-end mb-2">
           <button type="button" class="btn btn-sm btn-outline-secondary" data-controller="help" data-action="click->help#open" data-help-topic-value="<%= topic %>">
