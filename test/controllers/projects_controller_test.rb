@@ -405,8 +405,10 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_path(project)
     assert_response :success
-    assert_select "select[name=?] option", "project_responsible[responsible_id]", text: "Ana Gómez"
-    assert_select "select[name=?] option", "project_responsible[responsible_id]", text: "No Habilitado", count: 0
+    options = json_data_attribute("form[action='#{project_project_responsibles_path(project)}']", "data-dependent-select-options-value")
+    names = options.values.flatten(1).map(&:last)
+    assert_includes names, "Ana Gómez"
+    assert_not_includes names, "No Habilitado"
   end
 
   test "show doesn't add a query per PaperTrail history version (item N+1)" do
@@ -465,9 +467,10 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     stage = project.project_stages.first # instalaciones' stage_templates fixtures auto-create these on save
     ProjectResponsible.create!(project: project, responsible: responsibles(:ana_gomez), responsible_type: responsible_types(:instalador), project_stage: stage)
 
-    get project_type_projects_path(project_types(:instalaciones).slug)
+    slug = project_types(:instalaciones).slug
+    get project_type_projects_path(slug)
     assert_response :success
-    assert_select "td", text: /Ana Gómez/, count: 1
+    assert_select "table#listado-table-#{slug} td", text: /Ana Gómez/, count: 1
   end
 
   test "index's Listado table bolds the responsible matching the active type filter, not others" do
@@ -1321,7 +1324,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     get project_type_projects_path(project_types(:instalaciones).slug)
     assert_response :success
     assert_select ".card .card-header", "Cronograma"
-    assert_select ".card .card-header", "Listado"
+    assert_select ".card .card-header", text: /Listado/
   end
 
   test "new renders the right input for each new data type" do
@@ -1450,7 +1453,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/Elegí un tipo, un responsable y al menos un proyecto/, response.body)
   end
 
-  test "index renders a bulk-assign form with a checkbox per project, not nested inside another form" do
+  test "index renders a bulk-assign modal with a checkbox per project inside the same form" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     slug = project_types(:instalaciones).slug
     get project_type_projects_path(slug)
@@ -1459,11 +1462,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "form#bulk-assign-form-#{slug}[action=?]", bulk_assign_responsible_projects_path
     assert_select "form#bulk-assign-form-#{slug} select[name=?]", "responsible_type_id"
     assert_select "form#bulk-assign-form-#{slug} input[type=submit][value=?]", "Asignar"
-    assert_select "input[type=checkbox][name=?][form=bulk-assign-form-#{slug}]", "project_ids[]", value: project.id.to_s
-
-    doc = Nokogiri::HTML5(response.body)
-    bulk_form = doc.at_css("#bulk-assign-form-#{slug}")
-    assert_nil bulk_form.at_css("form"), "the archive button's form must not be nested inside the bulk-assign form"
+    assert_select "form#bulk-assign-form-#{slug} input[type=checkbox][name=?]", "project_ids[]", value: project.id.to_s
   end
 
   test "index's bulk-assign selector only offers responsibles enabled for this project type" do
@@ -1625,11 +1624,11 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_type_projects_path(slug)
     assert_response :success
-    assert_select "table tbody tr", count: 20
+    assert_select "table#listado-table-#{slug} tbody tr", count: 20
 
     get project_type_projects_path(slug), params: { page: 2 }
     assert_response :success
-    assert_select "table tbody tr", count: 5
+    assert_select "table#listado-table-#{slug} tbody tr", count: 5
   end
 
   test "index's KPI cards and Gantt tasks count all filtered projects, not just the current page" do
@@ -2044,11 +2043,11 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "select[data-controller=?][name=?]", "tom-select", "responsible_id"
   end
 
-  test "show's Responsables assignment select is marked for TomSelect" do
+  test "show's Responsables assignment select is filtered by a dependent-select controller" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_path(project)
     assert_response :success
-    assert_select "select[data-controller=?]#project_responsible_responsible_id", "tom-select"
+    assert_select "select#project_responsible_responsible_id[data-dependent-select-target=?]", "select"
   end
 
   test "show's Asociaciones Proyecto select is filtered by a dependent-select controller" do

@@ -196,72 +196,28 @@
 
   <% show_bulk_controls = current_user.admin? || current_user.gerente? %>
   <div data-controller="bulk-select">
-    <% if show_bulk_controls %>
-      <%
-        responsibles_by_type = project_type.responsible_project_types.includes(:responsible)
-          .group_by { |rpt| rpt.responsible_type_id.to_s }
-          .transform_values { |rows| rows.map { |rpt| [rpt.responsible_id, rpt.responsible.name] }.sort_by { |_, name| name } }
-      %>
-      <div class="card mb-4">
-        <div class="card-header d-flex align-items-center gap-2">
-          <i class="bi bi-people-fill"></i> Asignación masiva
-        </div>
-        <div class="card-body">
-          <%= form_with url: bulk_assign_responsible_projects_path(request.query_parameters.except("responsible_type_id", "responsible_id")), method: :patch, local: true,
-                id: "bulk-assign-form-#{slug}", class: "row g-3 align-items-end",
-                data: { controller: "dependent-select", dependent_select_options_value: responsibles_by_type.to_json } do |f| %>
-            <%= hidden_field_tag :project_type_slug, slug %>
-            <div class="col-auto">
-              <%= f.label :responsible_type_id, "Tipo", for: "bulk-assign-type-select-#{slug}", class: "form-label" %>
-              <%= f.select :responsible_type_id, project_type.responsible_types.order(:name).collect { |t| [t.name, t.id] },
-                    { include_blank: "Elegí un tipo", selected: section_params[:responsible_type_id] }, class: "form-select", id: "bulk-assign-type-select-#{slug}",
-                    data: { dependent_select_target: "control", action: "change->dependent-select#apply" } %>
-            </div>
-            <div class="col-auto">
-              <%= f.label :responsible_id, "Responsable", for: "bulk-assign-responsible-select-#{slug}", class: "form-label" %>
-              <%= f.select :responsible_id, [], { include_blank: "Elegí un responsable" }, class: "form-select", id: "bulk-assign-responsible-select-#{slug}",
-                    data: { dependent_select_target: "select" } %>
-            </div>
-            <div class="col-auto">
-              <%= f.submit "Asignar", class: "btn btn-primary", disabled: true, data: { bulk_select_target: "submit" } %>
-            </div>
-            <div class="col-auto ms-auto">
-              <span class="badge rounded-pill text-bg-secondary-subtle text-secondary-emphasis fw-normal" data-bulk-select-target="count">
-                0 seleccionados
-              </span>
-            </div>
-          <% end %>
-        </div>
-      </div>
-    <% end %>
-
     <div class="card mb-4">
-      <div class="card-header">Listado</div>
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Listado</span>
+        <% if show_bulk_controls %>
+          <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#bulk-assign-modal-<%= slug %>">
+            <i class="bi bi-people-fill"></i> Asignación masiva
+          </button>
+        <% end %>
+      </div>
       <div class="card-body p-0">
-        <table class="table table-striped mb-0">
+        <table class="table table-striped mb-0" id="listado-table-<%= slug %>">
           <thead>
             <tr>
-              <% if show_bulk_controls %><th><input type="checkbox" data-bulk-select-target="selectAll" data-action="change->bulk-select#toggleAll"></th><% end %>
               <th>Nombre</th><th>Estado</th><th>Responsables</th><th>Avance</th><th></th>
             </tr>
           </thead>
           <tbody>
             <% page_projects.each do |project| %>
               <tr>
-                <% if show_bulk_controls %>
-                  <td><%= check_box_tag "project_ids[]", project.id, false, id: nil, form: "bulk-assign-form-#{slug}",
-                        data: { bulk_select_target: "checkbox", action: "change->bulk-select#updateCount" } %></td>
-                <% end %>
                 <td><%= link_to project.name, project_path(project) %></td>
                 <td><%= status_badge(project.status) %></td>
-                <td>
-                  <% project_type.responsible_types.filter_map { |rt| project.representative_responsible_for(rt) }.sort_by { |pr| pr.responsible_type_id == selected_type&.id ? 0 : 1 }.each do |pr| %>
-                    <div class="d-flex align-items-center gap-1<%= " fw-bold" if pr.responsible_type_id == selected_type&.id %>">
-                      <span class="rounded-circle d-inline-block" style="width: 0.65rem; height: 0.65rem; background-color: <%= pr.responsible_color %>;"></span>
-                      <small><%= pr.responsible_type.name %>: <%= pr.responsible_name %></small>
-                    </div>
-                  <% end %>
-                </td>
+                <td><%= render "responsibles_summary", project: project, project_type: project_type, selected_type: selected_type %></td>
                 <td>
                   <%= progress_status_badge(project.progress_status) %>
                   <%= overdue_badge if project.overdue? %>
@@ -299,5 +255,72 @@
         <% end %>
       </div>
     </div>
+
+    <% if show_bulk_controls %>
+      <%
+        responsibles_by_type = project_type.responsible_project_types.includes(:responsible)
+          .group_by { |rpt| rpt.responsible_type_id.to_s }
+          .transform_values { |rows| rows.map { |rpt| [rpt.responsible_id, rpt.responsible.name] }.sort_by { |_, name| name } }
+      %>
+      <div class="modal fade" id="bulk-assign-modal-<%= slug %>" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+          <div class="modal-content">
+            <%= form_with url: bulk_assign_responsible_projects_path(request.query_parameters.except("responsible_type_id", "responsible_id")), method: :patch, local: true,
+                  id: "bulk-assign-form-#{slug}",
+                  data: { controller: "dependent-select", dependent_select_options_value: responsibles_by_type.to_json } do |f| %>
+              <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-people-fill"></i> Asignación masiva</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <%= hidden_field_tag :project_type_slug, slug %>
+                <div class="row g-3 align-items-end mb-3">
+                  <div class="col-auto">
+                    <%= f.label :responsible_type_id, "Tipo", for: "bulk-assign-type-select-#{slug}", class: "form-label" %>
+                    <%= f.select :responsible_type_id, project_type.responsible_types.order(:name).collect { |t| [t.name, t.id] },
+                          { include_blank: "Elegí un tipo", selected: section_params[:responsible_type_id] }, class: "form-select", id: "bulk-assign-type-select-#{slug}",
+                          data: { dependent_select_target: "control", action: "change->dependent-select#apply" } %>
+                  </div>
+                  <div class="col-auto">
+                    <%= f.label :responsible_id, "Responsable", for: "bulk-assign-responsible-select-#{slug}", class: "form-label" %>
+                    <%= f.select :responsible_id, [], { include_blank: "Elegí un responsable" }, class: "form-select", id: "bulk-assign-responsible-select-#{slug}",
+                          data: { dependent_select_target: "select" } %>
+                  </div>
+                </div>
+                <p class="text-muted small mb-2">Elegí a qué proyectos se les asigna:</p>
+                <table class="table table-sm table-striped mb-0" id="bulk-assign-projects-<%= slug %>">
+                  <thead>
+                    <tr>
+                      <th><input type="checkbox" data-bulk-select-target="selectAll" data-action="change->bulk-select#toggleAll"></th>
+                      <th>Proyecto</th>
+                      <th>Ya asignado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% page_projects.each do |project| %>
+                      <tr>
+                        <td><%= check_box_tag "project_ids[]", project.id, false, id: nil,
+                              data: { bulk_select_target: "checkbox", action: "change->bulk-select#updateCount" } %></td>
+                        <td><%= project.name %></td>
+                        <td><%= render "responsibles_summary", project: project, project_type: project_type, selected_type: selected_type %></td>
+                      </tr>
+                    <% end %>
+                  </tbody>
+                </table>
+              </div>
+              <div class="modal-footer justify-content-between">
+                <span class="badge rounded-pill text-bg-secondary-subtle text-secondary-emphasis fw-normal" data-bulk-select-target="count">
+                  0 seleccionados
+                </span>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  <%= f.submit "Asignar", class: "btn btn-primary", disabled: true, data: { bulk_select_target: "submit" } %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
   </div>
 <% end %>
