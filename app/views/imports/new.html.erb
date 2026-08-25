@@ -1,46 +1,104 @@
-<h1>Importar proyectos</h1>
+<%
+  current_step = if @results then 5
+  elsif @preview then 4
+  elsif @project_type then 3
+  else 1
+  end
 
-<%= form_with url: new_import_path, method: :get, local: true, class: "row g-2 mb-4" do |form| %>
-  <div class="col-auto">
-    <%= form.label :project_type_id, "Tipo de proyecto", class: "form-label" %>
-    <%= form.select :project_type_id, @project_types.collect { |pt| [pt.name, pt.id] },
-          { selected: @project_type&.id, include_blank: "Elegí un tipo" }, class: "form-select" %>
-  </div>
-  <div class="col-auto align-self-end">
-    <%= form.submit "Ver plantilla", class: "btn btn-outline-secondary" %>
-  </div>
+  steps = [
+    "Elegí el tipo",
+    "Descargá la plantilla",
+    "Subí tu archivo",
+    "Revisá la vista previa",
+    "Confirmá",
+  ]
+%>
+
+<h1>Importar proyectos</h1>
+<p class="text-muted">Cargá muchos proyectos de una sola vez desde un archivo Excel o CSV, en 5 pasos.</p>
+
+<ol class="list-unstyled d-flex flex-wrap gap-3 mb-4">
+  <% steps.each_with_index do |label, i| %>
+    <% step_number = i + 1 %>
+    <li class="d-flex align-items-center gap-2 <%= "text-muted" if step_number > current_step %>">
+      <span class="rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0
+                    <%= step_number < current_step ? "bg-success text-white" : step_number == current_step ? "bg-primary text-white" : "bg-body-secondary" %>"
+            style="width: 1.75rem; height: 1.75rem;">
+        <% if step_number < current_step %>
+          <i class="bi bi-check-lg"></i>
+        <% else %>
+          <%= step_number %>
+        <% end %>
+      </span>
+      <span class="<%= "fw-semibold" if step_number == current_step %>"><%= label %></span>
+    </li>
+  <% end %>
+</ol>
+
+<%= panel_card("Paso 1 · Elegí el tipo de proyecto") do %>
+  <%= form_with url: new_import_path, method: :get, local: true, class: "row g-2" do |form| %>
+    <div class="col-auto">
+      <%= form.label :project_type_id, "Tipo de proyecto", class: "form-label" %>
+      <%= form.select :project_type_id, @project_types.collect { |pt| [pt.name, pt.id] },
+            { selected: @project_type&.id, include_blank: "Elegí un tipo" }, class: "form-select" %>
+    </div>
+    <div class="col-auto align-self-end">
+      <%= form.submit "Continuar", class: "btn btn-primary" %>
+    </div>
+  <% end %>
 <% end %>
 
 <% if @project_type && !@preview && !@results %>
-  <div class="card mb-4">
-    <div class="card-body">
-      <p>
-        1. Descargar plantilla de <%= @project_type.name %>:
-        <%= link_to "CSV", template_imports_path(project_type_id: @project_type.id, format: "csv") %>
-        ·
-        <%= link_to "Excel", template_imports_path(project_type_id: @project_type.id, format: "xlsx") %>
-      </p>
-      <p>2. Llená una fila por proyecto. La columna "Nombre" es obligatoria.</p>
-
-      <%= form_with url: preview_imports_path, method: :post, local: true, multipart: true do |form| %>
-        <%= form.hidden_field :project_type_id, value: @project_type.id %>
-        <div class="mb-3">
-          <%= form.label :file, "Archivo lleno (CSV o Excel)", class: "form-label" %>
-          <%= form.file_field :file, class: "form-control", accept: ".csv,.xlsx" %>
-        </div>
-        <%= form.submit "Ver vista previa", class: "btn btn-primary" %>
+  <%= panel_card("Paso 2 · Descargá la plantilla de #{@project_type.name}") do %>
+    <p class="text-muted">
+      La plantilla trae las columnas exactas que la app espera para este tipo de proyecto
+      (una fila por proyecto, la columna <strong>Nombre</strong> es obligatoria).
+    </p>
+    <div class="d-flex gap-2">
+      <%= link_to template_imports_path(project_type_id: @project_type.id, format: "csv"), class: "btn btn-outline-secondary" do %>
+        <i class="bi bi-filetype-csv"></i> Descargar CSV
+      <% end %>
+      <%= link_to template_imports_path(project_type_id: @project_type.id, format: "xlsx"), class: "btn btn-outline-secondary" do %>
+        <i class="bi bi-file-earmark-excel"></i> Descargar Excel
       <% end %>
     </div>
-  </div>
+  <% end %>
+
+  <%= panel_card("Paso 3 · Subí tu archivo lleno") do %>
+    <%= form_with url: preview_imports_path, method: :post, local: true, multipart: true do |form| %>
+      <%= form.hidden_field :project_type_id, value: @project_type.id %>
+      <div class="mb-3">
+        <%= form.label :file, "Archivo (CSV o Excel)", class: "form-label" %>
+        <%= form.file_field :file, class: "form-control", accept: ".csv,.xlsx" %>
+        <div class="form-text">Subí el mismo archivo de la plantilla, ya completado con tus proyectos.</div>
+      </div>
+      <%= form.submit "Ver vista previa", class: "btn btn-primary" %>
+    <% end %>
+  <% end %>
 <% end %>
 
 <% if @preview %>
-  <div class="card mb-4">
-    <div class="card-body">
-      <h2 class="h5">Vista previa</h2>
+  <%
+    valid_count = @preview[:rows].count { |r| r[:error].nil? }
+    error_count = @preview[:rows].size - valid_count
+  %>
+  <%= panel_card("Paso 4 · Revisá la vista previa") do %>
+    <div class="d-flex gap-3 mb-3">
+      <span class="badge text-bg-success-subtle text-success-emphasis fs-6">
+        <i class="bi bi-check-circle"></i> <%= valid_count %> lista(s) para crear
+      </span>
+      <% if error_count > 0 %>
+        <span class="badge text-bg-danger-subtle text-danger-emphasis fs-6">
+          <i class="bi bi-exclamation-triangle"></i> <%= error_count %> con error
+        </span>
+      <% end %>
+    </div>
+
+    <div class="table-responsive">
       <table class="table table-sm">
         <thead>
           <tr>
+            <th></th>
             <th>Fila</th>
             <th>Nombre</th>
             <% @preview[:fields].each do |field| %>
@@ -52,6 +110,7 @@
         <tbody>
           <% @preview[:rows].each do |row| %>
             <tr class="<%= "table-danger" if row[:error] %>">
+              <td><i class="bi <%= row[:error] ? "bi-x-circle text-danger" : "bi-check-circle text-success" %>"></i></td>
               <td><%= row[:row] %></td>
               <td><%= row[:name] %></td>
               <% @preview[:fields].each do |field| %>
@@ -62,32 +121,50 @@
           <% end %>
         </tbody>
       </table>
-
-      <% if @preview[:rows].any? { |r| r[:error].nil? } %>
-        <%= form_with url: imports_path, method: :post, local: true do |form| %>
-          <%= form.hidden_field :project_type_id, value: @project_type.id %>
-          <%= form.hidden_field :valid_rows, value: @preview[:valid_rows_json] %>
-          <%= form.submit "Confirmar importación", class: "btn btn-primary" %>
-        <% end %>
-      <% else %>
-        <p class="text-muted">Ninguna fila es válida — corregí el archivo y volvé a subirlo.</p>
-      <% end %>
-
-      <%= link_to "Subir otro archivo", new_import_path(project_type_id: @project_type.id), class: "btn btn-outline-secondary mt-2" %>
     </div>
-  </div>
+
+    <% if valid_count > 0 %>
+      <%= form_with url: imports_path, method: :post, local: true do |form| %>
+        <%= form.hidden_field :project_type_id, value: @project_type.id %>
+        <%= form.hidden_field :valid_rows, value: @preview[:valid_rows_json] %>
+        <%= form.submit "Paso 5 · Confirmar importación de #{valid_count} proyecto(s)", class: "btn btn-primary" %>
+      <% end %>
+    <% else %>
+      <p class="text-muted">Ninguna fila es válida — corregí el archivo y volvé a subirlo.</p>
+    <% end %>
+
+    <%= link_to new_import_path(project_type_id: @project_type.id), class: "btn btn-outline-secondary mt-2" do %>
+      <i class="bi bi-arrow-repeat"></i> Subir otro archivo
+    <% end %>
+  <% end %>
 <% end %>
 
 <% if @results %>
-  <div class="alert <%= @results[:errors].any? ? "alert-warning" : "alert-success" %>">
-    <%= @results[:created] %> proyecto(s) creado(s).
+  <%= panel_card("Paso 5 · Listo") do %>
+    <div class="d-flex align-items-center gap-3">
+      <i class="bi <%= @results[:errors].any? ? "bi-exclamation-triangle text-warning" : "bi-check-circle text-success" %>" style="font-size: 2rem;"></i>
+      <div>
+        <div class="fs-5"><%= @results[:created] %> proyecto(s) creado(s).</div>
+        <% if @results[:errors].any? %>
+          <div class="text-muted">Algunas filas no se pudieron crear, revisá el detalle abajo.</div>
+        <% end %>
+      </div>
+    </div>
+
     <% if @results[:errors].any? %>
-      <p class="mb-0 mt-2">Filas con error:</p>
-      <ul class="mb-0">
+      <p class="mb-1 mt-3 fw-semibold">Filas con error:</p>
+      <ul>
         <% @results[:errors].each do |error| %>
           <li>Fila <%= error[:row] %>: <%= error[:message] %></li>
         <% end %>
       </ul>
     <% end %>
-  </div>
+
+    <%= link_to project_type_projects_path(@project_type.slug), class: "btn btn-primary mt-2" do %>
+      <i class="bi bi-list-check"></i> Ver proyectos de <%= @project_type.name %>
+    <% end %>
+    <%= link_to new_import_path(project_type_id: @project_type.id), class: "btn btn-outline-secondary mt-2" do %>
+      <i class="bi bi-arrow-repeat"></i> Importar otro archivo
+    <% end %>
+  <% end %>
 <% end %>
