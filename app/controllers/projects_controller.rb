@@ -27,7 +27,7 @@ class ProjectsController < ApplicationController
     end
     @projects = if @project_type
       scope = Project.visible_to(current_user).where(project_type: @project_type).where.not(status: "archived")
-                     .includes(project_stages: :stage_template).order(:name)
+                     .includes(project_stages: :stage_template, project_responsibles: :responsible_type).order(:name)
       filter_by_responsible(scope, @responsible_type_id, params[:responsible_id])
     else
       Project.none

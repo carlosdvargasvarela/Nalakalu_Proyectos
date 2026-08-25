@@ -117,7 +117,7 @@
         overdue: project.overdue?,
         responsibles: project.project_responsibles.map { |pr| { type: pr.responsible_type.name, name: pr.responsible_name, color: pr.responsible_color } },
         date_range_label: "#{l(first, format: :long)} – #{l(last, format: :long)}",
-        custom_fields: field_definitions.filter_map { |f| { label: f.label, value: project.custom_fields[f.key] } if project.custom_fields[f.key].present? }
+        custom_fields: field_definitions.filter_map { |f| { label: f.label, value: project.display_value_for(f) } if project.custom_fields[f.key].present? }
       }
     end
     gantt_tasks = gantt_tasks.sort_by { |task| task[:start] }

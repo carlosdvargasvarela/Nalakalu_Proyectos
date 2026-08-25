@@ -2,7 +2,7 @@
   <% fields.each do |field| %>
     <div>
       <small class="text-white-50 d-block"><%= field.label %></small>
-      <%= project.custom_fields[field.key] %>
+      <%= project.display_value_for(field) %>
     </div>
   <% end %>
 </div>

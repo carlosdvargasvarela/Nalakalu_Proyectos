@@ -280,15 +280,14 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".card .card-header", "Cronograma"
   end
 
-  test "tracker renders each project's data as a graphite band without a bordered card" do
+  test "tracker renders each project's data as a graphite band inside its own card" do
     project = Project.create!(
       project_type: project_types(:instalaciones), name: "Torre Norte",
       custom_fields: { cliente: "Acme S.A.", direccion: "Av. Siempre Viva 123" }
     )
     get tracker_projects_path
     assert_response :success
-    assert_select ".bg-primary", /Acme S\.A\./
-    assert_select ".card", count: 0
+    assert_select ".card .bg-primary", /Acme S\.A\./
   end
 
   test "show renders the Gantt chart container with one task per stage" do

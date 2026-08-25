@@ -37,6 +37,14 @@ class Project < ApplicationRecord
     project_stages.select(&:dates_missing?)
   end
 
+  # Reference fields store the referenced record's id in custom_fields - resolve
+  # it to a display name instead of leaking the raw id in read-only views.
+  def display_value_for(field)
+    raw = custom_fields[field.key]
+    return raw unless field.data_type == "reference" && raw.present?
+    field.reference_table.classify.constantize.find_by(id: raw)&.name || raw
+  end
+
   def matching_duration_profile
     field = project_type.duration_reference_field_definition
     return nil unless field
