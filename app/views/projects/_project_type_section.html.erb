@@ -267,7 +267,7 @@
           <div class="modal-content">
             <%= form_with url: bulk_assign_responsible_projects_path(request.query_parameters.except("responsible_type_id", "responsible_id")), method: :patch, local: true,
                   id: "bulk-assign-form-#{slug}",
-                  data: { controller: "dependent-select", dependent_select_options_value: responsibles_by_type.to_json } do |f| %>
+                  data: { controller: "dependent-select", dependent_select_options_value: responsibles_by_type.to_json, action: "submit->bulk-select#confirmOverwrite" } do |f| %>
               <div class="modal-header">
                 <h5 class="modal-title"><i class="bi bi-people-fill"></i> Asignación masiva</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -279,7 +279,8 @@
                     <%= f.label :responsible_type_id, "Tipo", for: "bulk-assign-type-select-#{slug}", class: "form-label" %>
                     <%= f.select :responsible_type_id, project_type.responsible_types.order(:name).collect { |t| [t.name, t.id] },
                           { include_blank: "Elegí un tipo", selected: section_params[:responsible_type_id] }, class: "form-select", id: "bulk-assign-type-select-#{slug}",
-                          data: { dependent_select_target: "control", action: "change->dependent-select#apply" } %>
+                          data: { dependent_select_target: "control", bulk_select_target: "typeSelect",
+                                  action: "change->dependent-select#apply change->bulk-select#highlightType" } %>
                   </div>
                   <div class="col-auto">
                     <%= f.label :responsible_id, "Responsable", for: "bulk-assign-responsible-select-#{slug}", class: "form-label" %>
@@ -298,7 +299,12 @@
                   </thead>
                   <tbody>
                     <% page_projects.each do |project| %>
-                      <tr>
+                      <%
+                        existing_by_type = project.project_responsibles.select { |pr| pr.project_stage_id.nil? }
+                          .each_with_object({}) { |pr, h| h[pr.responsible_type_id.to_s] = pr.responsible_name }
+                      %>
+                      <tr data-bulk-select-target="row" data-project-name="<%= project.name %>"
+                          data-existing-responsibles="<%= existing_by_type.to_json %>">
                         <td><%= check_box_tag "project_ids[]", project.id, false, id: nil,
                               data: { bulk_select_target: "checkbox", action: "change->bulk-select#updateCount" } %></td>
                         <td><%= project.name %></td>
