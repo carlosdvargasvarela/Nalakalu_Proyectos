@@ -58,12 +58,14 @@
               <div class="small text-muted">Vencidos</div>
             </div>
           </div>
-          <div class="col-4">
-            <div class="border rounded py-2">
-              <div class="fs-5 fw-bold text-success"><%= projects_list.count { |p| p.progress_status == "finalizado" } %></div>
-              <div class="small text-muted">Finalizados</div>
+          <% if current_user.show_project_progress? %>
+            <div class="col-4">
+              <div class="border rounded py-2">
+                <div class="fs-5 fw-bold text-success"><%= projects_list.count { |p| p.progress_status == "finalizado" } %></div>
+                <div class="small text-muted">Finalizados</div>
+              </div>
             </div>
-          </div>
+          <% end %>
         </div>
 
         <div data-controller="list-search">
@@ -79,7 +81,7 @@
                   <%= status_badge(project.status) %>
                 </div>
                 <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
-                  <%= progress_status_badge(project.progress_status) %>
+                  <%= progress_status_badge(project.progress_status) if current_user.show_project_progress? %>
                   <%= overdue_badge if project.overdue? %>
                 </div>
               </a>
@@ -101,7 +103,7 @@
                   <%= link_to project.name, project_path(project), class: "fw-bold text-decoration-none fs-5 text-body" %>
                   <div class="d-flex align-items-center gap-2 flex-wrap">
                     <%= status_badge(project.status) %>
-                    <%= progress_status_badge(project.progress_status) %>
+                    <%= progress_status_badge(project.progress_status) if current_user.show_project_progress? %>
                     <%= overdue_badge if project.overdue? %>
                   </div>
                 </div>

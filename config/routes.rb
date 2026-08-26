@@ -4,6 +4,7 @@ Rails.application.routes.draw do
     get "cuenta", to: "devise/registrations#edit", as: "edit_user_registration"
     put "cuenta", to: "devise/registrations#update", as: "user_registration"
   end
+  patch "cuenta/preferencias", to: "user_preferences#update", as: :user_preferences
   get "help/*topic", to: "help#show", as: :help_topic
   get "up" => "rails/health#show", as: :rails_health_check
   get "manifest.json" => "rails/pwa#manifest", as: :pwa_manifest

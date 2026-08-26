@@ -111,7 +111,18 @@ class Project < ApplicationRecord
       candidates.first
   end
 
-  def progress_status
+  def progress_percent(stage_name: nil)
+    stage = find_stage(stage_name)
+    return stage.progress_percent if stage
+
+    values = project_stages.map(&:progress_percent)
+    values.any? ? (values.sum / values.size.to_f).round : 0
+  end
+
+  def progress_status(stage_name: nil)
+    stage = find_stage(stage_name)
+    return stage.progress_status if stage
+
     return "sin_iniciar" if project_stages.all? { |stage| stage.progress_percent.zero? }
     return "finalizado" if project_stages.all? { |stage| stage.progress_percent == 100 }
     "iniciado"
@@ -122,6 +133,11 @@ class Project < ApplicationRecord
   end
 
   private
+
+  def find_stage(stage_name)
+    return nil if stage_name.blank?
+    project_stages.find { |stage| stage.name == stage_name }
+  end
 
   def build_stages_from_template
     project_type.stage_templates.each do |template|

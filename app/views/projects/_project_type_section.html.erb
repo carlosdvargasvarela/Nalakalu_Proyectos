@@ -70,14 +70,16 @@
         </div>
       </div>
     </div>
-    <div class="col-sm-4">
-      <div class="card text-center">
-        <div class="card-body">
-          <div class="display-6 text-success"><%= projects_list.count { |p| p.progress_status == "finalizado" } %></div>
-          <div class="text-muted">Finalizados</div>
+    <% if current_user.show_project_progress? %>
+      <div class="col-sm-4">
+        <div class="card text-center">
+          <div class="card-body">
+            <div class="display-6 text-success"><%= projects_list.count { |p| p.progress_status(stage_name: section[:stage_name]) == "finalizado" } %></div>
+            <div class="text-muted">Finalizados</div>
+          </div>
         </div>
       </div>
-    </div>
+    <% end %>
   </div>
 
   <% content_for :head do %>
@@ -98,22 +100,22 @@
         next if (project_type.require_stage_dates? || project_type.auto_stage_duration_enabled?) && project.project_stages.all?(&:dates_missing?)
         first, last = project.gantt_window
       end
-      progress_values = project.project_stages.map(&:progress_percent)
-      average_progress = progress_values.any? ? (progress_values.sum / progress_values.size.to_f).round : 0
       selected_type = ResponsibleType.find_by(id: section_params[:responsible_type_id])
       responsible = selected_type ? project.responsible_for(selected_type) : nil
+      project_progress_status = project.progress_status(stage_name: section[:stage_name])
       {
         id: project.id.to_s,
         name: project.name,
         start: first.to_s,
         end: last.to_s,
-        progress: average_progress,
+        progress: current_user.show_project_progress? ? project.progress_percent(stage_name: section[:stage_name]) : 0,
         edit_url: project_path(project),
         custom_class: "responsible-color-#{responsible&.id || 'none'}",
         status_label: status_label(project.status),
         status_badge_class: ApplicationHelper::STATUS_BADGE_CLASSES.fetch(project.status, "bg-light text-dark"),
-        progress_status_label: progress_status_label(project.progress_status),
-        progress_status_badge_class: ApplicationHelper::PROGRESS_STATUS_BADGE_CLASSES.fetch(project.progress_status, "bg-light text-dark"),
+        show_progress: current_user.show_project_progress?,
+        progress_status_label: progress_status_label(project_progress_status),
+        progress_status_badge_class: ApplicationHelper::PROGRESS_STATUS_BADGE_CLASSES.fetch(project_progress_status, "bg-light text-dark"),
         overdue: project.overdue?,
         responsibles: project.project_responsibles.map { |pr| { type: pr.responsible_type.name, name: pr.responsible_name, color: pr.responsible_color } },
         date_range_label: "#{l(first, format: :long)} – #{l(last, format: :long)}",
@@ -209,7 +211,9 @@
         <table class="table table-striped mb-0" id="listado-table-<%= slug %>">
           <thead>
             <tr>
-              <th>Nombre</th><th>Estado</th><th>Responsables</th><th>Avance</th><th></th>
+              <th>Nombre</th><th>Estado</th><th>Responsables</th>
+              <% if current_user.show_project_progress? %><th>Avance</th><% end %>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -218,10 +222,12 @@
                 <td><%= link_to project.name, project_path(project) %></td>
                 <td><%= status_badge(project.status) %></td>
                 <td><%= render "responsibles_summary", project: project, project_type: project_type, selected_type: selected_type %></td>
-                <td>
-                  <%= progress_status_badge(project.progress_status) %>
-                  <%= overdue_badge if project.overdue? %>
-                </td>
+                <% if current_user.show_project_progress? %>
+                  <td>
+                    <%= progress_status_badge(project.progress_status(stage_name: section[:stage_name])) %>
+                    <%= overdue_badge if project.overdue? %>
+                  </td>
+                <% end %>
                 <td>
                   <% if current_user.can_edit_project?(project) %>
                     <div class="d-flex gap-2">

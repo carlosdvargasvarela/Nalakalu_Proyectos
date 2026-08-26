@@ -122,6 +122,20 @@ class ProjectTest < ActiveSupport::TestCase
     assert_equal "finalizado", project.reload.progress_status
   end
 
+  test "progress_status and progress_percent with stage_name reflect only that stage, not the whole project" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    stages = project.project_stages.order(:id).to_a
+    stages[0].update!(progress_percent: 100)
+    stages[1].update!(progress_percent: 40)
+
+    project.reload
+    assert_equal "finalizado", project.progress_status(stage_name: stages[0].name)
+    assert_equal 100, project.progress_percent(stage_name: stages[0].name)
+    assert_equal "iniciado", project.progress_status(stage_name: stages[1].name)
+    assert_equal 40, project.progress_percent(stage_name: stages[1].name)
+    assert_not_equal project.progress_status(stage_name: stages[0].name), project.progress_status
+  end
+
   test "project overdue? is true only when its end_date has passed and it isn't finalizado" do
     project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
     stages = project.project_stages.order(:id).to_a

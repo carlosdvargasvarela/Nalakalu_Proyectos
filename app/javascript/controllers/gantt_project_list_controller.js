@@ -60,10 +60,10 @@ export default class extends Controller {
   }
 
   buildPopup(task) {
-    const rows = [
-      `<span class="badge ${task.status_badge_class}">${escapeHtml(task.status_label)}</span>`,
-      `<span class="badge ${task.progress_status_badge_class}">${escapeHtml(task.progress_status_label)}</span>`
-    ]
+    const rows = [`<span class="badge ${task.status_badge_class}">${escapeHtml(task.status_label)}</span>`]
+    if (task.show_progress) {
+      rows.push(`<span class="badge ${task.progress_status_badge_class}">${escapeHtml(task.progress_status_label)}</span>`)
+    }
     if (task.overdue) rows.push('<span class="badge bg-danger">Vencido</span>')
     const responsiblesHtml = (task.responsibles || []).map((r) =>
       `<div class="small mt-1"><span class="badge me-1" style="background-color: ${r.color}">&nbsp;</span>${escapeHtml(r.type)}: ${escapeHtml(r.name)}</div>`
