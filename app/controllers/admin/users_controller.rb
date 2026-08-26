@@ -11,6 +11,7 @@ class Admin::UsersController < Admin::BaseController
 
   def create
     @user = User.new(user_params)
+    @user.skip_confirmation!
     if @user.save
       redirect_to admin_users_path
     else

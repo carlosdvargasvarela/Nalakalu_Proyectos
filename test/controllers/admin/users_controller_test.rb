@@ -19,6 +19,13 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert User.find_by(email: "nuevo@example.com").gerente?
   end
 
+  test "create leaves the new user confirmed, without needing to open a confirmation email" do
+    post admin_users_path, params: {
+      user: { email: "nuevo@example.com", password: "password123", password_confirmation: "password123", role: "gerente" }
+    }
+    assert User.find_by(email: "nuevo@example.com").confirmed?
+  end
+
   test "create with blank email re-renders form with error" do
     assert_no_difference("User.count") do
       post admin_users_path, params: { user: { email: "", password: "password123", password_confirmation: "password123", role: "visor" } }
