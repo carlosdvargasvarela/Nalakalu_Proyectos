@@ -10,6 +10,14 @@
   font-weight: bold;
 }
 
+/* frappe-gantt's default label fill only follows the light/dark theme, not
+   our per-bar --bar-fill color - a light bar in dark mode would otherwise
+   render light text on a light bar. --bar-label-color is computed in JS
+   (gantt_bar_colors.js) from that bar's actual color. */
+.gantt .bar-wrapper .bar-label:not(.big) {
+  fill: var(--bar-label-color, var(--g-text-dark, #171717));
+}
+
 .gantt .bar-progress {
   fill: rgba(0, 0, 0, 0.25);
 }

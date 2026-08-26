@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { applyBarColors } from "gantt_bar_colors"
 
 function toDateInputValue(date) {
   const year = date.getFullYear()
@@ -47,11 +48,7 @@ export default class extends Controller {
   }
 
   applyColors() {
-    this.colorsValue.forEach(([id, _name, color]) => {
-      this.chartTarget.querySelectorAll(`.bar-wrapper.stage-color-${id}`).forEach((el) => {
-        el.style.setProperty("--bar-fill", color)
-      })
-    })
+    applyBarColors(this.chartTarget, this.colorsValue, "stage-color")
   }
 
   saveStage(stageId, attrs) {
