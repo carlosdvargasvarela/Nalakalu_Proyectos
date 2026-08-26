@@ -1,8 +1,25 @@
 <%= panel_card("Tipos de proyecto") do %>
-  <%= link_to "Nuevo tipo de proyecto", new_admin_project_type_path, class: "btn btn-primary mb-3" %>
+  <p class="text-muted">
+    Un tipo de proyecto define qué campos, etapas y reglas tiene cada
+    proyecto creado con él. Elegí uno para configurar sus campos,
+    subprocesos, duración automática, bitácora y responsables.
+  </p>
+  <%= link_to new_admin_project_type_path, class: "btn btn-primary mb-3" do %>
+    <i class="bi bi-plus-lg"></i> Nuevo tipo de proyecto
+  <% end %>
   <ul class="list-group">
     <% @project_types.each do |project_type| %>
-      <li class="list-group-item"><%= link_to project_type.name, admin_project_type_path(project_type) %></li>
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <%= link_to project_type.name, admin_project_type_path(project_type) %>
+        <%
+          fields_count = project_type.field_definitions.size
+          stages_count = project_type.stage_templates.size
+        %>
+        <span class="text-muted small">
+          <%= fields_count %> <%= fields_count == 1 ? "campo" : "campos" %> ·
+          <%= stages_count %> <%= stages_count == 1 ? "subproceso" : "subprocesos" %>
+        </span>
+      </li>
     <% end %>
   </ul>
 <% end %>

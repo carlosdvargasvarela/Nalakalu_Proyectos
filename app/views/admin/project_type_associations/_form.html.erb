@@ -1,4 +1,13 @@
+<%= link_to admin_project_type_associations_path, class: "d-inline-block mb-3" do %>
+  <i class="bi bi-arrow-left"></i> Tipos de asociación
+<% end %>
+
 <%= panel_card(project_type_association.persisted? ? "Editar tipo de asociación" : "Nuevo tipo de asociación") do %>
+  <p class="text-muted">
+    Define que un proyecto del tipo de origen puede vincularse a uno del
+    tipo de destino, con la etiqueta elegida (por ejemplo, "Instalación" →
+    "Caso de servicio" → "Mantenimiento").
+  </p>
   <%= form_with model: [:admin, project_type_association],
         data: {
           controller: "shared-field-mapping",
@@ -30,11 +39,13 @@
     <div class="mb-3">
       <%= form.label :label, "Etiqueta", class: "form-label" %>
       <%= form.text_field :label, class: "form-control" %>
+      <div class="form-text">Cómo se llama esta asociación en el detalle del proyecto (ej. "Mantenimiento").</div>
     </div>
 
     <div class="form-check mb-3">
       <%= form.check_box :responsables_can_create, class: "form-check-input" %>
       <%= form.label :responsables_can_create, "Responsables pueden crear", class: "form-check-label" %>
+      <div class="form-text">Sin esto, solo Admin y Gerente pueden crear el proyecto de destino desde acá; con esto, un usuario con rol Responsable también puede.</div>
     </div>
 
     <div class="mb-3">

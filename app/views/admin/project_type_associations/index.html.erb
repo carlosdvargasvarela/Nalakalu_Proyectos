@@ -1,9 +1,21 @@
 <%= panel_card("Tipos de asociación") do %>
-  <%= link_to "Nuevo tipo de asociación", new_admin_project_type_association_path, class: "btn btn-primary mb-3" %>
+  <p class="text-muted">
+    Definen qué combinaciones de tipos de proyecto pueden vincularse entre
+    sí (por ejemplo, que un proyecto de "Instalación" pueda asociarse a
+    uno de "Mantenimiento"). Sin una asociación configurada acá, esos dos
+    tipos no van a aparecer como opción para vincular en el detalle de un
+    proyecto.
+  </p>
+  <%= link_to new_admin_project_type_association_path, class: "btn btn-primary mb-3" do %>
+    <i class="bi bi-plus-lg"></i> Nuevo tipo de asociación
+  <% end %>
   <ul class="list-group">
     <% @project_type_associations.each do |pta| %>
       <li class="list-group-item d-flex justify-content-between align-items-center">
-        <span><%= pta.from_project_type.name %> → <%= pta.label %> → <%= pta.to_project_type.name %></span>
+        <span>
+          <%= pta.from_project_type.name %> → <%= pta.label %> → <%= pta.to_project_type.name %>
+          <% if pta.responsables_can_create? %><span class="badge text-bg-info-subtle text-info-emphasis">Responsables pueden crear</span><% end %>
+        </span>
         <span>
           <%= link_to "Editar", edit_admin_project_type_association_path(pta), class: "btn btn-outline-secondary btn-sm" %>
           <%= button_to "Borrar", admin_project_type_association_path(pta), method: :delete,

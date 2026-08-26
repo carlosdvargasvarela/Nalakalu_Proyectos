@@ -1,5 +1,13 @@
 <%= panel_card("Usuarios") do %>
-  <%= link_to "Nuevo usuario", new_admin_user_path, class: "btn btn-primary mb-3" %>
+  <p class="text-muted">
+    Cada usuario tiene un rol (Administrador, Gerente, Visor, Responsable)
+    que determina qué puede ver y editar. Además del rol, a un Visor o
+    Gerente se le puede dar acceso puntual a tipos de proyecto o
+    proyectos individuales desde su detalle.
+  </p>
+  <%= link_to new_admin_user_path, class: "btn btn-primary mb-3" do %>
+    <i class="bi bi-plus-lg"></i> Nuevo usuario
+  <% end %>
   <table class="table align-middle">
     <thead>
       <tr><th>Correo electrónico</th><th>Rol</th><th></th></tr>

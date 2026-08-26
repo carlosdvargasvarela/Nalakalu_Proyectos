@@ -1,3 +1,7 @@
+<%= link_to admin_project_types_path, class: "d-inline-block mb-3" do %>
+  <i class="bi bi-arrow-left"></i> Tipos de proyecto
+<% end %>
+
 <%= panel_card(project_type.persisted? ? "Editar tipo de proyecto" : "Nuevo tipo de proyecto") do %>
   <%= form_with model: [:admin, project_type] do |form| %>
     <% if project_type.errors.any? %>
@@ -13,15 +17,25 @@
     <div class="mb-3">
       <%= form.label :name, class: "form-label" %>
       <%= form.text_field :name, class: "form-control" %>
+      <div class="form-text">El nombre visible, por ejemplo "Instalaciones" o "Mantenimiento".</div>
     </div>
     <div class="mb-3">
       <%= form.label :slug, class: "form-label" %>
       <%= form.text_field :slug, class: "form-control" %>
+      <div class="form-text">Se usa en las URLs (ej. /projects/tipo/mi-slug). Minúsculas, sin espacios ni tildes.</div>
     </div>
     <div class="mb-3 form-check">
       <%= form.check_box :require_stage_dates, class: "form-check-input" %>
       <%= form.label :require_stage_dates, "Exigir fechas en las etapas", class: "form-check-label" %>
+      <div class="form-text">Obliga a cargar fecha de inicio y fin en cada etapa antes de poder avanzarla.</div>
     </div>
     <%= form.submit class: "btn btn-primary" %>
   <% end %>
+<% end %>
+
+<% if project_type.persisted? %>
+  <p class="text-muted mt-3">
+    Para configurar campos, subprocesos, duración automática, bitácora y
+    responsables, andá al <%= link_to "detalle de #{project_type.name}", admin_project_type_path(project_type) %>.
+  </p>
 <% end %>

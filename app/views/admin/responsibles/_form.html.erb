@@ -1,3 +1,7 @@
+<%= link_to admin_responsibles_path, class: "d-inline-block mb-3" do %>
+  <i class="bi bi-arrow-left"></i> Responsables
+<% end %>
+
 <%= panel_card(responsible.persisted? ? "Editar responsable" : "Nuevo responsable") do %>
   <%= form_with model: [:admin, responsible] do |form| %>
     <% if responsible.errors.any? %>
@@ -18,15 +22,18 @@
     <div class="mb-3">
       <%= form.label :color, class: "form-label" %>
       <%= form.color_field :color, class: "form-control form-control-color" %>
+      <div class="form-text">Identifica a este responsable en el cronograma y las listas.</div>
     </div>
 
     <div class="mb-3">
       <%= form.label :user_id, "Usuario vinculado", class: "form-label" %>
       <%= form.collection_select :user_id, unlinked_users, :id, :email, { include_blank: "Ninguno" }, class: "form-select", data: { controller: "tom-select" } %>
+      <div class="form-text">Si lo vinculás a un usuario con rol Responsable, esa persona va a ver solo los proyectos que le corresponden.</div>
     </div>
 
     <div class="mb-3">
       <%= form.label :responsible_project_types, "Tipo de responsable por tipo de proyecto", class: "form-label d-block" %>
+      <p class="form-text">Habilitá este responsable en los tipos de proyecto donde participa, eligiendo qué rol cumple en cada uno.</p>
       <%= form.fields_for :responsible_project_types, responsible.responsible_project_types.sort_by { |rpt| rpt.project_type.name } do |rpt_form| %>
         <div class="row align-items-center mb-2">
           <div class="col-4"><%= rpt_form.object.project_type.name %></div>

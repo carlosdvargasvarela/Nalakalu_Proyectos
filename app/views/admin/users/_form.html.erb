@@ -1,3 +1,7 @@
+<%= link_to admin_users_path, class: "d-inline-block mb-3" do %>
+  <i class="bi bi-arrow-left"></i> Usuarios
+<% end %>
+
 <%= panel_card(user.persisted? ? "Editar usuario" : "Nuevo usuario") do %>
   <%= form_with model: [:admin, user] do |form| %>
     <% if user.errors.any? %>
@@ -18,6 +22,12 @@
     <div class="mb-3">
       <%= form.label :role, "Rol", class: "form-label" %>
       <%= form.select :role, User.roles.keys.map { |r| [role_label(r), r] }, {}, class: "form-select" %>
+      <div class="form-text">
+        Administrador: acceso total. Gerente: ve todos los proyectos, pero
+        para editar necesita accesos puntuales (tabla de abajo). Visor:
+        solo ve los proyectos con acceso puntual, nunca edita. Responsable:
+        solo ve los proyectos donde está asignado como responsable.
+      </div>
     </div>
 
     <div class="mb-3">
