@@ -15,6 +15,10 @@
  */
 
 :root {
+  /* Tells the browser which palette to use for controls it renders itself
+     (native select popups, date pickers, checkboxes, scrollbars) - without
+     this they stay light-chrome even while data-bs-theme is "dark". */
+  color-scheme: light;
   --bs-primary: #2563EB;
   --bs-primary-rgb: 37, 99, 235;
   --bs-success: #059669;
@@ -37,6 +41,7 @@
 }
 
 [data-bs-theme="dark"] {
+  color-scheme: dark;
   --bs-primary: #3B82F6;
   --bs-primary-rgb: 59, 130, 246;
   --bs-success: #10B981;
@@ -182,4 +187,13 @@
 
 .modal-body > :last-child {
   margin-bottom: 0;
+}
+
+/* tom-select's bootstrap5 theme hardcodes text color to #343a40 (a fixed
+   dark gray) instead of following --bs-body-color, so its dropdown options
+   and selected value become nearly invisible on our dark surfaces. */
+[data-bs-theme="dark"] .ts-control,
+[data-bs-theme="dark"] .ts-control input,
+[data-bs-theme="dark"] .ts-dropdown {
+  color: var(--bs-body-color);
 }
