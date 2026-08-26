@@ -1,3 +1,7 @@
+<%= link_to project_path(@project), class: "d-inline-block mb-3" do %>
+  <i class="bi bi-arrow-left"></i> <%= @project.name %>
+<% end %>
+
 <%= panel_card("Editar proyecto — #{@project.name}") do %>
   <%= render "form", project: @project, project_type: @project_type %>
 <% end %>
