@@ -15,4 +15,13 @@ class UserPreferencesFlowTest < ActionDispatch::IntegrationTest
     patch user_preferences_path, params: { user: { show_project_progress: "1" } }
     assert user.reload.show_project_progress?
   end
+
+  test "request without a user param does not crash" do
+    user = users(:juan)
+    post user_session_path, params: { user: { email: user.email, password: "password123" } }
+
+    patch user_preferences_path
+    assert_redirected_to edit_user_registration_path
+    assert_not user.reload.show_project_progress?
+  end
 end

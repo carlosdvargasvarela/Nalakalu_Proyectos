@@ -38,6 +38,7 @@
         <h2 class="h6 mb-3">Preferencias</h2>
         <%= form_with url: user_preferences_path, method: :patch, local: true do |f| %>
           <div class="form-check form-switch mb-3">
+            <%= hidden_field_tag "user[show_project_progress]", "0", id: nil %>
             <%= check_box_tag "user[show_project_progress]", "1", current_user.show_project_progress?,
                   class: "form-check-input", id: "user_show_project_progress" %>
             <%= label_tag "user_show_project_progress", "Mostrar avance de los proyectos", class: "form-check-label" %>
