@@ -1,5 +1,14 @@
+<%= link_to admin_project_type_path(project_type), class: "d-inline-block mb-3" do %>
+  <i class="bi bi-arrow-left"></i> Volver a <%= project_type.name %>
+<% end %>
+
 <%= panel_card("#{field_definition.persisted? ? 'Editar' : 'Nuevo'} campo — #{project_type.name}") do %>
-  <%= form_with model: [:admin, project_type, field_definition] do |form| %>
+  <p class="text-muted">
+    Los campos son la información adicional que vas a completar en cada
+    proyecto de este tipo, además del nombre (por ejemplo, "Cliente" o "Dirección").
+  </p>
+
+  <%= form_with model: [:admin, project_type, field_definition], data: { controller: "toggle-field" } do |form| %>
     <% if field_definition.errors.any? %>
       <div class="alert alert-danger">
         <ul class="mb-0">
@@ -11,28 +20,30 @@
     <% end %>
 
     <div class="mb-3">
-      <%= form.label :key, class: "form-label" %>
-      <%= form.text_field :key, class: "form-control" %>
-    </div>
-    <div class="mb-3">
       <%= form.label :label, class: "form-label" %>
       <%= form.text_field :label, class: "form-control" %>
+      <div class="form-text">El nombre que van a ver los usuarios en el formulario del proyecto.</div>
+    </div>
+    <div class="mb-3">
+      <%= form.label :key, class: "form-label" %>
+      <%= form.text_field :key, class: "form-control" %>
+      <div class="form-text">Identificador interno (minúsculas, sin espacios ni tildes), no lo ve el usuario final.</div>
     </div>
     <div class="mb-3">
       <%= form.label :data_type, class: "form-label" %>
-      <%= form.select :data_type, FieldDefinition::DATA_TYPES.map { |dt| [FieldDefinition::DATA_TYPE_LABELS[dt], dt] }, {}, class: "form-select" %>
+      <%= form.select :data_type, FieldDefinition::DATA_TYPES.map { |dt| [FieldDefinition::DATA_TYPE_LABELS[dt], dt] }, {},
+            class: "form-select", data: { toggle_field_target: "control", action: "change->toggle-field#apply" } %>
     </div>
-    <div class="mb-3">
+    <div class="mb-3" data-toggle-field-target="field" data-toggle-field-show-when="reference" <%= "hidden" unless field_definition.data_type == "reference" %>>
       <%= form.label :reference_table, class: "form-label" %>
-      <%= form.text_field :reference_table, class: "form-control" %>
-    </div>
-    <div class="mb-3">
-      <%= form.label :position, class: "form-label" %>
-      <%= form.number_field :position, class: "form-control" %>
+      <%= form.select :reference_table, FieldDefinition::REFERENCEABLE_TABLES.map { |t| [FieldDefinition::REFERENCE_TABLE_LABELS[t], t] },
+            { include_blank: "Elegí una tabla" }, class: "form-select" %>
+      <div class="form-text">El campo va a mostrar un selector con las opciones de ese catálogo.</div>
     </div>
     <div class="form-check mb-3">
       <%= form.check_box :show_in_gantt, class: "form-check-input" %>
       <%= form.label :show_in_gantt, class: "form-check-label" %>
+      <div class="form-text">Lo muestra como un dato extra en las tarjetas del cronograma (Gantt).</div>
     </div>
     <%= form.submit class: "btn btn-primary" %>
   <% end %>

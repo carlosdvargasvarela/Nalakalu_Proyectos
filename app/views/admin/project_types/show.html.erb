@@ -1,140 +1,252 @@
-<h1><%= @project_type.name %></h1>
-<%= link_to "Editar", edit_admin_project_type_path(@project_type), class: "btn btn-outline-secondary btn-sm mb-3" %>
+<%= link_to admin_project_types_path, class: "d-inline-block mb-2" do %>
+  <i class="bi bi-arrow-left"></i> Tipos de proyecto
+<% end %>
 
-<div class="card mb-4">
-  <div class="card-header">Campos</div>
-  <div class="card-body">
-    <%= link_to "Nuevo campo", new_admin_project_type_field_definition_path(@project_type), class: "btn btn-primary btn-sm mb-2" %>
-    <ul class="list-group list-group-flush" id="field-definitions-list" data-controller="drag-reorder"
-        data-drag-reorder-url-value="<%= reorder_admin_project_type_field_definitions_path(@project_type) %>"
-        data-action="dragstart->drag-reorder#start dragend->drag-reorder#end dragover->drag-reorder#over drop->drag-reorder#drop">
-      <% @project_type.field_definitions.each do |field| %>
-        <li class="list-group-item d-flex justify-content-between align-items-center" data-id="<%= field.id %>">
-          <span>
-            <span class="drag-handle me-2" draggable="true" style="cursor: grab;">⠿</span>
-            <%= field.label %> (<%= field.data_type_label %>)
-          </span>
-          <span>
-            <%= link_to "Editar", edit_admin_project_type_field_definition_path(@project_type, field), class: "btn btn-outline-secondary btn-sm" %>
-            <%= button_to "Eliminar", admin_project_type_field_definition_path(@project_type, field), method: :delete,
-                  class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar campo?')" } %>
-          </span>
-        </li>
-      <% end %>
-    </ul>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+  <div>
+    <h1 class="mb-1"><%= @project_type.name %></h1>
+    <p class="text-muted mb-0">Configurá acá los campos, etapas y reglas que va a tener cada proyecto de este tipo.</p>
   </div>
+  <%= link_to edit_admin_project_type_path(@project_type), class: "btn btn-outline-secondary btn-sm" do %>
+    <i class="bi bi-gear"></i> Configuración general
+  <% end %>
 </div>
 
-<div class="card mb-4">
-  <div class="card-header">Subprocesos</div>
-  <div class="card-body">
-    <%= link_to "Nuevo subproceso", new_admin_project_type_stage_template_path(@project_type), class: "btn btn-primary btn-sm mb-2" %>
-    <ol class="list-group list-group-numbered list-group-flush" id="stage-templates-list" data-controller="drag-reorder"
-        data-drag-reorder-url-value="<%= reorder_admin_project_type_stage_templates_path(@project_type) %>"
-        data-action="dragstart->drag-reorder#start dragend->drag-reorder#end dragover->drag-reorder#over drop->drag-reorder#drop">
-      <% @project_type.stage_templates.each do |stage| %>
-        <li class="list-group-item d-flex justify-content-between align-items-center" data-id="<%= stage.id %>">
-          <span>
-            <span class="drag-handle me-2" draggable="true" style="cursor: grab;">⠿</span>
-            <%= stage.name %>
-          </span>
-          <span>
-            <%= link_to "Editar", edit_admin_project_type_stage_template_path(@project_type, stage), class: "btn btn-outline-secondary btn-sm" %>
-            <%= button_to "Eliminar", admin_project_type_stage_template_path(@project_type, stage), method: :delete,
-                  class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar subproceso?')" } %>
-          </span>
-        </li>
-      <% end %>
-    </ol>
-  </div>
-</div>
+<ul class="nav nav-tabs mb-3" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-campos" type="button" role="tab">
+      <i class="bi bi-input-cursor-text"></i> Campos
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-subprocesos" type="button" role="tab">
+      <i class="bi bi-diagram-3"></i> Subprocesos
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-duracion" type="button" role="tab">
+      <i class="bi bi-stopwatch"></i> Duración automática
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-bitacora" type="button" role="tab">
+      <i class="bi bi-journal-text"></i> Bitácora
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-responsables" type="button" role="tab">
+      <i class="bi bi-people"></i> Responsables
+    </button>
+  </li>
+</ul>
 
-<div class="card mb-4">
-  <div class="card-header">Cálculo automático de duración</div>
-  <div class="card-body">
-    <%= form_with model: [:admin, @project_type], method: :patch do |form| %>
-      <div class="mb-3 form-check">
-        <%= form.check_box :auto_stage_duration_enabled, class: "form-check-input" %>
-        <%= form.label :auto_stage_duration_enabled, "Calcular duración automáticamente", class: "form-check-label" %>
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="tab-campos" role="tabpanel">
+    <div class="card mb-4">
+      <div class="card-header">Campos</div>
+      <div class="card-body">
+        <p class="text-muted">
+          Son la información adicional que va a tener cada proyecto de este
+          tipo, además del nombre (por ejemplo, "Cliente" o "Dirección").
+          Arrastrá <span class="drag-handle">⠿</span> para cambiar el orden en que aparecen.
+        </p>
+        <%= link_to new_admin_project_type_field_definition_path(@project_type), class: "btn btn-primary btn-sm mb-2" do %>
+          <i class="bi bi-plus-lg"></i> Nuevo campo
+        <% end %>
+        <% if @project_type.field_definitions.none? %>
+          <p class="text-muted fst-italic">Todavía no hay campos definidos.</p>
+        <% end %>
+        <ul class="list-group list-group-flush" id="field-definitions-list" data-controller="drag-reorder"
+            data-drag-reorder-url-value="<%= reorder_admin_project_type_field_definitions_path(@project_type) %>"
+            data-action="dragstart->drag-reorder#start dragend->drag-reorder#end dragover->drag-reorder#over drop->drag-reorder#drop">
+          <% @project_type.field_definitions.each do |field| %>
+            <li class="list-group-item d-flex justify-content-between align-items-center" data-id="<%= field.id %>">
+              <span>
+                <span class="drag-handle me-2" draggable="true" style="cursor: grab;">⠿</span>
+                <%= field.label %> <span class="badge text-bg-secondary-subtle text-secondary-emphasis"><%= field.data_type_label %></span>
+              </span>
+              <span>
+                <%= link_to "Editar", edit_admin_project_type_field_definition_path(@project_type, field), class: "btn btn-outline-secondary btn-sm" %>
+                <%= button_to "Eliminar", admin_project_type_field_definition_path(@project_type, field), method: :delete,
+                      class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar campo?')" } %>
+              </span>
+            </li>
+          <% end %>
+        </ul>
       </div>
-      <div class="mb-3">
-        <%= form.label :duration_reference_field_definition_id, "Campo numérico de referencia", class: "form-label" %>
-        <%= form.collection_select :duration_reference_field_definition_id,
-              @project_type.field_definitions.where(data_type: %w[number currency percent]),
-              :id, :label, { include_blank: "Ninguno" }, class: "form-select" %>
+    </div>
+  </div>
+
+  <div class="tab-pane fade" id="tab-subprocesos" role="tabpanel">
+    <div class="card mb-4">
+      <div class="card-header">Subprocesos</div>
+      <div class="card-body">
+        <p class="text-muted">
+          Son las etapas por las que pasa cada proyecto de este tipo, en
+          orden (por ejemplo, "Diseño" → "Producción" → "Entrega"). Arrastrá
+          <span class="drag-handle">⠿</span> para reordenarlas.
+        </p>
+        <%= link_to new_admin_project_type_stage_template_path(@project_type), class: "btn btn-primary btn-sm mb-2" do %>
+          <i class="bi bi-plus-lg"></i> Nuevo subproceso
+        <% end %>
+        <% if @project_type.stage_templates.none? %>
+          <p class="text-muted fst-italic">Todavía no hay subprocesos definidos.</p>
+        <% end %>
+        <ol class="list-group list-group-numbered list-group-flush" id="stage-templates-list" data-controller="drag-reorder"
+            data-drag-reorder-url-value="<%= reorder_admin_project_type_stage_templates_path(@project_type) %>"
+            data-action="dragstart->drag-reorder#start dragend->drag-reorder#end dragover->drag-reorder#over drop->drag-reorder#drop">
+          <% @project_type.stage_templates.each do |stage| %>
+            <li class="list-group-item d-flex justify-content-between align-items-center" data-id="<%= stage.id %>">
+              <span>
+                <span class="drag-handle me-2" draggable="true" style="cursor: grab;">⠿</span>
+                <span class="rounded-circle d-inline-block me-1" style="width: 0.65rem; height: 0.65rem; background-color: <%= stage.color %>;"></span>
+                <%= stage.name %>
+              </span>
+              <span>
+                <%= link_to "Editar", edit_admin_project_type_stage_template_path(@project_type, stage), class: "btn btn-outline-secondary btn-sm" %>
+                <%= button_to "Eliminar", admin_project_type_stage_template_path(@project_type, stage), method: :delete,
+                      class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar subproceso?')" } %>
+              </span>
+            </li>
+          <% end %>
+        </ol>
       </div>
-      <%= form.submit "Guardar", class: "btn btn-primary btn-sm" %>
-    <% end %>
-    <hr>
-    <%= link_to "Nuevo perfil", new_admin_project_type_duration_profile_path(@project_type), class: "btn btn-primary btn-sm mb-2" %>
-    <ol class="list-group list-group-numbered list-group-flush" id="duration-profiles-list" data-controller="drag-reorder"
-        data-drag-reorder-url-value="<%= reorder_admin_project_type_duration_profiles_path(@project_type) %>"
-        data-action="dragstart->drag-reorder#start dragend->drag-reorder#end dragover->drag-reorder#over drop->drag-reorder#drop">
-      <% @project_type.duration_profiles.each do |profile| %>
-        <li class="list-group-item d-flex justify-content-between align-items-center" data-id="<%= profile.id %>">
-          <span>
-            <span class="drag-handle me-2" draggable="true" style="cursor: grab;">⠿</span>
-            <%= profile.operator %> <%= profile.min_value %><%= " - #{profile.max_value}" if profile.operator == "between" %>
-          </span>
-          <span>
-            <%= link_to "Editar", edit_admin_project_type_duration_profile_path(@project_type, profile), class: "btn btn-outline-secondary btn-sm" %>
-            <%= button_to "Eliminar", admin_project_type_duration_profile_path(@project_type, profile), method: :delete,
-                  class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar perfil?')" } %>
-          </span>
-        </li>
-      <% end %>
-    </ol>
+    </div>
   </div>
-</div>
 
-<div class="card mb-4">
-  <div class="card-header">Tipos de Bitácora</div>
-  <div class="card-body">
-    <%= link_to "Nuevo tipo", new_admin_project_type_log_entry_type_path(@project_type), class: "btn btn-primary btn-sm mb-2" %>
-    <ul class="list-group list-group-flush">
-      <% @project_type.log_entry_types.each do |type| %>
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span><span class="badge me-2" style="background-color: <%= type.color %>">&nbsp;</span><%= type.name %></span>
-          <span>
-            <%= link_to "Editar", edit_admin_project_type_log_entry_type_path(@project_type, type), class: "btn btn-outline-secondary btn-sm" %>
-            <%= button_to "Eliminar", admin_project_type_log_entry_type_path(@project_type, type), method: :delete,
-                  class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar tipo de bitácora?')" } %>
-          </span>
-        </li>
-      <% end %>
-    </ul>
+  <div class="tab-pane fade" id="tab-duracion" role="tabpanel">
+    <div class="card mb-4">
+      <div class="card-header">Cálculo automático de duración</div>
+      <div class="card-body">
+        <p class="text-muted">
+          Si lo activás, las fechas de cada etapa se calculan solas a partir
+          de un campo numérico de referencia del proyecto (por ejemplo, la
+          cantidad de unidades), en vez de que alguien las cargue a mano.
+        </p>
+        <%= form_with model: [:admin, @project_type], method: :patch do |form| %>
+          <div class="mb-3 form-check">
+            <%= form.check_box :auto_stage_duration_enabled, class: "form-check-input" %>
+            <%= form.label :auto_stage_duration_enabled, "Calcular duración automáticamente", class: "form-check-label" %>
+          </div>
+          <div class="mb-3">
+            <%= form.label :duration_reference_field_definition_id, "Campo numérico de referencia", class: "form-label" %>
+            <%= form.collection_select :duration_reference_field_definition_id,
+                  @project_type.field_definitions.where(data_type: %w[number currency percent]),
+                  :id, :label, { include_blank: "Ninguno" }, class: "form-select" %>
+          </div>
+          <%= form.submit "Guardar", class: "btn btn-primary btn-sm" %>
+        <% end %>
+        <hr>
+        <p class="text-muted mb-2">
+          Un perfil de duración define cuántos días dura cada etapa según el
+          rango en que caiga el valor del campo de referencia. El primer
+          perfil cuyo rango coincida es el que se usa.
+        </p>
+        <%= link_to new_admin_project_type_duration_profile_path(@project_type), class: "btn btn-primary btn-sm mb-2" do %>
+          <i class="bi bi-plus-lg"></i> Nuevo perfil
+        <% end %>
+        <% if @project_type.duration_profiles.none? %>
+          <p class="text-muted fst-italic">Todavía no hay perfiles de duración definidos.</p>
+        <% end %>
+        <ol class="list-group list-group-numbered list-group-flush" id="duration-profiles-list" data-controller="drag-reorder"
+            data-drag-reorder-url-value="<%= reorder_admin_project_type_duration_profiles_path(@project_type) %>"
+            data-action="dragstart->drag-reorder#start dragend->drag-reorder#end dragover->drag-reorder#over drop->drag-reorder#drop">
+          <% @project_type.duration_profiles.each do |profile| %>
+            <li class="list-group-item d-flex justify-content-between align-items-center" data-id="<%= profile.id %>">
+              <span>
+                <span class="drag-handle me-2" draggable="true" style="cursor: grab;">⠿</span>
+                <%= profile.operator %> <%= profile.min_value %><%= " - #{profile.max_value}" if profile.operator == "between" %>
+              </span>
+              <span>
+                <%= link_to "Editar", edit_admin_project_type_duration_profile_path(@project_type, profile), class: "btn btn-outline-secondary btn-sm" %>
+                <%= button_to "Eliminar", admin_project_type_duration_profile_path(@project_type, profile), method: :delete,
+                      class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar perfil?')" } %>
+              </span>
+            </li>
+          <% end %>
+        </ol>
+      </div>
+    </div>
   </div>
-</div>
 
-<div class="card mb-4">
-  <div class="card-header">Tipos de responsable</div>
-  <div class="card-body">
-    <%= link_to "Nuevo tipo", new_admin_project_type_responsible_type_path(@project_type), class: "btn btn-primary btn-sm mb-2" %>
-    <ul class="list-group list-group-flush">
-      <% @project_type.responsible_types.order(:name).each do |type| %>
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span><%= type.name %></span>
-          <span>
-            <%= link_to "Editar", edit_admin_project_type_responsible_type_path(@project_type, type), class: "btn btn-outline-secondary btn-sm" %>
-            <%= button_to "Eliminar", admin_project_type_responsible_type_path(@project_type, type), method: :delete,
-                  class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar tipo de responsable?')" } %>
-          </span>
-        </li>
-      <% end %>
-    </ul>
+  <div class="tab-pane fade" id="tab-bitacora" role="tabpanel">
+    <div class="card mb-4">
+      <div class="card-header">Tipos de Bitácora</div>
+      <div class="card-body">
+        <p class="text-muted">
+          Clasifican las notas que se agregan al detalle de un proyecto de
+          este tipo (por ejemplo, "Incidencia" o "Visita técnica").
+        </p>
+        <%= link_to new_admin_project_type_log_entry_type_path(@project_type), class: "btn btn-primary btn-sm mb-2" do %>
+          <i class="bi bi-plus-lg"></i> Nuevo tipo
+        <% end %>
+        <% if @project_type.log_entry_types.none? %>
+          <p class="text-muted fst-italic">Todavía no hay tipos de bitácora definidos.</p>
+        <% end %>
+        <ul class="list-group list-group-flush">
+          <% @project_type.log_entry_types.each do |type| %>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span><span class="badge me-2" style="background-color: <%= type.color %>">&nbsp;</span><%= type.name %></span>
+              <span>
+                <%= link_to "Editar", edit_admin_project_type_log_entry_type_path(@project_type, type), class: "btn btn-outline-secondary btn-sm" %>
+                <%= button_to "Eliminar", admin_project_type_log_entry_type_path(@project_type, type), method: :delete,
+                      class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar tipo de bitácora?')" } %>
+              </span>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
   </div>
-</div>
 
-<div class="card mb-4">
-  <div class="card-header">Responsables</div>
-  <div class="card-body">
-    <%= link_to "Administrar responsables", admin_responsibles_path, class: "btn btn-outline-secondary btn-sm mb-2" %>
-    <ul class="list-group list-group-flush">
-      <% @project_type.responsibles.order(:name).each do |responsible| %>
-        <li class="list-group-item">
-          <span class="badge me-2" style="background-color: <%= responsible.color %>">&nbsp;</span><%= responsible.name %>
-        </li>
-      <% end %>
-    </ul>
+  <div class="tab-pane fade" id="tab-responsables" role="tabpanel">
+    <div class="card mb-4">
+      <div class="card-header">Tipos de responsable</div>
+      <div class="card-body">
+        <p class="text-muted">
+          Son los roles que se pueden asignar a un proyecto de este tipo
+          (por ejemplo, "Instalador" o "Diseñador").
+        </p>
+        <%= link_to new_admin_project_type_responsible_type_path(@project_type), class: "btn btn-primary btn-sm mb-2" do %>
+          <i class="bi bi-plus-lg"></i> Nuevo tipo
+        <% end %>
+        <% if @project_type.responsible_types.none? %>
+          <p class="text-muted fst-italic">Todavía no hay tipos de responsable definidos.</p>
+        <% end %>
+        <ul class="list-group list-group-flush">
+          <% @project_type.responsible_types.order(:name).each do |type| %>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span><%= type.name %></span>
+              <span>
+                <%= link_to "Editar", edit_admin_project_type_responsible_type_path(@project_type, type), class: "btn btn-outline-secondary btn-sm" %>
+                <%= button_to "Eliminar", admin_project_type_responsible_type_path(@project_type, type), method: :delete,
+                      class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar tipo de responsable?')" } %>
+              </span>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header">Responsables</div>
+      <div class="card-body">
+        <p class="text-muted">
+          Personas del catálogo general habilitadas para este tipo de
+          proyecto, con su tipo de responsable correspondiente.
+        </p>
+        <%= link_to "Administrar responsables", admin_responsibles_path, class: "btn btn-outline-secondary btn-sm mb-2" %>
+        <% if @project_type.responsibles.none? %>
+          <p class="text-muted fst-italic">Todavía no hay responsables habilitados para este tipo.</p>
+        <% end %>
+        <ul class="list-group list-group-flush">
+          <% @project_type.responsibles.order(:name).each do |responsible| %>
+            <li class="list-group-item">
+              <span class="badge me-2" style="background-color: <%= responsible.color %>">&nbsp;</span><%= responsible.name %>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
   </div>
 </div>

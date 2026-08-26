@@ -13,6 +13,7 @@ ninguna de las dos cosas.
 
 ### Campos, subprocesos y perfiles de duración
 
-Desde el detalle de un tipo de proyecto se administran sus campos
-personalizados, sus subprocesos (etapas) y, si aplica, sus perfiles de
-duración — ver los tutoriales de cada uno para más detalle.
+Desde el detalle de un tipo de proyecto (organizado en pestañas: Campos,
+Subprocesos, Duración automática, Bitácora y Responsables) se administran
+sus campos personalizados, sus subprocesos (etapas) y, si aplica, sus
+perfiles de duración — ver los tutoriales de cada uno para más detalle.

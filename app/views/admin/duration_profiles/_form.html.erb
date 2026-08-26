@@ -1,4 +1,15 @@
+<%= link_to admin_project_type_path(project_type), class: "d-inline-block mb-3" do %>
+  <i class="bi bi-arrow-left"></i> Volver a <%= project_type.name %>
+<% end %>
+
 <%= panel_card("#{duration_profile.persisted? ? 'Editar' : 'Nuevo'} perfil de duración — #{project_type.name}") do %>
+  <p class="text-muted">
+    Un perfil de duración calcula automáticamente cuántos días dura cada
+    etapa, según el valor del campo numérico de referencia del proyecto
+    (por ejemplo, "si la Cantidad de Unidades es mayor que 100, Producción
+    dura 5 días"). El primer perfil cuyo rango coincida es el que se usa.
+  </p>
+
   <%= form_with model: [:admin, project_type, duration_profile] do |form| %>
     <% if duration_profile.errors.any? %>
       <div class="alert alert-danger">
@@ -23,10 +34,7 @@
     <div class="mb-3">
       <%= form.label :max_value, "Valor máximo", class: "form-label" %>
       <%= form.number_field :max_value, step: "any", class: "form-control" %>
-    </div>
-    <div class="mb-3">
-      <%= form.label :position, class: "form-label" %>
-      <%= form.number_field :position, class: "form-control" %>
+      <div class="form-text">Solo aplica con la comparación "Entre".</div>
     </div>
 
     <h6>Duración por etapa (días)</h6>

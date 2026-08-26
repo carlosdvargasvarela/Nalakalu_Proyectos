@@ -1,4 +1,13 @@
+<%= link_to admin_project_type_path(@project_type), class: "d-inline-block mb-3" do %>
+  <i class="bi bi-arrow-left"></i> Volver a <%= @project_type.name %>
+<% end %>
+
 <%= panel_card(@responsible_type.persisted? ? "Editar tipo de responsable" : "Nuevo tipo de responsable") do %>
+  <p class="text-muted">
+    Los tipos de responsable son los roles que se pueden asignar a un
+    proyecto de este tipo (por ejemplo, "Instalador" o "Diseñador").
+  </p>
+
   <%= form_with model: [@project_type, @responsible_type], url: @responsible_type.persisted? ? admin_project_type_responsible_type_path(@project_type, @responsible_type) : admin_project_type_responsible_types_path(@project_type) do |f| %>
     <div class="mb-3">
       <%= f.label :name, "Nombre" %>
@@ -7,6 +16,7 @@
     <div class="mb-3 form-check">
       <%= f.check_box :default_in_filter, class: "form-check-input" %>
       <%= f.label :default_in_filter, "Tipo de responsable por defecto en el filtro", class: "form-check-label" %>
+      <div class="form-text">Se preselecciona al abrir el filtro por tipo de responsable en el listado de proyectos.</div>
     </div>
     <%= f.submit (@responsible_type.persisted? ? "Actualizar Tipo de Responsable" : "Crear Tipo de Responsable"), class: "btn btn-primary" %>
   <% end %>

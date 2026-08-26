@@ -1,6 +1,7 @@
 class FieldDefinition < ApplicationRecord
   DATA_TYPES = %w[text textarea number currency percent date boolean reference].freeze
   REFERENCEABLE_TABLES = %w[responsibles].freeze
+  REFERENCE_TABLE_LABELS = { "responsibles" => "Responsables" }.freeze
   DATA_TYPE_LABELS = {
     "text" => "Texto",
     "textarea" => "Texto largo",
