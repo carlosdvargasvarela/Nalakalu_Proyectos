@@ -31,6 +31,9 @@
       </button>
       <% if user_signed_in? %>
         <span class="navbar-text me-3"><%= current_user.email %></span>
+        <%= link_to edit_user_registration_path, class: "btn btn-outline-secondary btn-sm me-2", title: "Cambiar mi contraseña" do %>
+          <i class="bi bi-key"></i>
+        <% end %>
         <%= button_to "Cerrar sesión", destroy_user_session_path, method: :delete, class: "btn btn-outline-secondary btn-sm" %>
       <% else %>
         <%= link_to "Iniciar sesión", new_user_session_path, class: "btn btn-outline-primary btn-sm me-2" %>

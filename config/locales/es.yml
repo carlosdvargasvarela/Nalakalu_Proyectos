@@ -48,6 +48,7 @@ es:
         email: "Correo electrónico"
         password: "Contraseña"
         password_confirmation: "Confirmación de contraseña"
+        current_password: "Contraseña actual"
       project_type:
         name: "Nombre"
         slug: "Slug"
