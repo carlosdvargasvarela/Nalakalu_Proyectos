@@ -197,3 +197,19 @@
 [data-bs-theme="dark"] .ts-dropdown {
   color: var(--bs-body-color);
 }
+
+/* Trix's toolbar bakes its icons in as black-stroke SVG data-URIs and its
+   button text as rgba(0,0,0,...) - neither follows --bs-body-color, so both
+   go nearly invisible against our dark surfaces. Invert the icons (flips
+   black strokes to white) and flip the text color, dark mode only. */
+[data-bs-theme="dark"] trix-toolbar .trix-button--icon::before {
+  filter: invert(1);
+}
+
+[data-bs-theme="dark"] trix-toolbar .trix-button {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+[data-bs-theme="dark"] trix-toolbar .trix-button:disabled {
+  color: rgba(255, 255, 255, 0.125);
+}
