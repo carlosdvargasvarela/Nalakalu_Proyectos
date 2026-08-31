@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_08_26_181918) do
+ActiveRecord::Schema[7.2].define(version: 2026_08_31_160000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -183,6 +183,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_26_181918) do
     t.boolean "require_stage_dates", default: false, null: false
     t.boolean "auto_stage_duration_enabled", default: false, null: false
     t.bigint "duration_reference_field_definition_id"
+    t.string "icon", default: "bi-kanban", null: false
     t.index ["duration_reference_field_definition_id"], name: "index_project_types_on_duration_reference_field_definition_id"
     t.index ["slug"], name: "index_project_types_on_slug", unique: true
   end

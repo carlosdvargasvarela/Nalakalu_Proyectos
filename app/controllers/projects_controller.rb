@@ -7,11 +7,16 @@ class ProjectsController < ApplicationController
   before_action :authorize_update!, only: [:update]
 
   def index
-    @project_type = ProjectType.find_by(slug: params[:slug]) || ProjectType.first
-    return render(:index) if @project_type.nil?
-    return redirect_to(project_type_projects_path(@project_type.slug)) if params[:slug].blank? || params[:slug] != @project_type.slug
-
     @project_types = ProjectType.all
+    if params[:slug].blank?
+      return render(:index) if @project_types.empty?
+      return render(:select_type)
+    end
+
+    @project_type = ProjectType.find_by(slug: params[:slug]) || @project_types.first
+    return render(:index) if @project_type.nil?
+    return redirect_to(project_type_projects_path(@project_type.slug)) if params[:slug] != @project_type.slug
+
     @statuses = Project.distinct.pluck(:status).compact
     @section = build_section(@project_type)
   end

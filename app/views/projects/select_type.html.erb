@@ -1,0 +1,14 @@
+<h1 class="text-center mb-4">¿Qué tipo de proyecto deseas visualizar hoy?</h1>
+
+<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+  <% @project_types.each do |project_type| %>
+    <div class="col">
+      <%= link_to project_type_projects_path(project_type.slug), class: "card text-center text-decoration-none h-100" do %>
+        <div class="card-body">
+          <i class="bi <%= project_type.icon %> display-4 d-block mb-2"></i>
+          <span class="card-title fs-5"><%= project_type.name %></span>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>

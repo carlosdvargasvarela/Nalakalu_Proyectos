@@ -856,9 +856,10 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", project_path(project)
   end
 
-  test "index without a slug redirects to the first project type's tab" do
+  test "index without a slug shows the project type selection landing page" do
     get projects_path
-    assert_redirected_to project_type_projects_path(ProjectType.first.slug)
+    assert_response :success
+    assert_select "a[href=?]", project_type_projects_path(ProjectType.first.slug)
   end
 
   test "index with an unknown slug redirects to the first project type's tab" do

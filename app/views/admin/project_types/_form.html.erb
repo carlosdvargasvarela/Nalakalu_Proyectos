@@ -24,6 +24,24 @@
       <%= form.text_field :slug, class: "form-control" %>
       <div class="form-text">Se usa en las URLs (ej. /projects/tipo/mi-slug). Minúsculas, sin espacios ni tildes.</div>
     </div>
+    <div class="mb-3" data-controller="icon-picker">
+      <%= form.label :icon, "Ícono", class: "form-label" %>
+      <div class="input-group mb-2" style="max-width: 320px;">
+        <span class="input-group-text"><i data-icon-picker-target="preview"></i></span>
+        <%= form.text_field :icon, class: "form-control", data: { icon_picker_target: "input", action: "input->icon-picker#refresh" } %>
+      </div>
+      <div class="d-flex flex-wrap gap-1">
+        <% %w[bi-kanban bi-house-door bi-building bi-tools bi-wrench-adjustable bi-truck
+              bi-box-seam bi-gear bi-clipboard-check bi-lightning-charge bi-cash-coin
+              bi-people bi-map bi-calendar-check bi-graph-up bi-shield-check].each do |icon| %>
+          <button type="button" class="btn btn-outline-secondary" data-icon-picker-target="option"
+                  data-action="icon-picker#pick" data-icon-picker-icon-param="<%= icon %>">
+            <i class="bi <%= icon %>"></i>
+          </button>
+        <% end %>
+      </div>
+      <div class="form-text">Elegí uno de la lista o escribí el nombre de cualquier ícono de <%= link_to "Bootstrap Icons", "https://icons.getbootstrap.com/", target: "_blank", rel: "noopener" %>.</div>
+    </div>
     <div class="mb-3 form-check">
       <%= form.check_box :require_stage_dates, class: "form-check-input" %>
       <%= form.label :require_stage_dates, "Exigir fechas en las etapas", class: "form-check-label" %>
