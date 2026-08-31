@@ -24,6 +24,11 @@
     </button>
   </li>
   <li class="nav-item" role="presentation">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-tipos-evento" type="button" role="tab">
+      <i class="bi bi-calendar-event"></i> Tipos de evento
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
     <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-duracion" type="button" role="tab">
       <i class="bi bi-stopwatch"></i> Duración automática
     </button>
@@ -106,6 +111,44 @@
                 <%= link_to "Editar", edit_admin_project_type_stage_template_path(@project_type, stage), class: "btn btn-outline-secondary btn-sm" %>
                 <%= button_to "Eliminar", admin_project_type_stage_template_path(@project_type, stage), method: :delete,
                       class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar subproceso?')" } %>
+              </span>
+            </li>
+          <% end %>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane fade" id="tab-tipos-evento" role="tabpanel">
+    <div class="card mb-4">
+      <div class="card-header">Tipos de evento</div>
+      <div class="card-body">
+        <p class="text-muted">
+          Clasifican los eventos (reuniones, hitos, entregas) que se pueden
+          cargar en un proyecto de este tipo, y definen su color e ícono en
+          el cronograma. Arrastrá <span class="drag-handle">⠿</span> para
+          reordenarlos.
+        </p>
+        <%= link_to new_admin_project_type_event_type_path(@project_type), class: "btn btn-primary btn-sm mb-2" do %>
+          <i class="bi bi-plus-lg"></i> Nuevo tipo de evento
+        <% end %>
+        <% if @project_type.event_types.none? %>
+          <p class="text-muted fst-italic">Todavía no hay tipos de evento definidos.</p>
+        <% end %>
+        <ol class="list-group list-group-numbered list-group-flush" id="event-types-list" data-controller="drag-reorder"
+            data-drag-reorder-url-value="<%= reorder_admin_project_type_event_types_path(@project_type) %>"
+            data-action="dragstart->drag-reorder#start dragend->drag-reorder#end dragover->drag-reorder#over drop->drag-reorder#drop">
+          <% @project_type.event_types.each do |event_type| %>
+            <li class="list-group-item d-flex justify-content-between align-items-center" data-id="<%= event_type.id %>">
+              <span>
+                <span class="drag-handle me-2" draggable="true" style="cursor: grab;">⠿</span>
+                <i class="bi <%= event_type.icon %> me-1" style="color: <%= event_type.color %>;"></i>
+                <%= event_type.name %>
+              </span>
+              <span>
+                <%= link_to "Editar", edit_admin_project_type_event_type_path(@project_type, event_type), class: "btn btn-outline-secondary btn-sm" %>
+                <%= button_to "Eliminar", admin_project_type_event_type_path(@project_type, event_type), method: :delete,
+                      class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar tipo de evento?')" } %>
               </span>
             </li>
           <% end %>

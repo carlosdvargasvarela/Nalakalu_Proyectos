@@ -173,4 +173,14 @@ class Admin::ProjectTypesControllerTest < ActionDispatch::IntegrationTest
     assert_equal true, project_type.auto_stage_duration_enabled
     assert_equal field.id, project_type.duration_reference_field_definition_id
   end
+
+  test "show renders a Tipos de evento tab listing event types" do
+    get admin_project_type_path(project_types(:instalaciones))
+    assert_response :success
+    assert_select "button", "Tipos de evento"
+    assert_select "#tab-tipos-evento" do
+      assert_select "li", text: /Reunión de obra/
+      assert_select "li", text: /Entrega final/
+    end
+  end
 end
