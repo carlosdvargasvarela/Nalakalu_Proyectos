@@ -1,6 +1,7 @@
 class ProjectType < ApplicationRecord
   has_many :field_definitions, -> { order(:position) }, dependent: :destroy
   has_many :stage_templates, -> { order(:position) }, dependent: :destroy
+  has_many :event_types, -> { order(:position) }, dependent: :destroy
   has_many :duration_profiles, -> { order(:position) }, dependent: :destroy
   belongs_to :duration_reference_field_definition, class_name: "FieldDefinition", optional: true
   has_many :log_entry_types, dependent: :destroy
