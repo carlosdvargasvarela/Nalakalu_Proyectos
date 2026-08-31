@@ -37,7 +37,7 @@ es:
       field_definition: "Campo"
       stage_template: "Subproceso"
       duration_profile: "Perfil de duración"
-      event_type: "Tipo De Evento"
+      event_type: "Tipo de evento"
       responsible_type: "Tipo de responsable"
       responsible: "Responsable"
       project_responsible: "Responsable de proyecto"

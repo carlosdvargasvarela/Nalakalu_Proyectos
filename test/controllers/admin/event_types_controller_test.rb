@@ -64,10 +64,10 @@ class Admin::EventTypesControllerTest < ActionDispatch::IntegrationTest
   test "new and edit show the submit button in Spanish" do
     get new_admin_project_type_event_type_path(@project_type)
     assert_response :success
-    assert_select "input[value=?]", "Crear Tipo De Evento"
+    assert_select "input[value=?]", "Crear Tipo de evento"
 
     get edit_admin_project_type_event_type_path(@project_type, event_types(:reunion_obra))
     assert_response :success
-    assert_select "input[value=?]", "Actualizar Tipo De Evento"
+    assert_select "input[value=?]", "Actualizar Tipo de evento"
   end
 end
