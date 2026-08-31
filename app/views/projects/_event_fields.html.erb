@@ -1,5 +1,7 @@
 <%# app/views/projects/_event_fields.html.erb %>
 <%
+  # ponytail: ranges are render-time; a Gantt drag in the same page session leaves them stale
+  # until reload. Hint-only, never blocks save - not worth syncing the two controllers.
   stage_date_ranges = project.project_stages.to_h { |stage| [stage.id.to_s, [stage.start_date&.iso8601, stage.end_date&.iso8601]] }
 %>
 <div data-controller="event-date-range-warning" data-event-date-range-warning-ranges-value="<%= stage_date_ranges.to_json %>">

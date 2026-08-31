@@ -53,6 +53,10 @@ export default class extends Controller {
     this.refreshVisuals()
   }
 
+  disconnect() {
+    this.closeEventPicker()
+  }
+
   changeViewMode(event) {
     this.gantt.change_view_mode(event.currentTarget.dataset.mode)
     this.viewModeButtonTargets.forEach((btn) => btn.classList.remove("active"))
@@ -209,6 +213,7 @@ export default class extends Controller {
     this.closeEventPicker()
     const rect = svg.getBoundingClientRect()
     const picker = document.createElement("div")
+    picker.setAttribute("role", "menu")
     picker.className = "list-group position-absolute shadow"
     picker.style.zIndex = "1000"
     picker.style.left = `${rect.left + cx + window.scrollX}px`
@@ -227,11 +232,16 @@ export default class extends Controller {
     })
 
     document.body.appendChild(picker)
+    picker.querySelector("button")?.focus()
     this.eventPicker = picker
     this.eventPickerOutsideHandler = (e) => {
       if (!picker.contains(e.target)) this.closeEventPicker()
     }
+    this.eventPickerEscapeHandler = (e) => {
+      if (e.key === "Escape") this.closeEventPicker()
+    }
     setTimeout(() => document.addEventListener("click", this.eventPickerOutsideHandler), 0)
+    document.addEventListener("keydown", this.eventPickerEscapeHandler)
   }
 
   closeEventPicker() {
@@ -242,6 +252,10 @@ export default class extends Controller {
     if (this.eventPickerOutsideHandler) {
       document.removeEventListener("click", this.eventPickerOutsideHandler)
       this.eventPickerOutsideHandler = null
+    }
+    if (this.eventPickerEscapeHandler) {
+      document.removeEventListener("keydown", this.eventPickerEscapeHandler)
+      this.eventPickerEscapeHandler = null
     }
   }
 

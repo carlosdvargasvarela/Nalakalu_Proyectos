@@ -56,7 +56,7 @@ class GanttEventMarkersTest < ApplicationSystemTestCase
     stage.update!(start_date: Date.current, end_date: Date.current + 10.days)
     event_type = event_types(:reunion_obra)
     first = Event.create!(project: project, event_type: event_type, title: "Kickoff", event_date: Date.current + 5.days, project_stage: stage)
-    second = Event.create!(project: project, event_type: event_type, title: "Revisión", event_date: Date.current + 5.days, project_stage: stage)
+    Event.create!(project: project, event_type: event_type, title: "Revisión", event_date: Date.current + 5.days, project_stage: stage)
 
     visit new_user_session_path
     fill_in "Correo electrónico", with: users(:juan).email
@@ -80,6 +80,33 @@ class GanttEventMarkersTest < ApplicationSystemTestCase
 
     click_on "Kickoff"
     assert_selector "#edit-event-modal-#{first.id}.show", visible: :all
+  end
+
+  test "the Gantt merges a chain of 3 same-stage events into one cluster" do
+    project_type = project_types(:instalaciones)
+    project = Project.create!(project_type: project_type, name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.first
+    stage.update!(start_date: Date.current, end_date: Date.current + 30.days)
+    event_type = event_types(:reunion_obra)
+    Event.create!(project: project, event_type: event_type, title: "Uno", event_date: Date.current + 5.days, project_stage: stage)
+    Event.create!(project: project, event_type: event_type, title: "Dos", event_date: Date.current + 6.days, project_stage: stage)
+    Event.create!(project: project, event_type: event_type, title: "Tres", event_date: Date.current + 7.days, project_stage: stage)
+
+    visit new_user_session_path
+    fill_in "Correo electrónico", with: users(:juan).email
+    fill_in "Contraseña", with: "password123"
+    click_button "Iniciar sesión"
+    assert_text users(:juan).email
+
+    visit project_path(project)
+    # Day view's fixed ~46px/day column width puts even adjacent days well
+    # past the 16px cluster threshold - switch to Month view, where a day's
+    # width shrinks enough for three consecutive days to land in one cluster.
+    click_on "Mes"
+
+    assert_selector ".event-marker-group", count: 1, visible: :all
+    label_text = evaluate_script("document.querySelector('.event-marker-group text').textContent")
+    assert_equal "3", label_text
   end
 
   test "the Gantt still draws a single plain marker when only one event is at a position" do
