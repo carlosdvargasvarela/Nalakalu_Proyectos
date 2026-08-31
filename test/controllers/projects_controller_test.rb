@@ -2106,6 +2106,38 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "body", { text: /Ana Gómez \(eliminado\)/, count: 0 }
   end
 
+  test "show renders a + Evento button and an empty state when there are no events" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_response :success
+    assert_select "button", text: /Evento/
+    assert_select "body", /Todavía no hay eventos cargados/
+  end
+
+  test "show lists existing events with type, title, stage and status" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.first
+    Event.create!(project: project, event_type: event_types(:reunion_obra), title: "Kickoff", event_date: Date.current, project_stage: stage)
+
+    get project_path(project)
+    assert_response :success
+    assert_select "body", /Kickoff/
+    assert_select "body", /Reunión de obra/
+    assert_select "body", Regexp.new(Regexp.escape(stage.name))
+  end
+
+  test "show hides the + Evento button and edit/delete actions from a visor without edit access" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    ProjectAccess.create!(project: project, user: users(:maria))
+    Event.create!(project: project, event_type: event_types(:reunion_obra), title: "Kickoff", event_date: Date.current)
+
+    sign_in users(:maria)
+    get project_path(project)
+    assert_response :success
+    assert_select "button", { text: /Evento/, count: 0 }
+    assert_select "a", { text: "Eliminar", count: 0 }
+  end
+
   private
 
   # The Gantt/dependent-select controllers now receive their data via

@@ -1,0 +1,20 @@
+<%# app/views/projects/_add_event_modal.html.erb %>
+<div class="modal fade" id="add-event-modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <%= form_with model: Event.new, url: project_events_path(project) do |form| %>
+        <div class="modal-header">
+          <h5 class="modal-title">Agregar evento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <%= render "event_fields", form: form, project: project %>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <%= form.submit "Agregar", class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

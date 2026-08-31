@@ -1,0 +1,52 @@
+<%# app/views/projects/_events_table.html.erb %>
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    Eventos
+    <% if current_user.can_edit_project?(project) %>
+      <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#add-event-modal">
+        <i class="bi bi-plus-lg"></i> Evento
+      </button>
+    <% end %>
+  </div>
+  <div class="card-body p-0">
+    <% events = project.events.includes(:event_type, :project_stage, :responsible).order(:event_date) %>
+    <% if events.empty? %>
+      <p class="text-muted p-3 mb-0">Todavía no hay eventos cargados.</p>
+    <% else %>
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr><th>Fecha</th><th>Tipo</th><th>Título</th><th>Etapa</th><th>Responsable</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% events.each do |event| %>
+            <tr>
+              <td>
+                <%= l(event.event_date, format: :long) %>
+                <% if event.event_time.present? %> <%= event.event_time.strftime("%H:%M") %><% end %>
+              </td>
+              <td>
+                <span class="badge me-1" style="background-color: <%= event.event_type.color %>">&nbsp;</span>
+                <%= event.event_type.name %>
+              </td>
+              <td><%= event.title %></td>
+              <td><%= event.project_stage&.name || "Todo el proyecto" %></td>
+              <td><%= event.responsible&.name || "—" %></td>
+              <td><%= event.status == "realizado" ? "Realizado" : "Pendiente" %></td>
+              <td>
+                <% if current_user.can_edit_project?(project) %>
+                  <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#edit-event-modal-<%= event.id %>">
+                      Editar
+                    </button>
+                    <%= button_to "Eliminar", project_event_path(project, event), method: :delete,
+                          class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar evento?')" } %>
+                  </div>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+  </div>
+</div>

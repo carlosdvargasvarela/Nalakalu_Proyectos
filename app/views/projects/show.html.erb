@@ -78,6 +78,10 @@
   </div>
 </div>
 
+<%= render "events_table", project: @project %>
+<%= render "add_event_modal", project: @project if current_user.can_edit_project?(@project) %>
+<%= render "edit_event_modals", project: @project if current_user.can_edit_project?(@project) %>
+
 <% if current_user.can_edit_project?(@project) %>
   <%
     responsibles_by_type = @project.project_type.responsible_project_types.includes(:responsible)

@@ -1,0 +1,22 @@
+<%# app/views/projects/_edit_event_modals.html.erb %>
+<% project.events.each do |event| %>
+  <div class="modal fade" id="edit-event-modal-<%= event.id %>" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <%= form_with model: event, url: project_event_path(project, event), method: :patch do |form| %>
+          <div class="modal-header">
+            <h5 class="modal-title">Editar evento</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <%= render "event_fields", form: form, project: project %>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <%= form.submit "Guardar", class: "btn btn-primary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>

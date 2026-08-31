@@ -1,0 +1,47 @@
+<%# app/views/projects/_event_fields.html.erb %>
+<% if form.object.errors.any? %>
+  <div class="alert alert-danger">
+    <ul class="mb-0">
+      <% form.object.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+<div class="mb-3">
+  <%= form.label :event_type_id, "Tipo", class: "form-label" %>
+  <%= form.collection_select :event_type_id, project.project_type.event_types, :id, :name,
+        { include_blank: "Elegí un tipo" }, class: "form-select" %>
+</div>
+<div class="mb-3">
+  <%= form.label :title, "Título", class: "form-label" %>
+  <%= form.text_field :title, class: "form-control" %>
+</div>
+<div class="row g-2 mb-3">
+  <div class="col">
+    <%= form.label :event_date, "Fecha", class: "form-label" %>
+    <%= form.date_field :event_date, class: "form-control" %>
+  </div>
+  <div class="col">
+    <%= form.label :event_time, "Hora", class: "form-label" %>
+    <%= form.time_field :event_time, class: "form-control" %>
+  </div>
+</div>
+<div class="mb-3">
+  <%= form.label :project_stage_id, "Etapa", class: "form-label" %>
+  <%= form.collection_select :project_stage_id, project.project_stages, :id, :name,
+        { include_blank: "Todo el proyecto" }, class: "form-select" %>
+</div>
+<div class="mb-3">
+  <%= form.label :responsible_id, "Responsable", class: "form-label" %>
+  <%= form.collection_select :responsible_id, project.project_type.responsibles.order(:name), :id, :name,
+        { include_blank: "Sin asignar" }, class: "form-select" %>
+</div>
+<div class="mb-3">
+  <%= form.label :notes, "Notas", class: "form-label" %>
+  <%= form.text_area :notes, class: "form-control", rows: 2 %>
+</div>
+<div class="mb-0">
+  <%= form.label :status, "Estado", class: "form-label" %>
+  <%= form.select :status, [["Pendiente", "pendiente"], ["Realizado", "realizado"]], {}, class: "form-select" %>
+</div>
