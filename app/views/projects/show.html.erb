@@ -51,31 +51,35 @@
   end
   stage_colors = stages.map { |stage| [stage.stage_template_id || "none", stage.stage_template&.name || "Sin subproceso", stage.stage_template&.color || "#6c757d"] }.uniq
 
-  all_events = @project.events.includes(:event_type)
-  stage_less_events = all_events.select(&:project_wide?)
-  stage_linked_events = all_events.reject(&:project_wide?)
+  @project_events = @project.events.includes(:event_type, :project_stage, :responsible).order(:event_date)
+  stage_less_events = @project_events.select(&:project_wide?)
 
-  stage_less_events.each do |event|
+  # A single synthetic "Eventos del proyecto" row hosts every stage-less event as an
+  # overlaid marker (see drawEventMarkers in gantt_stage_editor_controller.js) - frappe-gantt
+  # 1.2.2 silently ignores `type: "milestone"` and renders an ordinary draggable bar instead,
+  # so a real milestone type isn't available here.
+  if stage_less_events.any?
+    event_dates = stage_less_events.map(&:event_date)
     gantt_tasks << {
-      id: "event-#{event.id}",
-      name: event.title,
-      start: event.event_date.to_s,
-      end: event.event_date.to_s,
-      type: "milestone",
-      custom_class: "event-color-#{event.event_type_id}"
+      id: "project-events",
+      name: "Eventos del proyecto",
+      start: event_dates.min.to_s,
+      end: (event_dates.max + 1.day).to_s,
+      progress: 0,
+      custom_class: "project-events-row"
     }
   end
 
-  event_colors = all_events.map { |event| [event.event_type_id, event.event_type.name, event.event_type.color] }.uniq
-  stage_events_data = stage_linked_events.map do |event|
+  events_data = @project_events.map do |event|
     {
       id: event.id,
-      project_stage_id: event.project_stage_id.to_s,
+      project_stage_id: (event.project_wide? ? "project-events" : event.project_stage_id).to_s,
       event_date: event.event_date.to_s,
       title: event.title,
       color: event.event_type.color
     }
   end
+  event_type_legend = @project_events.map { |event| [event.event_type.name, event.event_type.color] }.uniq
 %>
 <div class="card mb-4">
   <div class="card-header">Cronograma</div>
@@ -83,8 +87,7 @@
        data-gantt-stage-editor-patch-url-value="<%= project_path(@project) %>"
        data-gantt-stage-editor-tasks-value="<%= gantt_tasks.to_json %>"
        data-gantt-stage-editor-colors-value="<%= stage_colors.to_json %>"
-       data-gantt-stage-editor-event-colors-value="<%= event_colors.to_json %>"
-       data-gantt-stage-editor-events-value="<%= stage_events_data.to_json %>">
+       data-gantt-stage-editor-events-value="<%= events_data.to_json %>">
     <div class="btn-group btn-group-sm mb-2" role="group" id="view-mode-show">
       <button type="button" class="btn btn-outline-secondary view-mode-btn active" data-mode="Day"
               data-gantt-stage-editor-target="viewModeButton" data-action="click->gantt-stage-editor#changeViewMode">Día</button>
@@ -93,7 +96,7 @@
       <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Month"
               data-gantt-stage-editor-target="viewModeButton" data-action="click->gantt-stage-editor#changeViewMode">Mes</button>
     </div>
-    <%= render "gantt_legend", entries: stage_colors.map { |_, name, color| [name, color] } %>
+    <%= render "gantt_legend", entries: stage_colors.map { |_, name, color| [name, color] } + event_type_legend %>
     <div id="gantt" data-gantt-stage-editor-target="chart" class="mb-4"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@1.2.2/dist/frappe-gantt.umd.js"></script>
@@ -106,9 +109,12 @@
   </div>
 </div>
 
-<%= render "events_table", project: @project %>
-<%= render "add_event_modal", project: @project if current_user.can_edit_project?(@project) %>
-<%= render "edit_event_modals", project: @project if current_user.can_edit_project?(@project) %>
+<%
+  project_responsibles_for_events = @project.project_type.responsibles.order(:name)
+%>
+<%= render "events_table", project: @project, events: @project_events %>
+<%= render "add_event_modal", project: @project, responsibles: project_responsibles_for_events if current_user.can_edit_project?(@project) %>
+<%= render "edit_event_modals", project: @project, events: @project_events, responsibles: project_responsibles_for_events if current_user.can_edit_project?(@project) %>
 
 <% if current_user.can_edit_project?(@project) %>
   <%

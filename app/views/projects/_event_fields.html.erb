@@ -34,7 +34,7 @@
 </div>
 <div class="mb-3">
   <%= form.label :responsible_id, "Responsable", class: "form-label" %>
-  <%= form.collection_select :responsible_id, project.project_type.responsibles.order(:name), :id, :name,
+  <%= form.collection_select :responsible_id, responsibles, :id, :name,
         { include_blank: "Sin asignar" }, class: "form-select" %>
 </div>
 <div class="mb-3">

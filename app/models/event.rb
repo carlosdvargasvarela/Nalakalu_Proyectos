@@ -9,6 +9,7 @@ class Event < ApplicationRecord
   validates :status, inclusion: { in: %w[pendiente realizado] }
   validate :project_stage_belongs_to_project
   validate :event_type_belongs_to_project_type
+  validate :responsible_enabled_for_project_type
 
   def project_wide?
     project_stage_id.nil?
@@ -24,5 +25,11 @@ class Event < ApplicationRecord
   def event_type_belongs_to_project_type
     return if event_type.nil? || project.nil?
     errors.add(:event_type, "debe pertenecer al tipo de este proyecto") unless event_type.project_type_id == project.project_type_id
+  end
+
+  def responsible_enabled_for_project_type
+    return if responsible.nil? || project.nil?
+    return if responsible.responsible_project_types.exists?(project_type_id: project.project_type_id)
+    errors.add(:responsible, "no está habilitado para este tipo de proyecto")
   end
 end

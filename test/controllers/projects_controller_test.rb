@@ -2138,7 +2138,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a", { text: "Eliminar", count: 0 }
   end
 
-  test "show's Gantt data includes a milestone task for a project-wide event" do
+  test "show's Gantt data includes a synthetic row and marker data for a project-wide event" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     event = Event.create!(project: project, event_type: event_types(:reunion_obra), title: "Kickoff", event_date: Date.current)
 
@@ -2146,10 +2146,15 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "[data-gantt-stage-editor-tasks-value]" do |elements|
       tasks = JSON.parse(elements.first["data-gantt-stage-editor-tasks-value"])
-      milestone = tasks.find { |t| t["id"] == "event-#{event.id}" }
-      assert milestone.present?
-      assert_equal "milestone", milestone["type"]
-      assert_equal "event-color-#{event.event_type_id}", milestone["custom_class"]
+      row = tasks.find { |t| t["id"] == "project-events" }
+      assert row.present?
+      assert_equal "Eventos del proyecto", row["name"]
+    end
+    assert_select "[data-gantt-stage-editor-events-value]" do |elements|
+      events_data = JSON.parse(elements.first["data-gantt-stage-editor-events-value"])
+      entry = events_data.find { |e| e["id"] == event.id }
+      assert_equal "project-events", entry["project_stage_id"]
+      assert_equal event_types(:reunion_obra).color, entry["color"]
     end
   end
 

@@ -1,5 +1,5 @@
 <%# app/views/projects/_edit_event_modals.html.erb %>
-<% project.events.each do |event| %>
+<% events.each do |event| %>
   <div class="modal fade" id="edit-event-modal-<%= event.id %>" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -9,7 +9,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <%= render "event_fields", form: form, project: project %>
+            <%= render "event_fields", form: form, project: project, responsibles: responsibles %>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>

@@ -28,7 +28,7 @@ class GanttEventMarkersTest < ApplicationSystemTestCase
     assert_selector "#edit-event-modal-#{event.id}", visible: :all
   end
 
-  test "the Gantt shows a native milestone bar for a project-wide event, colored by its type" do
+  test "the Gantt shows a colored marker on the 'Eventos del proyecto' row for a project-wide event" do
     project_type = project_types(:instalaciones)
     project = Project.create!(project_type: project_type, name: "Torre Norte", custom_fields: {})
     event_type = event_types(:entrega_final)
@@ -43,9 +43,9 @@ class GanttEventMarkersTest < ApplicationSystemTestCase
 
     visit project_path(project)
 
-    bar_selector = ".bar-wrapper.event-color-#{event_type.id}"
-    assert_selector bar_selector, visible: :all
-    inline_style = evaluate_script("document.querySelector(#{bar_selector.to_json}).getAttribute('style')")
-    assert_match "--bar-fill: #00aaff", inline_style
+    assert_selector ".bar-wrapper[data-id='project-events']", visible: :all
+    assert_selector ".event-marker", visible: :all
+    fill_color = evaluate_script("document.querySelector('.event-marker').getAttribute('fill')")
+    assert_equal "#00aaff", fill_color
   end
 end

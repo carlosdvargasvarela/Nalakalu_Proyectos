@@ -9,7 +9,6 @@
     <% end %>
   </div>
   <div class="card-body p-0">
-    <% events = project.events.includes(:event_type, :project_stage, :responsible).order(:event_date) %>
     <% if events.empty? %>
       <p class="text-muted p-3 mb-0">Todavía no hay eventos cargados.</p>
     <% else %>

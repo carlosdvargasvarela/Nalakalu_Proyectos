@@ -8,18 +8,19 @@ function toDateInputValue(date) {
   return `${year}-${month}-${day}`
 }
 
-function isEventTaskId(id) {
-  return String(id).startsWith("event-")
+function isProjectEventsRow(id) {
+  return id === "project-events"
 }
 
 // Editable Gantt chart for a single project's stages - dragging a bar's dates
 // or progress PATCHes the change back to the server. Also overlays a colored
-// diamond marker on a stage's bar for each event tied to that stage (events
-// with no stage are rendered as native frappe-gantt "milestone" tasks instead,
-// already present in tasksValue - see projects/show.html.erb).
+// diamond marker on a stage's bar for each event tied to that stage. Events
+// with no stage are grouped onto a single synthetic "project-events" row
+// (already present in tasksValue - see projects/show.html.erb) since
+// frappe-gantt 1.2.2 ignores `type: "milestone"`.
 export default class extends Controller {
   static targets = ["chart", "viewModeButton"]
-  static values = { patchUrl: String, tasks: Array, colors: Array, eventColors: Array, events: Array }
+  static values = { patchUrl: String, tasks: Array, colors: Array, events: Array }
 
   connect() {
     if (this.tasksValue.length === 0) return
@@ -37,15 +38,15 @@ export default class extends Controller {
       // date-range extension (tasksValue is already the full, fixed set).
       infinite_padding: false,
       on_click: (task) => {
-        if (isEventTaskId(task.id)) return
+        if (isProjectEventsRow(task.id)) return
         window.location.hash = `stage-${task.id}`
       },
       on_date_change: (task, start, end) => {
-        if (isEventTaskId(task.id)) return
+        if (isProjectEventsRow(task.id)) return this.revertProjectEventsRow()
         this.saveStage(task.id, { start_date: toDateInputValue(start), end_date: toDateInputValue(end) })
       },
       on_progress_change: (task, progress) => {
-        if (isEventTaskId(task.id)) return
+        if (isProjectEventsRow(task.id)) return this.revertProjectEventsRow()
         this.saveStage(task.id, { progress_percent: Math.round(progress) })
       }
     })
@@ -64,9 +65,13 @@ export default class extends Controller {
     this.drawEventMarkers()
   }
 
+  revertProjectEventsRow() {
+    this.gantt.refresh(this.tasksValue)
+    this.refreshVisuals()
+  }
+
   applyColors() {
     applyBarColors(this.chartTarget, this.colorsValue, "stage-color")
-    applyBarColors(this.chartTarget, this.eventColorsValue, "event-color")
   }
 
   // Overlays a small diamond on a stage's bar for each event scoped to that
@@ -145,6 +150,7 @@ export default class extends Controller {
         row.querySelector("input[name*='[start_date]']").value = updated.start_date || ""
         row.querySelector("input[name*='[end_date]']").value = updated.end_date || ""
         row.querySelector("input[name*='[progress_percent]']").value = updated.progress_percent
+        this.drawEventMarkers()
       })
       .catch(() => {
         this.gantt.refresh(this.tasksValue)
