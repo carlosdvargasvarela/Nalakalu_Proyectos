@@ -1124,7 +1124,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     get project_path(project)
     assert_response :success
     source = Rails.root.join("app/javascript/controllers/gantt_stage_editor_controller.js").read
-    assert_match(/on_click:\s*\(task\)\s*=>\s*\{\s*window\.location\.hash\s*=\s*`stage-\$\{task\.id\}`\s*\}/, source)
+    assert_match(/on_click:\s*\(task\)\s*=>\s*\{[^}]*window\.location\.hash\s*=\s*`stage-\$\{task\.id\}`[^}]*\}/m, source)
     assert_no_match(/gantt\.on\(/, source)
   end
 
