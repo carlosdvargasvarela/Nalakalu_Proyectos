@@ -50,13 +50,41 @@
     }
   end
   stage_colors = stages.map { |stage| [stage.stage_template_id || "none", stage.stage_template&.name || "Sin subproceso", stage.stage_template&.color || "#6c757d"] }.uniq
+
+  all_events = @project.events.includes(:event_type)
+  stage_less_events = all_events.select(&:project_wide?)
+  stage_linked_events = all_events.reject(&:project_wide?)
+
+  stage_less_events.each do |event|
+    gantt_tasks << {
+      id: "event-#{event.id}",
+      name: event.title,
+      start: event.event_date.to_s,
+      end: event.event_date.to_s,
+      type: "milestone",
+      custom_class: "event-color-#{event.event_type_id}"
+    }
+  end
+
+  event_colors = all_events.map { |event| [event.event_type_id, event.event_type.name, event.event_type.color] }.uniq
+  stage_events_data = stage_linked_events.map do |event|
+    {
+      id: event.id,
+      project_stage_id: event.project_stage_id.to_s,
+      event_date: event.event_date.to_s,
+      title: event.title,
+      color: event.event_type.color
+    }
+  end
 %>
 <div class="card mb-4">
   <div class="card-header">Cronograma</div>
   <div class="card-body" data-controller="gantt-stage-editor"
        data-gantt-stage-editor-patch-url-value="<%= project_path(@project) %>"
        data-gantt-stage-editor-tasks-value="<%= gantt_tasks.to_json %>"
-       data-gantt-stage-editor-colors-value="<%= stage_colors.to_json %>">
+       data-gantt-stage-editor-colors-value="<%= stage_colors.to_json %>"
+       data-gantt-stage-editor-event-colors-value="<%= event_colors.to_json %>"
+       data-gantt-stage-editor-events-value="<%= stage_events_data.to_json %>">
     <div class="btn-group btn-group-sm mb-2" role="group" id="view-mode-show">
       <button type="button" class="btn btn-outline-secondary view-mode-btn active" data-mode="Day"
               data-gantt-stage-editor-target="viewModeButton" data-action="click->gantt-stage-editor#changeViewMode">Día</button>

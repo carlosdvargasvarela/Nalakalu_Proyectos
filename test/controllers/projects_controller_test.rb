@@ -2138,6 +2138,36 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a", { text: "Eliminar", count: 0 }
   end
 
+  test "show's Gantt data includes a milestone task for a project-wide event" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    event = Event.create!(project: project, event_type: event_types(:reunion_obra), title: "Kickoff", event_date: Date.current)
+
+    get project_path(project)
+    assert_response :success
+    assert_select "[data-gantt-stage-editor-tasks-value]" do |elements|
+      tasks = JSON.parse(elements.first["data-gantt-stage-editor-tasks-value"])
+      milestone = tasks.find { |t| t["id"] == "event-#{event.id}" }
+      assert milestone.present?
+      assert_equal "milestone", milestone["type"]
+      assert_equal "event-color-#{event.event_type_id}", milestone["custom_class"]
+    end
+  end
+
+  test "show's Gantt data includes stage-linked events with a resolved color" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.first
+    event = Event.create!(project: project, event_type: event_types(:reunion_obra), title: "Kickoff", event_date: Date.current, project_stage: stage)
+
+    get project_path(project)
+    assert_response :success
+    assert_select "[data-gantt-stage-editor-events-value]" do |elements|
+      events_data = JSON.parse(elements.first["data-gantt-stage-editor-events-value"])
+      entry = events_data.find { |e| e["id"] == event.id }
+      assert_equal stage.id.to_s, entry["project_stage_id"]
+      assert_equal event_types(:reunion_obra).color, entry["color"]
+    end
+  end
+
   private
 
   # The Gantt/dependent-select controllers now receive their data via
