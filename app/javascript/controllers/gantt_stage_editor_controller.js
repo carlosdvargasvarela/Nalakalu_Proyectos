@@ -79,10 +79,18 @@ export default class extends Controller {
   // (x/width/y/height already reflect the current view mode's column width),
   // not from frappe-gantt's internal date_utils/config - which keeps this
   // independent of the vendored library's private implementation details.
+  // Events whose computed X position lands within CLUSTER_THRESHOLD_PX of a
+  // neighbor on the same row are merged into one gray "N" marker instead of
+  // drawing overlapping diamonds - clicking it opens a small picker listing
+  // every grouped event.
   drawEventMarkers() {
-    this.chartTarget.querySelectorAll(".event-marker").forEach((el) => el.remove())
+    this.chartTarget.querySelectorAll(".event-marker, .event-marker-group").forEach((el) => el.remove())
+    this.closeEventPicker()
     const svg = this.chartTarget.querySelector("svg.gantt")
     if (!svg) return
+
+    const CLUSTER_THRESHOLD_PX = 16
+    const byStage = {}
 
     this.eventsValue.forEach((evt) => {
       const barWrapper = this.chartTarget.querySelector(`.bar-wrapper[data-id="${evt.project_stage_id}"]`)
@@ -103,28 +111,138 @@ export default class extends Controller {
 
       const cx = barX + barWidth * fraction
       const cy = barY + barHeight / 2
-      const size = 7
 
-      const marker = document.createElementNS("http://www.w3.org/2000/svg", "path")
-      marker.setAttribute("d", `M ${cx} ${cy - size} L ${cx + size} ${cy} L ${cx} ${cy + size} L ${cx - size} ${cy} Z`)
-      marker.setAttribute("fill", evt.color)
-      marker.setAttribute("stroke", "#fff")
-      marker.setAttribute("stroke-width", "1.5")
-      marker.setAttribute("class", "event-marker")
-      marker.style.cursor = "pointer"
+      const key = evt.project_stage_id
+      byStage[key] = byStage[key] || []
+      byStage[key].push(Object.assign({}, evt, { cx, cy }))
+    })
 
-      const title = document.createElementNS("http://www.w3.org/2000/svg", "title")
-      title.textContent = `${evt.title} — ${evt.event_date}`
-      marker.appendChild(title)
-
-      marker.addEventListener("click", (e) => {
-        e.stopPropagation()
-        const modalEl = document.getElementById(`edit-event-modal-${evt.id}`)
-        if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show()
+    Object.values(byStage).forEach((stageEvents) => {
+      stageEvents.sort((a, b) => a.cx - b.cx)
+      const clusters = []
+      stageEvents.forEach((evt) => {
+        const last = clusters[clusters.length - 1]
+        const lastEvent = last && last[last.length - 1]
+        if (lastEvent && evt.cx - lastEvent.cx < CLUSTER_THRESHOLD_PX) {
+          last.push(evt)
+        } else {
+          clusters.push([evt])
+        }
       })
 
-      svg.appendChild(marker)
+      clusters.forEach((cluster) => {
+        const avgCx = cluster.reduce((sum, e) => sum + e.cx, 0) / cluster.length
+        const cy = cluster[0].cy
+        if (cluster.length === 1) {
+          this.drawSingleMarker(svg, cluster[0], avgCx, cy)
+        } else {
+          this.drawClusterMarker(svg, cluster, avgCx, cy)
+        }
+      })
     })
+  }
+
+  drawSingleMarker(svg, evt, cx, cy) {
+    const size = 7
+    const marker = document.createElementNS("http://www.w3.org/2000/svg", "path")
+    marker.setAttribute("d", `M ${cx} ${cy - size} L ${cx + size} ${cy} L ${cx} ${cy + size} L ${cx - size} ${cy} Z`)
+    marker.setAttribute("fill", evt.color)
+    marker.setAttribute("stroke", "#fff")
+    marker.setAttribute("stroke-width", "1.5")
+    marker.setAttribute("class", "event-marker")
+    marker.style.cursor = "pointer"
+
+    const title = document.createElementNS("http://www.w3.org/2000/svg", "title")
+    title.textContent = `${evt.title} — ${evt.event_date}`
+    marker.appendChild(title)
+
+    marker.addEventListener("click", (e) => {
+      e.stopPropagation()
+      this.openEventModal(evt.id)
+    })
+
+    svg.appendChild(marker)
+  }
+
+  drawClusterMarker(svg, events, cx, cy) {
+    const size = 10
+    const group = document.createElementNS("http://www.w3.org/2000/svg", "g")
+    group.setAttribute("class", "event-marker-group")
+    group.style.cursor = "pointer"
+
+    const marker = document.createElementNS("http://www.w3.org/2000/svg", "path")
+    marker.setAttribute("d", `M ${cx} ${cy - size} L ${cx + size} ${cy} L ${cx} ${cy + size} L ${cx - size} ${cy} Z`)
+    marker.setAttribute("fill", "#495057")
+    marker.setAttribute("stroke", "#fff")
+    marker.setAttribute("stroke-width", "1.5")
+    marker.setAttribute("class", "event-marker")
+    group.appendChild(marker)
+
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text")
+    label.setAttribute("x", cx)
+    label.setAttribute("y", cy)
+    label.setAttribute("text-anchor", "middle")
+    label.setAttribute("dominant-baseline", "central")
+    label.setAttribute("fill", "#fff")
+    label.setAttribute("font-size", "10")
+    label.textContent = events.length
+    group.appendChild(label)
+
+    const title = document.createElementNS("http://www.w3.org/2000/svg", "title")
+    title.textContent = events.map((e) => `${e.title} — ${e.event_date}`).join("\n")
+    group.appendChild(title)
+
+    group.addEventListener("click", (e) => {
+      e.stopPropagation()
+      this.openEventPicker(events, cx, cy, svg)
+    })
+
+    svg.appendChild(group)
+  }
+
+  openEventModal(id) {
+    const modalEl = document.getElementById(`edit-event-modal-${id}`)
+    if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show()
+  }
+
+  openEventPicker(events, cx, cy, svg) {
+    this.closeEventPicker()
+    const rect = svg.getBoundingClientRect()
+    const picker = document.createElement("div")
+    picker.className = "list-group position-absolute shadow"
+    picker.style.zIndex = "1000"
+    picker.style.left = `${rect.left + cx + window.scrollX}px`
+    picker.style.top = `${rect.top + cy + window.scrollY}px`
+
+    events.forEach((evt) => {
+      const item = document.createElement("button")
+      item.type = "button"
+      item.className = "list-group-item list-group-item-action small"
+      item.textContent = `${evt.title} — ${evt.event_date}`
+      item.addEventListener("click", () => {
+        this.closeEventPicker()
+        this.openEventModal(evt.id)
+      })
+      picker.appendChild(item)
+    })
+
+    document.body.appendChild(picker)
+    this.eventPicker = picker
+    this.eventPickerOutsideHandler = (e) => {
+      if (!picker.contains(e.target)) this.closeEventPicker()
+    }
+    setTimeout(() => document.addEventListener("click", this.eventPickerOutsideHandler), 0)
+  }
+
+  closeEventPicker() {
+    if (this.eventPicker) {
+      this.eventPicker.remove()
+      this.eventPicker = null
+    }
+    if (this.eventPickerOutsideHandler) {
+      document.removeEventListener("click", this.eventPickerOutsideHandler)
+      this.eventPickerOutsideHandler = null
+    }
   }
 
   saveStage(stageId, attrs) {
