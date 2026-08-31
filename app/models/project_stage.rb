@@ -4,6 +4,7 @@ class ProjectStage < ApplicationRecord
   belongs_to :stage_template, optional: true
   belongs_to :user, optional: true
   has_many :project_responsibles, dependent: :destroy
+  has_many :events, dependent: :nullify
 
   validates :name, presence: true
   validates :progress_percent, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }

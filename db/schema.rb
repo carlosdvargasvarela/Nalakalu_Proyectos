@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_08_31_161000) do
+ActiveRecord::Schema[7.2].define(version: 2026_08_31_162000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -73,6 +73,24 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_31_161000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["project_type_id"], name: "index_event_types_on_project_type_id"
+  end
+
+  create_table "events", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.bigint "project_stage_id"
+    t.bigint "event_type_id", null: false
+    t.bigint "responsible_id"
+    t.string "title", null: false
+    t.date "event_date", null: false
+    t.time "event_time"
+    t.text "notes"
+    t.string "status", default: "pendiente", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_type_id"], name: "index_events_on_event_type_id"
+    t.index ["project_id"], name: "index_events_on_project_id"
+    t.index ["project_stage_id"], name: "index_events_on_project_stage_id"
+    t.index ["responsible_id"], name: "index_events_on_responsible_id"
   end
 
   create_table "field_definitions", force: :cascade do |t|
@@ -285,6 +303,10 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_31_161000) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "duration_profiles", "project_types"
   add_foreign_key "event_types", "project_types"
+  add_foreign_key "events", "event_types"
+  add_foreign_key "events", "project_stages"
+  add_foreign_key "events", "projects"
+  add_foreign_key "events", "responsibles"
   add_foreign_key "field_definitions", "project_types"
   add_foreign_key "log_entries", "log_entry_types"
   add_foreign_key "log_entries", "projects"

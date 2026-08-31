@@ -5,6 +5,7 @@ class Project < ApplicationRecord
   has_many :log_entries, dependent: :destroy
   has_many :project_accesses, dependent: :destroy
   has_many :project_responsibles, dependent: :destroy
+  has_many :events, dependent: :destroy
   has_many :outgoing_project_associations, class_name: "ProjectAssociation", foreign_key: :from_project_id, dependent: :destroy
   has_many :incoming_project_associations, class_name: "ProjectAssociation", foreign_key: :to_project_id, dependent: :destroy
   accepts_nested_attributes_for :project_stages, update_only: true

@@ -1,6 +1,7 @@
 class Responsible < ApplicationRecord
   belongs_to :user, optional: true
   has_many :project_responsibles, dependent: :nullify
+  has_many :events, dependent: :nullify
   has_many :responsible_project_types, dependent: :destroy
   has_many :project_types, through: :responsible_project_types
 
