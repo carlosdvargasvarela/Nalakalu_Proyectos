@@ -22,6 +22,9 @@ Rails.application.routes.draw do
       resources :duration_profiles, except: [:index, :show] do
         patch :reorder, on: :collection
       end
+      resources :event_types, except: [:index, :show] do
+        patch :reorder, on: :collection
+      end
       resources :log_entry_types, except: [:index, :show]
       resources :responsible_types, except: [:index, :show]
     end
