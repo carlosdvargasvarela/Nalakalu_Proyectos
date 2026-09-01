@@ -58,28 +58,43 @@ nuevo y mínimo:
 class ProjectStagesController < ApplicationController
   before_action :set_project
   before_action :authorize_edit!
+  before_action :set_project_stage, only: [:update]
 
   def create
-    @project.project_stages.create(project_stage_params)
+    @project_stage = @project.project_stages.new(project_stage_params)
+    if @project_stage.save
+      redirect_to project_path(@project)
+    else
+      redirect_to project_path(@project), alert: @project_stage.errors.full_messages.to_sentence
+    end
+  end
+
+  def update
+    @project_stage.update(project_stage_toggle_params)
     redirect_to project_path(@project)
   end
 end
 ```
 
-Ruta: `resources :project_stages, only: [:create]` anidada bajo `projects`.
-Permiso: mismo criterio que el resto de la gestión de etapas —
+Ruta: `resources :project_stages, only: [:create, :update]` anidada bajo
+`projects`. Permiso: mismo criterio que el resto de la gestión de etapas —
 `current_user.can_edit_project?(@project)`.
 
-UI: botón "+ Etapa" (mismo patrón visual que "+ Evento") junto a la tabla
-de etapas, abre un modal con nombre (requerido), fecha de inicio y fecha de
-fin (opcionales, igual que hoy permite una etapa de plantilla).
+UI (crear): botón "+ Etapa" (mismo patrón visual que "+ Evento") junto a la
+tabla de etapas, abre un modal con nombre (requerido), fecha de inicio y
+fecha de fin (opcionales, igual que hoy permite una etapa de plantilla).
 
 ## Marcar "No aplica" / reactivar
 
-Se reutiliza el mecanismo ya existente para el botón "Archivar" de un
-proyecto: un mini-form que pega directo a `ProjectsController#update` con
-un solo campo. Se agrega `:not_applicable` a `project_stages_attributes`
-en `project_params`.
+**Nota de diseño:** la tabla de etapas (`_stage_table.html.erb`) ya está
+íntegramente envuelta en un `<form>` (el de "Guardar cambios", que edita
+fechas/avance en bloque). Un botón "No aplica" con su propio mini-form
+anidado ahí adentro sería HTML inválido (`<form>` dentro de `<form>`). En
+vez de reutilizar el patrón del botón "Archivar" (que si es un mini-form
+independiente, pero fuera de cualquier otro form), se usa `link_to` con
+`data: { turbo_method: :patch }` contra el `update` del controller nuevo
+— la app ya depende de `turbo-rails`, y un `<a>` no tiene el problema de
+anidamiento de un `<form>`.
 
 - En la tabla de etapas normal (`_stage_table.html.erb`), cada fila
   aplicable tiene un botón "No aplica" que pega `not_applicable: true`
