@@ -2248,7 +2248,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "#stage-table-#{project.id} tr##{"stage-#{stage.id}"}", count: 0
   end
 
-  test "show lists a not_applicable stage in the collapsible section with a Reactivar link" do
+  test "show lists a not_applicable stage in the collapsible section with a Reactivar button posting a PATCH" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     stage = project.project_stages.order(:id).first
     stage.update!(not_applicable: true)
@@ -2256,16 +2256,22 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     get project_path(project)
     assert_response :success
     assert_select "details summary", text: /no aplicables \(1\)/
-    assert_select "a[href^=?][data-turbo-method=?]", project_project_stage_path(project, stage), "patch"
+    assert_select "form[action=?][method=?]", project_project_stage_path(project, stage), "post" do
+      assert_select "input[name=?][value=?]", "_method", "patch"
+      assert_select "button", text: "Reactivar"
+    end
   end
 
-  test "show renders a No aplica link for each applicable stage" do
+  test "show renders a No aplica button wired to a standalone PATCH form for each applicable stage" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     stage = project.project_stages.order(:id).first
 
     get project_path(project)
     assert_response :success
-    assert_select "a[href^=?][data-turbo-method=?]", project_project_stage_path(project, stage), "patch"
+    assert_select "button[form=?]", "no-aplica-form-#{stage.id}", text: "No aplica"
+    assert_select "form[id=?][action=?][method=?]", "no-aplica-form-#{stage.id}", project_project_stage_path(project, stage), "post" do
+      assert_select "input[name=?][value=?]", "_method", "patch"
+    end
   end
 
   private
