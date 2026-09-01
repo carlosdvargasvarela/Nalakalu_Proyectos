@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_09_01_090000) do
+ActiveRecord::Schema[7.2].define(version: 2026_09_01_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -177,6 +177,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_09_01_090000) do
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.boolean "not_applicable", default: false, null: false
+    t.string "color", default: "#6c757d", null: false
     t.index ["project_id"], name: "index_project_stages_on_project_id"
     t.index ["stage_template_id"], name: "index_project_stages_on_stage_template_id"
     t.index ["user_id"], name: "index_project_stages_on_user_id"

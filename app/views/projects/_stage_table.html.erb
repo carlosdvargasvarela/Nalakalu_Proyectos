@@ -3,12 +3,19 @@
 <%= form_with model: project do |f| %>
   <table id="stage-table-<%= project.id %>" class="table table-sm table-bordered mb-0 stage-table" data-controller="stage-table">
     <thead>
-      <tr><th>Etapa</th><th>Inicio</th><th>Fin</th><th>Duración (días)</th><th>% Avance</th><th>Estado</th><th></th></tr>
+      <tr><th>Etapa</th><th>Color</th><th>Inicio</th><th>Fin</th><th>Duración (días)</th><th>% Avance</th><th>Estado</th><th></th></tr>
     </thead>
     <tbody>
       <%= f.fields_for :project_stages, project.project_stages.applicable.includes(:stage_template).order(:id) do |sf| %>
         <tr id="stage-<%= sf.object.id %>">
           <td><%= sf.object.name %></td>
+          <td>
+            <% if sf.object.stage_template_id %>
+              <span class="rounded-circle d-inline-block" style="width: 0.9rem; height: 0.9rem; background-color: <%= sf.object.stage_template.color %>;" title="Color de la plantilla <%= sf.object.stage_template.name %>"></span>
+            <% else %>
+              <%= sf.color_field :color, class: "form-control form-control-color form-control-sm" %>
+            <% end %>
+          </td>
           <td><%= sf.hidden_field :id %><%= sf.date_field :start_date, class: "form-control form-control-sm fecha-input" %></td>
           <td><%= sf.date_field :end_date, class: "form-control form-control-sm fecha-input" %></td>
           <td><input type="number" min="1" class="form-control form-control-sm duracion-input" data-action="input->stage-table#syncEndDate"></td>
@@ -83,6 +90,10 @@
           <div class="mb-3">
             <%= form.label :name, "Nombre", class: "form-label" %>
             <%= form.text_field :name, class: "form-control" %>
+          </div>
+          <div class="mb-3">
+            <%= form.label :color, "Color", class: "form-label" %>
+            <%= form.color_field :color, class: "form-control form-control-color" %>
           </div>
           <div class="row g-2">
             <div class="col">

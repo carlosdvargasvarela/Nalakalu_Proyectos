@@ -95,6 +95,20 @@ class ProjectStageTest < ActiveSupport::TestCase
     assert_equal users(:juan).id.to_s, version.whodunnit
   end
 
+  test "valid with default color" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.first
+    assert stage.valid?
+    assert_equal "#6c757d", stage.color
+  end
+
+  test "invalid with a malformed color" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.first
+    stage.color = "blue"
+    assert_not stage.valid?
+  end
+
   test "not_applicable defaults to false" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     stage = project.project_stages.order(:id).first

@@ -18,6 +18,14 @@ class ProjectStagesControllerTest < ActionDispatch::IntegrationTest
     assert_nil stage.stage_template_id
   end
 
+  test "create sets the chosen color" do
+    post project_project_stages_path(@project), params: {
+      project_stage: { name: "Etapa propia", color: "#ff5733" }
+    }
+    stage = @project.project_stages.order(:id).last
+    assert_equal "#ff5733", stage.color
+  end
+
   test "create with a blank name redirects with an error" do
     assert_no_difference("@project.project_stages.count") do
       post project_project_stages_path(@project), params: { project_stage: { name: "" } }

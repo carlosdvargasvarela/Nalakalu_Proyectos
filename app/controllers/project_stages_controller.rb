@@ -33,7 +33,7 @@ class ProjectStagesController < ApplicationController
   end
 
   def project_stage_params
-    params.require(:project_stage).permit(:name, :start_date, :end_date)
+    params.require(:project_stage).permit(:name, :start_date, :end_date, :color)
   end
 
   def not_applicable_param

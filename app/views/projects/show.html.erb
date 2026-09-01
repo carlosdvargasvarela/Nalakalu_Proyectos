@@ -46,10 +46,19 @@
       start: stage_start.to_s,
       end: stage_end.to_s,
       progress: stage.progress_percent,
-      custom_class: "stage-color-#{stage.stage_template_id || 'none'}"
+      custom_class: "stage-color-#{stage.stage_template_id || "custom-#{stage.id}"}"
     }
   end
-  stage_colors = stages.map { |stage| [stage.stage_template_id || "none", stage.stage_template&.name || "Sin subproceso", stage.stage_template&.color || "#6c757d"] }.uniq
+  # Template-backed stages share one legend entry per template (as before); a
+  # project-specific stage (no stage_template) gets its own entry with its own
+  # name and color instead of collapsing into a single generic "Sin subproceso" bucket.
+  stage_colors = stages.map do |stage|
+    if stage.stage_template_id
+      [stage.stage_template_id, stage.stage_template.name, stage.stage_template.color]
+    else
+      ["custom-#{stage.id}", stage.name, stage.color]
+    end
+  end.uniq
 
   @project_events = @project.events.includes(:event_type, :project_stage, :responsible).order(:event_date)
   stage_less_events = @project_events.select(&:project_wide?)

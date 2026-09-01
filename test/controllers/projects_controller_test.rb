@@ -386,13 +386,39 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".gantt-legend span", text: /Producción/
   end
 
-  test "show's Gantt legend labels a stage with no stage_template as Sin subproceso" do
+  test "show's Gantt legend labels a stage with no stage_template by its own name and color" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
-    project.project_stages.first.update!(stage_template: nil)
+    stage = project.project_stages.first
+    stage.update!(stage_template: nil, color: "#123abc")
 
     get project_path(project)
     assert_response :success
-    assert_select ".gantt-legend span", text: /Sin subproceso/
+    assert_select ".gantt-legend span[title=?]", stage.name
+    assert_select ".gantt-legend span span[style*=?]", "#123abc"
+  end
+
+  test "show's Gantt legend gives each custom stage its own entry instead of sharing one Sin subproceso bucket" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    first = project.project_stages.create!(name: "Etapa A", color: "#111111")
+    second = project.project_stages.create!(name: "Etapa B", color: "#222222")
+
+    get project_path(project)
+    assert_response :success
+    assert_select ".gantt-legend span[title=?]", first.name
+    assert_select ".gantt-legend span[title=?]", second.name
+    assert_select ".gantt-legend span span[style*=?]", "#111111"
+    assert_select ".gantt-legend span span[style*=?]", "#222222"
+  end
+
+  test "show's Gantt legend truncates a long stage name to 20 chars but keeps the full name in the tooltip" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    long_name = "Un nombre de etapa extremadamente largo para probar el recorte"
+    project.project_stages.create!(name: long_name)
+
+    get project_path(project)
+    assert_response :success
+    assert_select ".gantt-legend span[title=?]", long_name
+    assert_select ".gantt-legend small", text: /\A.{0,20}\z/
   end
 
   test "show's Responsables assignment form only offers responsibles enabled for this project's type" do
@@ -1074,6 +1100,18 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_equal Date.new(2026, 8, 1), stage.start_date
     assert_equal Date.new(2026, 8, 10), stage.end_date
     assert_equal 60, stage.progress_percent
+  end
+
+  test "updating project_stages_attributes changes a custom stage's color" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.create!(name: "Etapa propia")
+
+    patch project_path(project), params: {
+      project: { project_stages_attributes: { "0" => { id: stage.id, color: "#123abc" } } }
+    }
+
+    assert_redirected_to project_path(project)
+    assert_equal "#123abc", stage.reload.color
   end
 
   test "index shows the project status as a Spanish badge, not the raw value" do

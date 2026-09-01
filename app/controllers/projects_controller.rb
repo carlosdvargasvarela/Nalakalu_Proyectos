@@ -231,7 +231,7 @@ class ProjectsController < ApplicationController
   def project_params
     params.require(:project).permit(
       :project_type_id, :name, :status, custom_fields: {},
-      project_stages_attributes: [:id, :start_date, :end_date, :progress_percent]
+      project_stages_attributes: [:id, :start_date, :end_date, :progress_percent, :color]
     )
   end
 

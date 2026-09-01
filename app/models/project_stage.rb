@@ -10,6 +10,7 @@ class ProjectStage < ApplicationRecord
 
   validates :name, presence: true
   validates :progress_percent, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }
+  validates :color, format: { with: /\A#[0-9a-fA-F]{6}\z/, message: "debe ser un color hexadecimal (ej. #6c757d)" }
 
   def progress_status
     return "finalizado" if progress_percent == 100
