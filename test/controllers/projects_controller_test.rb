@@ -1259,6 +1259,19 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "#stage-table-#{project.id} input[name*='[start_date]']", count: project.project_stages.count
   end
 
+  test "tracker renders a distinct + Etapa modal id per project, not one shared id" do
+    project_type = project_types(:instalaciones)
+    project_a = Project.create!(project_type: project_type, name: "Proyecto A", custom_fields: {})
+    project_b = Project.create!(project_type: project_type, name: "Proyecto B", custom_fields: {})
+
+    get tracker_projects_path(project_type_id: project_type.id)
+    assert_response :success
+    assert_select "#add-stage-modal-#{project_a.id}", count: 1
+    assert_select "#add-stage-modal-#{project_b.id}", count: 1
+    assert_select "[data-bs-target='#add-stage-modal-#{project_a.id}']", count: 1
+    assert_select "[data-bs-target='#add-stage-modal-#{project_b.id}']", count: 1
+  end
+
   test "tracker saves a project's stages independently of other projects" do
     torre = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     otra = Project.create!(project_type: project_types(:instalaciones), name: "Otra Torre", custom_fields: {})

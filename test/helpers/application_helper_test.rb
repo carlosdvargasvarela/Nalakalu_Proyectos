@@ -61,6 +61,14 @@ class ApplicationHelperTest < ActionView::TestCase
     assert_equal 0, pending_stage_dates_count(users(:juan))
   end
 
+  test "pending_stage_dates_count doesn't count a project whose only undated stage is not_applicable" do
+    project_types(:instalaciones).update!(require_stage_dates: true)
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    project.project_stages.each { |stage| stage.update!(not_applicable: true) }
+
+    assert_equal 0, pending_stage_dates_count(users(:juan))
+  end
+
   test "help_topic_path_if_exists returns the controller path when a doc file exists" do
     @controller.stub(:controller_path, "projects") do
       assert_equal "projects", help_topic_path_if_exists
