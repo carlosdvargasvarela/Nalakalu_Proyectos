@@ -94,4 +94,19 @@ class ProjectStageTest < ActiveSupport::TestCase
     assert_equal "update", version.event
     assert_equal users(:juan).id.to_s, version.whodunnit
   end
+
+  test "not_applicable defaults to false" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.order(:id).first
+    assert_equal false, stage.not_applicable
+  end
+
+  test "applicable scope excludes stages marked not_applicable" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.order(:id).first
+    stage.update!(not_applicable: true)
+
+    assert_not_includes project.project_stages.applicable, stage
+    assert_includes project.project_stages, stage
+  end
 end

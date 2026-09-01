@@ -6,6 +6,8 @@ class ProjectStage < ApplicationRecord
   has_many :project_responsibles, dependent: :destroy
   has_many :events, dependent: :nullify
 
+  scope :applicable, -> { where(not_applicable: false) }
+
   validates :name, presence: true
   validates :progress_percent, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }
 
