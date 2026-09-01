@@ -2126,7 +2126,13 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "select#project_association_project_type_association_id option[value=?][data-key=?]",
       association.id.to_s, other_type.id.to_s
-    options = json_data_attribute('form[data-controller="dependent-select"]', "data-dependent-select-options-value")
+    # The page has two dependent-select forms (Responsables and this one) - a
+    # bare `data-controller` selector would grab whichever renders first, so
+    # scope to this form's own action to target it unambiguously.
+    options = json_data_attribute(
+      "form[action=\"#{project_project_associations_path(project)}\"][data-controller=\"dependent-select\"]",
+      "data-dependent-select-options-value"
+    )
     assert_equal [[caso.id, caso.name]], options[other_type.id.to_s]
   end
 
@@ -2184,7 +2190,13 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     get project_path(project)
     assert_response :success
 
-    options = json_data_attribute('[data-controller="dependent-select"]', "data-dependent-select-options-value")
+    # The page has two dependent-select forms (Responsables and this one) - a
+    # bare `data-controller` selector would grab whichever renders first, so
+    # scope to this form's own action to target it unambiguously.
+    options = json_data_attribute(
+      "[action=\"#{project_project_associations_path(project)}\"][data-controller=\"dependent-select\"]",
+      "data-dependent-select-options-value"
+    )
     project_names = options.values.flatten(1).map { |_id, name| name }
 
     assert_includes project_names, "Proyecto vinculable"
