@@ -1,10 +1,12 @@
+<button type="button" class="btn btn-outline-primary btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#add-stage-modal">+ Etapa</button>
+
 <%= form_with model: project do |f| %>
   <table id="stage-table-<%= project.id %>" class="table table-sm table-bordered mb-0 stage-table" data-controller="stage-table">
     <thead>
-      <tr><th>Etapa</th><th>Inicio</th><th>Fin</th><th>Duración (días)</th><th>% Avance</th><th>Estado</th></tr>
+      <tr><th>Etapa</th><th>Inicio</th><th>Fin</th><th>Duración (días)</th><th>% Avance</th><th>Estado</th><th></th></tr>
     </thead>
     <tbody>
-      <%= f.fields_for :project_stages, project.project_stages.includes(:stage_template).order(:id) do |sf| %>
+      <%= f.fields_for :project_stages, project.project_stages.applicable.includes(:stage_template).order(:id) do |sf| %>
         <tr id="stage-<%= sf.object.id %>">
           <td><%= sf.object.name %></td>
           <td><%= sf.hidden_field :id %><%= sf.date_field :start_date, class: "form-control form-control-sm fecha-input" %></td>
@@ -15,9 +17,75 @@
             <%= progress_status_badge(sf.object.progress_status) %>
             <%= overdue_badge if sf.object.overdue? %>
           </td>
+          <td>
+            <%= link_to "No aplica", project_project_stage_path(project, sf.object, project_stage: { not_applicable: true }),
+                  data: { turbo_method: :patch, turbo_confirm: "¿Marcar \"#{sf.object.name}\" como no aplicable a este proyecto?" },
+                  class: "btn btn-outline-secondary btn-sm" %>
+          </td>
         </tr>
       <% end %>
     </tbody>
   </table>
   <%= f.submit "Guardar cambios", class: "btn btn-primary btn-sm mt-3" %>
 <% end %>
+
+<%
+  not_applicable_stages = project.project_stages.where(not_applicable: true).order(:id)
+%>
+<% if not_applicable_stages.any? %>
+  <details class="mt-3">
+    <summary class="text-muted">Etapas no aplicables (<%= not_applicable_stages.size %>)</summary>
+    <ul class="list-group list-group-flush mt-2">
+      <% not_applicable_stages.each do |stage| %>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span><%= stage.name %></span>
+          <%= link_to "Reactivar", project_project_stage_path(project, stage, project_stage: { not_applicable: false }),
+                data: { turbo_method: :patch },
+                class: "btn btn-outline-primary btn-sm" %>
+        </li>
+      <% end %>
+    </ul>
+  </details>
+<% end %>
+
+<div class="modal fade" id="add-stage-modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <%= form_with model: ProjectStage.new, url: project_project_stages_path(project) do |form| %>
+        <div class="modal-header">
+          <h5 class="modal-title">Agregar etapa</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <% if form.object.errors.any? %>
+            <div class="alert alert-danger">
+              <ul class="mb-0">
+                <% form.object.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+          <div class="mb-3">
+            <%= form.label :name, "Nombre", class: "form-label" %>
+            <%= form.text_field :name, class: "form-control" %>
+          </div>
+          <div class="row g-2">
+            <div class="col">
+              <%= form.label :start_date, "Fecha de inicio", class: "form-label" %>
+              <%= form.date_field :start_date, class: "form-control" %>
+            </div>
+            <div class="col">
+              <%= form.label :end_date, "Fecha de fin", class: "form-label" %>
+              <%= form.date_field :end_date, class: "form-control" %>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <%= form.submit "Agregar", class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

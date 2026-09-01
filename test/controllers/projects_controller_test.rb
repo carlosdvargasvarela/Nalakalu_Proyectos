@@ -1212,7 +1212,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "body", /Cliente/
     assert_select "body", /Acme S\.A\./
-    assert_select "input[name*='[start_date]']", count: project.project_stages.count
+    assert_select "#stage-table-#{project.id} input[name*='[start_date]']", count: project.project_stages.count
   end
 
   test "tracker saves a project's stages independently of other projects" do
@@ -2171,6 +2171,44 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       assert_equal stage.id.to_s, entry["project_stage_id"]
       assert_equal event_types(:reunion_obra).color, entry["color"]
     end
+  end
+
+  test "show renders a + Etapa button and a form to add a project-specific stage" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_response :success
+    assert_select "button", text: /Etapa/
+    assert_select "form[action=?]", project_project_stages_path(project)
+  end
+
+  test "show hides a stage marked not_applicable from the main stage table" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.order(:id).first
+    stage.update!(not_applicable: true)
+
+    get project_path(project)
+    assert_response :success
+    assert_select "#stage-table-#{project.id} tr##{"stage-#{stage.id}"}", count: 0
+  end
+
+  test "show lists a not_applicable stage in the collapsible section with a Reactivar link" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.order(:id).first
+    stage.update!(not_applicable: true)
+
+    get project_path(project)
+    assert_response :success
+    assert_select "details summary", text: /no aplicables \(1\)/
+    assert_select "a[href^=?][data-turbo-method=?]", project_project_stage_path(project, stage), "patch"
+  end
+
+  test "show renders a No aplica link for each applicable stage" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.order(:id).first
+
+    get project_path(project)
+    assert_response :success
+    assert_select "a[href^=?][data-turbo-method=?]", project_project_stage_path(project, stage), "patch"
   end
 
   private

@@ -4,7 +4,7 @@
       <tr><th>Etapa</th><th>% Avance</th><th>Estado</th></tr>
     </thead>
     <tbody>
-      <% project.project_stages.includes(:stage_template).order(:id).each do |stage| %>
+      <% project.project_stages.applicable.includes(:stage_template).order(:id).each do |stage| %>
         <tr>
           <td><%= stage.name %></td>
           <td>
