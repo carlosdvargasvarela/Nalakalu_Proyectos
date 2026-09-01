@@ -41,6 +41,7 @@ Rails.application.routes.draw do
     resources :project_responsibles, only: [:create, :destroy]
     resources :project_associations, only: [:create, :destroy]
     resources :events, only: [:create, :update, :destroy]
+    resources :project_stages, only: [:create, :update]
   end
 
   resources :imports, only: [:new, :create] do
