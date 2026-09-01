@@ -19,13 +19,14 @@ function isProjectEventsRow(id) {
 // (already present in tasksValue - see projects/show.html.erb) since
 // frappe-gantt 1.2.2 ignores `type: "milestone"`.
 export default class extends Controller {
-  static targets = ["chart", "viewModeButton"]
+  static targets = ["chart", "viewModeButton", "sortButton"]
   static values = { patchUrl: String, tasks: Array, colors: Array, events: Array }
 
   connect() {
     if (this.tasksValue.length === 0) return
 
-    this.gantt = new Gantt(this.chartTarget, this.tasksValue, {
+    this.ascending = true
+    this.gantt = new Gantt(this.chartTarget, this.currentOrder(), {
       language: "es",
       popup: false,
       today_button: false,
@@ -64,13 +65,26 @@ export default class extends Controller {
     this.refreshVisuals()
   }
 
+  toggleSort() {
+    this.ascending = !this.ascending
+    this.gantt.refresh(this.currentOrder())
+    this.refreshVisuals()
+    if (this.hasSortButtonTarget) {
+      this.sortButtonTarget.querySelector("i").className = this.ascending ? "bi bi-sort-down" : "bi bi-sort-up"
+    }
+  }
+
+  currentOrder() {
+    return this.ascending ? this.tasksValue : [...this.tasksValue].reverse()
+  }
+
   refreshVisuals() {
     this.applyColors()
     this.drawEventMarkers()
   }
 
   revertProjectEventsRow() {
-    this.gantt.refresh(this.tasksValue)
+    this.gantt.refresh(this.currentOrder())
     this.refreshVisuals()
   }
 
@@ -285,7 +299,7 @@ export default class extends Controller {
         this.drawEventMarkers()
       })
       .catch(() => {
-        this.gantt.refresh(this.tasksValue)
+        this.gantt.refresh(this.currentOrder())
         this.refreshVisuals()
         alert("No se pudo guardar el cambio. Intenta de nuevo.")
       })

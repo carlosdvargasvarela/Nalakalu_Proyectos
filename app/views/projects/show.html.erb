@@ -104,6 +104,10 @@
               data-gantt-stage-editor-target="viewModeButton" data-action="click->gantt-stage-editor#changeViewMode">Semana</button>
       <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Month"
               data-gantt-stage-editor-target="viewModeButton" data-action="click->gantt-stage-editor#changeViewMode">Mes</button>
+      <button type="button" class="btn btn-outline-secondary" data-gantt-stage-editor-target="sortButton"
+              data-action="click->gantt-stage-editor#toggleSort" title="Invertir orden">
+        <i class="bi bi-sort-down"></i>
+      </button>
     </div>
     <%= render "gantt_legend", entries: stage_colors.map { |_, name, color| [name, color] } + event_type_legend %>
     <div id="gantt" data-gantt-stage-editor-target="chart" class="mb-4"></div>

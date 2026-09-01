@@ -1193,12 +1193,20 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "#view-mode-show button", text: "Mes"
   end
 
+  test "show shows a sort-direction toggle button for the Gantt, wired to the stage editor controller" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_path(project)
+    assert_response :success
+    assert_select "#view-mode-show [data-gantt-stage-editor-target=?][data-action=?]",
+      "sortButton", "click->gantt-stage-editor#toggleSort"
+  end
+
   test "show's Gantt still reverts a failed save via gantt.refresh" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_path(project)
     assert_response :success
     source = Rails.root.join("app/javascript/controllers/gantt_stage_editor_controller.js").read
-    assert_match(/this\.gantt\.refresh\(this\.tasksValue\)/, source)
+    assert_match(/this\.gantt\.refresh\(this\.currentOrder\(\)\)/, source)
   end
 
   test "show's Gantt handlers are wired via constructor options, not gantt.on" do
