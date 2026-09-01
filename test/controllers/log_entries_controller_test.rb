@@ -99,6 +99,67 @@ class LogEntriesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "update changes the body and type of the author's own entry" do
+    entry = LogEntry.create!(project: @project, user: users(:juan), log_entry_type: log_entry_types(:nota), body: "Nota original")
+    other_type = log_entry_types(:incidencia)
+
+    patch project_log_entry_path(@project, entry), params: {
+      log_entry: { body: "Nota corregida", log_entry_type_id: other_type.id }
+    }
+
+    assert_redirected_to project_path(@project)
+    entry.reload
+    assert_equal "Nota corregida", entry.body.to_plain_text
+    assert_equal other_type, entry.log_entry_type
+  end
+
+  test "update is blocked for a log entry owned by another user (non-admin/gerente signed in)" do
+    ProjectAccess.create!(user: users(:maria), project: @project)
+    entry = LogEntry.create!(project: @project, user: users(:juan), log_entry_type: log_entry_types(:nota), body: "Ajena")
+
+    sign_in users(:maria)
+    patch project_log_entry_path(@project, entry), params: {
+      log_entry: { body: "Intento de edición ajena" }
+    }
+
+    assert_redirected_to project_path(@project)
+    assert_equal "Ajena", entry.reload.body.to_plain_text
+  end
+
+  test "update succeeds for an admin editing another user's entry" do
+    entry = LogEntry.create!(project: @project, user: users(:maria), log_entry_type: log_entry_types(:nota), body: "Nota de otro")
+
+    # setup already signs in users(:juan), whose fixture role is admin
+    patch project_log_entry_path(@project, entry), params: {
+      log_entry: { body: "Corregida por admin" }
+    }
+
+    assert_equal "Corregida por admin", entry.reload.body.to_plain_text
+  end
+
+  test "update succeeds for a gerente editing another user's entry" do
+    entry = LogEntry.create!(project: @project, user: users(:juan), log_entry_type: log_entry_types(:nota), body: "Nota de juan")
+
+    sign_in users(:carla)
+    patch project_log_entry_path(@project, entry), params: {
+      log_entry: { body: "Corregida por gerente" }
+    }
+
+    assert_equal "Corregida por gerente", entry.reload.body.to_plain_text
+  end
+
+  test "update is blocked once the author's edit access is revoked (non-admin/gerente author)" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    access = ProjectAccess.create!(user: users(:pedro), project: project, can_edit: true)
+    entry = LogEntry.create!(project: project, user: users(:pedro), log_entry_type: log_entry_types(:nota), body: "Nota de pedro")
+    access.update!(can_edit: false)
+
+    sign_in users(:pedro)
+    patch project_log_entry_path(project, entry), params: { log_entry: { body: "Intento tras revocación" } }
+
+    assert_equal "Nota de pedro", entry.reload.body.to_plain_text
+  end
+
   test "create succeeds for a gerente with edit access" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     ProjectAccess.create!(user: users(:carla), project: project, can_edit: true)

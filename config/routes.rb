@@ -37,7 +37,7 @@ Rails.application.routes.draw do
   get "projects/tipo/:slug", to: "projects#index", as: :project_type_projects
   resources :projects do
     member { post :apply_auto_duration }
-    resources :log_entries, only: [:create, :destroy]
+    resources :log_entries, only: [:create, :update, :destroy]
     resources :project_responsibles, only: [:create, :destroy]
     resources :project_associations, only: [:create, :destroy]
     resources :events, only: [:create, :update, :destroy]
