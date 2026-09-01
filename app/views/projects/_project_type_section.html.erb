@@ -90,14 +90,14 @@
     field_definitions = project_type.field_definitions.order(:position)
     gantt_tasks = projects_list.filter_map do |project|
       if section[:stage_name].present?
-        stage = project.project_stages.find { |s| s.name == section[:stage_name] }
+        stage = project.find_stage(section[:stage_name])
         next if stage.nil?
         next if (project_type.require_stage_dates? || project_type.auto_stage_duration_enabled?) && stage.dates_missing?
         stage_start = stage.start_date || project.created_at.to_date
         stage_end = stage.end_date || (stage_start + 7.days)
         first, last = stage_start, stage_end
       else
-        next if (project_type.require_stage_dates? || project_type.auto_stage_duration_enabled?) && project.project_stages.all?(&:dates_missing?)
+        next if (project_type.require_stage_dates? || project_type.auto_stage_duration_enabled?) && project.project_stages.reject(&:not_applicable?).all?(&:dates_missing?)
         first, last = project.gantt_window
       end
       selected_type = ResponsibleType.find_by(id: section_params[:responsible_type_id])
@@ -135,7 +135,7 @@
     <%
       pending_projects = projects_list.filter_map do |project|
         if section[:stage_name].present?
-          stage = project.project_stages.find { |s| s.name == section[:stage_name] }
+          stage = project.find_stage(section[:stage_name])
           next if stage.nil? || !stage.dates_missing?
           [project, [stage], project.pending_auto_duration_start_date?]
         else

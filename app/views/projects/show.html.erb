@@ -34,7 +34,7 @@
   # a visual approximation, not real data — real dates come from editing the stage.
   # Project types with require_stage_dates skip that placeholder entirely instead:
   # an undated stage just doesn't appear on this Gantt until it has real dates.
-  stages = @project.project_stages.includes(:stage_template).order(:id)
+  stages = @project.project_stages.applicable.includes(:stage_template).order(:id)
   require_dates = @project.project_type.require_stage_dates? || @project.project_type.auto_stage_duration_enabled?
   visible_stages = require_dates ? stages.reject(&:dates_missing?) : stages
   gantt_tasks = visible_stages.map do |stage|

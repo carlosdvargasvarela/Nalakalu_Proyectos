@@ -525,6 +525,32 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert(tasks.any? { |t| t["name"] == project.name })
   end
 
+  test "index's Gantt filtered by a stage that's not_applicable on a project omits that project" do
+    project_type = project_types(:instalaciones)
+    project = Project.create!(project_type: project_type, name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.find_by(name: "Producción")
+    stage.update!(start_date: Date.current, end_date: Date.current + 5.days, not_applicable: true)
+
+    get project_type_projects_path(project_type.slug), params: { stage_name: "Producción", status: "" }
+    assert_response :success
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    assert_nil tasks.find { |t| t["id"] == project.id.to_s }
+  end
+
+  test "index's Gantt (no stage filter) date range ignores a not_applicable stage's dates" do
+    project_type = project_types(:instalaciones)
+    project = Project.create!(project_type: project_type, name: "Torre Norte", custom_fields: {})
+    stages = project.project_stages.order(:id).to_a
+    stages[0].update!(start_date: Date.new(2026, 3, 1), end_date: Date.new(2026, 3, 10))
+    stages[1].update!(start_date: Date.new(2026, 9, 1), end_date: Date.new(2026, 9, 10), not_applicable: true)
+
+    get project_type_projects_path(project_type.slug)
+    assert_response :success
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    task = tasks.find { |t| t["id"] == project.id.to_s }
+    assert_equal "2026-03-10", task["end"]
+  end
+
   test "index's Gantt tasks are ordered by start date ascending, not by project name" do
     slug = project_types(:instalaciones).slug
     z_project = Project.create!(project_type: project_types(:instalaciones), name: "Zeta", custom_fields: {})
