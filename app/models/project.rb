@@ -27,15 +27,15 @@ class Project < ApplicationRecord
   end
 
   def start_date
-    project_stages.map(&:start_date).compact.min
+    project_stages.reject(&:not_applicable?).map(&:start_date).compact.min
   end
 
   def end_date
-    project_stages.map(&:end_date).compact.max
+    project_stages.reject(&:not_applicable?).map(&:end_date).compact.max
   end
 
   def stages_missing_dates
-    project_stages.select(&:dates_missing?)
+    project_stages.reject(&:not_applicable?).select(&:dates_missing?)
   end
 
   # Reference fields store the referenced record's id in custom_fields - resolve
@@ -69,6 +69,7 @@ class Project < ApplicationRecord
       next if days.blank?
       stage = project_stages.find_by(stage_template_id: template.id)
       next unless stage
+      next if stage.not_applicable?
       stage_end = cursor + (days.to_i - 1).days
       stage.update!(start_date: cursor, end_date: stage_end)
       cursor = stage_end + 1.day
@@ -83,7 +84,7 @@ class Project < ApplicationRecord
     first_template = project_type.stage_templates.min_by(&:position)
     return false unless first_template
     stage = project_stages.find { |s| s.stage_template_id == first_template.id }
-    stage.present? && stage.start_date.blank?
+    stage.present? && !stage.not_applicable? && stage.start_date.blank?
   end
 
   def gantt_window
@@ -93,7 +94,8 @@ class Project < ApplicationRecord
   end
 
   def current_stage
-    project_stages.select { |stage| stage.progress_percent > 0 }.max_by(&:id) || project_stages.min_by(&:id)
+    applicable_stages = project_stages.reject(&:not_applicable?)
+    applicable_stages.select { |stage| stage.progress_percent > 0 }.max_by(&:id) || applicable_stages.min_by(&:id)
   end
 
   def responsible_for(responsible_type)
@@ -116,7 +118,7 @@ class Project < ApplicationRecord
     stage = find_stage(stage_name)
     return stage.progress_percent if stage
 
-    values = project_stages.map(&:progress_percent)
+    values = project_stages.reject(&:not_applicable?).map(&:progress_percent)
     values.any? ? (values.sum / values.size.to_f).round : 0
   end
 
@@ -124,9 +126,15 @@ class Project < ApplicationRecord
     stage = find_stage(stage_name)
     return stage.progress_status if stage
 
-    return "sin_iniciar" if project_stages.all? { |stage| stage.progress_percent.zero? }
-    return "finalizado" if project_stages.all? { |stage| stage.progress_percent == 100 }
+    applicable_stages = project_stages.reject(&:not_applicable?)
+    return "sin_iniciar" if applicable_stages.all? { |stage| stage.progress_percent.zero? }
+    return "finalizado" if applicable_stages.all? { |stage| stage.progress_percent == 100 }
     "iniciado"
+  end
+
+  def find_stage(stage_name)
+    return nil if stage_name.blank?
+    project_stages.find { |stage| stage.name == stage_name && !stage.not_applicable? }
   end
 
   def overdue?
@@ -134,11 +142,6 @@ class Project < ApplicationRecord
   end
 
   private
-
-  def find_stage(stage_name)
-    return nil if stage_name.blank?
-    project_stages.find { |stage| stage.name == stage_name }
-  end
 
   def build_stages_from_template
     project_type.stage_templates.each do |template|

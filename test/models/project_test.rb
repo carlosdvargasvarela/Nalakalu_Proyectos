@@ -53,6 +53,24 @@ class ProjectTest < ActiveSupport::TestCase
     assert_equal [Date.new(2026, 1, 5), Date.new(2026, 2, 28)], project.gantt_window
   end
 
+  test "start_date and end_date ignore a stage marked not_applicable" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stages = project.project_stages.order(:id).to_a
+    stages[0].update!(start_date: Date.new(2026, 1, 1), end_date: Date.new(2026, 1, 10))
+    stages[1].update!(start_date: Date.new(2026, 6, 1), end_date: Date.new(2026, 6, 10), not_applicable: true)
+
+    assert_equal Date.new(2026, 1, 1), project.start_date
+    assert_equal Date.new(2026, 1, 10), project.end_date
+  end
+
+  test "find_stage ignores a stage with a matching name marked not_applicable" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.order(:id).first
+    stage.update!(not_applicable: true)
+
+    assert_nil project.find_stage(stage.name)
+  end
+
   test "gantt_window falls back to a one-week window from created_at when no stage has dates" do
     project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
     first, last = project.gantt_window
@@ -68,6 +86,14 @@ class ProjectTest < ActiveSupport::TestCase
     stages[0].update!(progress_percent: 100)
     stages[1].update!(progress_percent: 40)
     assert_equal stages[1], project.reload.current_stage
+  end
+
+  test "current_stage ignores a stage marked not_applicable" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stages = project.project_stages.order(:id).to_a
+    stages.last.update!(progress_percent: 50, not_applicable: true)
+
+    assert_equal stages.first, project.current_stage
   end
 
   test "representative_responsible_for prefers the project-wide assignment over a stage-scoped one" do
@@ -134,6 +160,16 @@ class ProjectTest < ActiveSupport::TestCase
     assert_equal "iniciado", project.progress_status(stage_name: stages[1].name)
     assert_equal 40, project.progress_percent(stage_name: stages[1].name)
     assert_not_equal project.progress_status(stage_name: stages[0].name), project.progress_status
+  end
+
+  test "progress_percent and progress_status ignore a stage marked not_applicable" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    stages = project.project_stages.order(:id).to_a
+    stages.each { |s| s.update!(progress_percent: 100) }
+    stages.last.update!(progress_percent: 0, not_applicable: true)
+
+    assert_equal 100, project.progress_percent
+    assert_equal "finalizado", project.progress_status
   end
 
   test "project overdue? is true only when its end_date has passed and it isn't finalizado" do
@@ -288,6 +324,14 @@ class ProjectTest < ActiveSupport::TestCase
     assert_includes project.stages_missing_dates, stage
   end
 
+  test "stages_missing_dates ignores a stage marked not_applicable" do
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    stage = project.project_stages.order(:id).first
+    stage.update!(not_applicable: true)
+
+    assert_not_includes project.stages_missing_dates, stage
+  end
+
   test "apply_auto_duration! sets sequential dates per stage_template when a profile matches" do
     field = FieldDefinition.create!(project_type: @project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
     @project_type.update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
@@ -333,6 +377,24 @@ class ProjectTest < ActiveSupport::TestCase
     assert_nil project.project_stages.first.start_date
   end
 
+  test "apply_auto_duration! skips a stage marked not_applicable" do
+    field = FieldDefinition.create!(project_type: @project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    @project_type.update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    diseno = stage_templates(:diseno_aprobacion)
+    revision = stage_templates(:revision_inicial)
+    DurationProfile.create!(
+      project_type: @project_type, operator: "between", min_value: 100, max_value: 500,
+      durations: { diseno.id.to_s => 5, revision.id.to_s => 3 }
+    )
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: { "cantidad" => "300" })
+    diseno_stage = project.project_stages.find_by(stage_template: diseno)
+    diseno_stage.update!(not_applicable: true)
+
+    assert project.apply_auto_duration!(Date.new(2026, 1, 1))
+
+    assert_nil diseno_stage.reload.start_date
+  end
+
   test "matching_duration_profile respects priority order (position ascending)" do
     field = FieldDefinition.create!(project_type: @project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
     @project_type.update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
@@ -375,6 +437,16 @@ class ProjectTest < ActiveSupport::TestCase
     project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
 
     assert project.pending_auto_duration_start_date?
+  end
+
+  test "pending_auto_duration_start_date? is false when the first stage is marked not_applicable" do
+    field = FieldDefinition.create!(project_type: @project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
+    @project_type.update!(auto_stage_duration_enabled: true, duration_reference_field_definition: field)
+    project = Project.create!(project_type: @project_type, name: "Torre Norte", custom_fields: {})
+    first_template = project.project_type.stage_templates.min_by(&:position)
+    project.project_stages.find_by(stage_template_id: first_template.id).update!(not_applicable: true)
+
+    assert_not project.pending_auto_duration_start_date?
   end
 
   test "pending_auto_duration_start_date? is false when the type doesn't have auto duration enabled" do
