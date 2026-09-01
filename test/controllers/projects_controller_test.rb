@@ -551,6 +551,24 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "2026-03-10", task["end"]
   end
 
+  test "index's unfiltered Gantt else-branch guard ignores a dated not_applicable stage when every applicable stage is undated" do
+    project_type = project_types(:instalaciones)
+    project_type.update!(require_stage_dates: true)
+    project = Project.create!(project_type: project_type, name: "Torre Norte", custom_fields: {})
+    # Every applicable stage is left undated (default). Only the not_applicable stage has dates.
+    # project.project_stages.all?(&:dates_missing?) (the old, buggy check) would see that dated
+    # not_applicable stage and evaluate to false, wrongly keeping the project on the Gantt even
+    # though every stage that actually counts still lacks dates. The fixed
+    # .reject(&:not_applicable?).all?(&:dates_missing?) correctly excludes it instead.
+    stage = project.project_stages.find_by(name: "Producción")
+    stage.update!(not_applicable: true, start_date: Date.new(2026, 3, 1), end_date: Date.new(2026, 3, 10))
+
+    get project_type_projects_path(project_type.slug)
+    assert_response :success
+    tasks = json_data_attribute('[data-controller="gantt-project-list"]', "data-gantt-project-list-tasks-value")
+    assert_nil tasks.find { |t| t["id"] == project.id.to_s }
+  end
+
   test "index's Gantt tasks are ordered by start date ascending, not by project name" do
     slug = project_types(:instalaciones).slug
     z_project = Project.create!(project_type: project_types(:instalaciones), name: "Zeta", custom_fields: {})
