@@ -1193,6 +1193,18 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select "#view-mode-show button", text: "Mes"
   end
 
+  test "show's Gantt tasks are ordered by start date ascending, not by stage creation order" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    late_stage = project.project_stages.create!(name: "Etapa tardía", start_date: Date.new(2026, 6, 1), end_date: Date.new(2026, 6, 5))
+    early_stage = project.project_stages.create!(name: "Etapa temprana", start_date: Date.new(2026, 1, 1), end_date: Date.new(2026, 1, 5))
+
+    get project_path(project)
+    assert_response :success
+    tasks = json_data_attribute('[data-controller="gantt-stage-editor"]', "data-gantt-stage-editor-tasks-value")
+    ids_in_order = tasks.map { |t| t["id"] }
+    assert_operator ids_in_order.index(early_stage.id.to_s), :<, ids_in_order.index(late_stage.id.to_s)
+  end
+
   test "show shows a sort-direction toggle button for the Gantt, wired to the stage editor controller" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_path(project)

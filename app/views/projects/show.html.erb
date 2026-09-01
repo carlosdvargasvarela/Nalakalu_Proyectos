@@ -78,6 +78,11 @@
       custom_class: "project-events-row"
     }
   end
+  # Stages are stored/queried in creation order (roughly template position),
+  # not chronological order - a project with custom stages added out of date
+  # order would otherwise render (and "Invertir orden" would toggle) a
+  # meaningless order instead of an actual ascending/descending date sort.
+  gantt_tasks = gantt_tasks.sort_by { |task| task[:start] }
 
   events_data = @project_events.map do |event|
     {
