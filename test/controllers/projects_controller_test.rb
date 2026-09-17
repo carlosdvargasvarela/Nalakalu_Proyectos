@@ -1385,6 +1385,25 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".card-header", "Filtros"
   end
 
+  test "index's advanced filters are collapsed by default behind a 'Más filtros' toggle" do
+    slug = project_types(:instalaciones).slug
+    get project_type_projects_path(slug)
+    assert_response :success
+    assert_select "button", text: "Más filtros"
+    assert_select "#filtros-avanzados-#{slug}.collapse:not(.show)"
+    assert_select "#filtros-avanzados-#{slug} select#responsible_type_id"
+    assert_select "#filtros-avanzados-#{slug} input[type=date][name=?]", "from_date"
+  end
+
+  test "index's basic filters (Estado, Buscar) stay outside the advanced-filters collapse" do
+    slug = project_types(:instalaciones).slug
+    get project_type_projects_path(slug)
+    assert_response :success
+    assert_select "form.row select#status"
+    assert_select "form.row input[type=text][name=?]", "q"
+    assert_select "#filtros-avanzados-#{slug} select#status", count: 0
+  end
+
   test "show displays the project's progress status and overdue badges" do
     project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     project.project_stages.order(:id).first.update!(end_date: Date.current - 1.day, progress_percent: 40)
