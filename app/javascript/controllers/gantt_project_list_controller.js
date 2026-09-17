@@ -14,6 +14,15 @@ export default class extends Controller {
   connect() {
     if (this.tasksValue.length === 0) return
 
+    const collapseEl = this.element.closest(".collapse")
+    if (collapseEl && !collapseEl.classList.contains("show")) {
+      collapseEl.addEventListener("shown.bs.collapse", () => this.initGantt(), { once: true })
+    } else {
+      this.initGantt()
+    }
+  }
+
+  initGantt() {
     this.ascending = true
     this.gantt = new Gantt(this.chartTarget, this.tasksValue, {
       language: "es",
