@@ -1452,6 +1452,15 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".card .card-header", text: /Listado/
   end
 
+  test "index's Cronograma panel is collapsed by default" do
+    project = Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    slug = project_types(:instalaciones).slug
+
+    get project_type_projects_path(slug)
+    assert_response :success
+    assert_select "#cronograma-#{slug}.collapse:not(.show)"
+  end
+
   test "index shows the Listado section before the Cronograma section" do
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_type_projects_path(project_types(:instalaciones).slug)

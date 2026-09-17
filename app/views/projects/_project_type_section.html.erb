@@ -322,7 +322,13 @@
   <% end %>
 
   <div class="card mb-4">
-    <div class="card-header">Cronograma</div>
+    <div class="card-header">
+      <button type="button" class="btn btn-link p-0 text-decoration-none" data-bs-toggle="collapse"
+              data-bs-target="#cronograma-<%= slug %>" aria-expanded="false" aria-controls="cronograma-<%= slug %>">
+        Cronograma
+      </button>
+    </div>
+    <div class="collapse" id="cronograma-<%= slug %>">
     <div class="card-body" data-controller="gantt-project-list"
          data-gantt-project-list-tasks-value="<%= gantt_tasks.to_json %>"
          data-gantt-project-list-colors-value="<%= gantt_colors.to_json %>">
@@ -344,6 +350,7 @@
       <div id="gantt-<%= slug %>" data-gantt-project-list-target="chart" class="mb-0"></div>
 
       <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@1.2.2/dist/frappe-gantt.umd.js"></script>
+    </div>
     </div>
   </div>
 <% end %>
