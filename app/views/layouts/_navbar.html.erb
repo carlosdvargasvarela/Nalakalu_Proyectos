@@ -6,7 +6,7 @@
       <% if user_signed_in? %>
         <% pending_count = pending_stage_dates_count(current_user) %>
         <% if pending_count > 0 %>
-          <span class="badge bg-danger"><%= pending_count %></span>
+          <span class="badge bg-danger" title="<%= pending_count %> proyecto(s) con fecha pendiente"><%= pending_count %></span>
         <% end %>
       <% end %>
       <%= link_to "Seguimiento", tracker_projects_path, class: "nav-link" %>
@@ -14,10 +14,17 @@
         <%= link_to "Importar", new_import_path, class: "nav-link" %>
       <% end %>
       <% if user_signed_in? && current_user.admin? %>
-        <%= link_to "Administración", admin_project_types_path, class: "nav-link" %>
-        <%= link_to "Responsables", admin_responsibles_path, class: "nav-link" %>
-        <%= link_to "Tipos de asociación", admin_project_type_associations_path, class: "nav-link" %>
-        <%= link_to "Usuarios", admin_users_path, class: "nav-link" %>
+        <div class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Administración
+          </a>
+          <ul class="dropdown-menu">
+            <li><%= link_to "Tipos de proyecto", admin_project_types_path, class: "dropdown-item" %></li>
+            <li><%= link_to "Responsables", admin_responsibles_path, class: "dropdown-item" %></li>
+            <li><%= link_to "Tipos de asociación", admin_project_type_associations_path, class: "dropdown-item" %></li>
+            <li><%= link_to "Usuarios", admin_users_path, class: "dropdown-item" %></li>
+          </ul>
+        </div>
       <% end %>
     </div>
     <div class="navbar-nav" data-controller="theme">

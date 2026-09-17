@@ -45,6 +45,26 @@ class NavbarTest < ActionDispatch::IntegrationTest
     assert_select "nav a[href=?]", admin_project_type_associations_path
   end
 
+  test "navbar groups the admin links under an Administración dropdown" do
+    sign_in users(:juan)
+    get root_path
+    assert_response :success
+    assert_select "nav .dropdown-menu a[href=?]", admin_project_types_path
+    assert_select "nav .dropdown-menu a[href=?]", admin_responsibles_path
+    assert_select "nav .dropdown-menu a[href=?]", admin_project_type_associations_path
+    assert_select "nav .dropdown-menu a[href=?]", admin_users_path
+  end
+
+  test "navbar's pending-dates badge has an accessible label" do
+    project_types(:instalaciones).update!(require_stage_dates: true)
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+
+    sign_in users(:juan)
+    get root_path
+    assert_response :success
+    assert_select "nav a[href=?] + .badge[title=?]", projects_path, "1 proyecto(s) con fecha pendiente"
+  end
+
   test "navbar does not show the Tipos de asociación link to a gerente" do
     sign_in users(:carla)
     get root_path
