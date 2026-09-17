@@ -291,7 +291,13 @@
     %>
     <% if pending_projects.any? %>
       <div class="card mb-4">
-        <div class="card-header">Pendientes de fecha</div>
+        <div class="card-header">
+          <button type="button" class="btn btn-link p-0 text-decoration-none" data-bs-toggle="collapse"
+                  data-bs-target="#pendientes-fecha-<%= slug %>" aria-expanded="false" aria-controls="pendientes-fecha-<%= slug %>">
+            Pendientes de fecha (<%= pending_projects.size %>)
+          </button>
+        </div>
+        <div class="collapse" id="pendientes-fecha-<%= slug %>">
         <div class="card-body p-0">
           <ul class="list-group list-group-flush">
             <% pending_projects.each do |project, missing, needs_start| %>
@@ -309,6 +315,7 @@
               </li>
             <% end %>
           </ul>
+        </div>
         </div>
       </div>
     <% end %>

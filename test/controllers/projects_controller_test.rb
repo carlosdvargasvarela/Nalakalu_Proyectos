@@ -784,9 +784,19 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_type_projects_path(slug)
     assert_response :success
-    assert_select ".card-header", "Pendientes de fecha"
+    assert_select ".card-header", "Pendientes de fecha (1)"
     assert_select "body", /Torre Norte/
     assert_select "body", /Instalación/
+  end
+
+  test "index's pendientes de fecha panel is collapsed by default" do
+    project_types(:instalaciones).update!(require_stage_dates: true)
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    slug = project_types(:instalaciones).slug
+
+    get project_type_projects_path(slug)
+    assert_response :success
+    assert_select "#pendientes-fecha-#{slug}.collapse:not(.show)"
   end
 
   test "index hides the pendientes de fecha panel when the type doesn't require dates" do
@@ -806,7 +816,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_type_projects_path(slug)
     assert_response :success
-    assert_select ".card-header", "Pendientes de fecha"
+    assert_select ".card-header", "Pendientes de fecha (1)"
     assert_select "form[action=?]", apply_auto_duration_project_path(project) do
       assert_select "input[type=date]"
     end
@@ -864,7 +874,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_type_projects_path(slug), params: { stage_name: "Instalación", status: "" }
     assert_response :success
-    assert_select ".card-header", "Pendientes de fecha"
+    assert_select ".card-header", "Pendientes de fecha (1)"
     assert_select "body", /Torre Norte/
   end
 
