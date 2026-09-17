@@ -43,11 +43,11 @@ template y el wrapper plegable de los dos últimos.
 - Si `pending_projects` está vacío, la sección no se renderiza en absoluto
   (comportamiento actual, se mantiene).
 - La lista interna no cambia (misma lógica de `missing`/`needs_start`/botón
-  "Calcular"); solo se pagina igual que el Listado si supera un umbral, para no
-  reintroducir una lista larga sin cortar. Umbral: 10 filas por página,
-  reutilizando el mismo patrón de paginación Kaminari-like que ya usa
-  `page_projects`/`section[:total_pages]` (paginación manual con `.slice`,
-  sin gema nueva — ya es como está implementado el Listado).
+  "Calcular"), y **no se pagina**: una vez colapsado por defecto, ya no ocupa
+  espacio en la pantalla salvo que el usuario decida abrirlo, así que no hay
+  problema de sobrecarga que resolver ahí. Agregar paginación introduciría un
+  segundo parámetro de página en conflicto con el `page` que ya usa el
+  Listado — se descarta por YAGNI.
 
 ### 3. Panel "Cronograma" colapsable
 
@@ -65,10 +65,14 @@ template y el wrapper plegable de los dos últimos.
 - Fila visible siempre: **Estado** y **Buscar**.
 - Detrás de un botón "Más filtros" (toggle, mismo patrón de collapse):
   Tipo de responsable, Responsable, Desde, Hasta, Etapa.
-- Si alguno de los filtros avanzados tiene un valor activo (viene en
-  `section_params`), el panel avanzado empieza expandido para que el usuario
-  vea qué filtro está aplicado — evita el caso confuso de "tengo un filtro
-  puesto pero no lo veo".
+- El panel avanzado empieza siempre colapsado. Nota: `responsible_type_id` y
+  `stage_name` en `section_params` casi siempre traen un valor por defecto
+  (`default_in_filter`) aunque el usuario no haya tocado el filtro
+  (`build_section` en `app/controllers/projects_controller.rb:289-312`), así
+  que "¿hay un filtro avanzado activo?" no es una señal confiable para
+  decidir si auto-expandir — se descarta esa heurística por YAGNI en vez de
+  construir una distinción frágil entre "valor por defecto" y "valor elegido
+  por el usuario".
 
 ### 5. Navbar (`_navbar.html.erb`)
 
@@ -77,12 +81,14 @@ template y el wrapper plegable de los dos últimos.
   patrón `dropdown`/`dropdown-menu` ya usado en el resto de la app vía
   Bootstrap, sin JS adicional).
 - El badge rojo de conteo de pendientes junto a "Proyectos": se le agrega
-  `title`/`aria-label` = `"#{pending_count} proyecto(s) con fecha pendiente"`,
-  y se envuelve en un enlace que apunta a `/projects` con un query param
-  (`#pendientes-de-fecha` anchor) para que al llegar al listado el panel de
-  pendientes se abra automáticamente. Esto reutiliza el mismo dato
-  (`pending_stage_dates_count`) que ya calcula el helper existente —
-  no se agrega una nueva fuente de verdad.
+  `title`/`aria-label` = `"#{pending_count} proyecto(s) con fecha pendiente"`
+  al mismo `<span class="badge bg-danger">` que ya existe (sin envolverlo en
+  un enlace nuevo, para no romper la estructura de hermano directo que ya
+  verifica `test/controllers/navbar_test.rb:69`
+  `assert_select "nav a[href=?] + .badge", projects_path, "1"`). Reutiliza el
+  mismo dato (`pending_stage_dates_count`) que ya calcula el helper
+  existente — no se agrega una nueva fuente de verdad ni un flujo de
+  auto-expandir el panel al llegar (fuera de alcance, YAGNI).
 
 ## Fuera de alcance / explícitamente descartado
 
