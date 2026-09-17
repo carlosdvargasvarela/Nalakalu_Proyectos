@@ -1442,6 +1442,21 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".card .card-header", text: /Listado/
   end
 
+  test "index shows the Listado section before the Cronograma section" do
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_type_projects_path(project_types(:instalaciones).slug)
+    assert_response :success
+    assert_operator response.body.index("Listado"), :<, response.body.index("Cronograma")
+  end
+
+  test "index shows the Listado section before the Pendientes de fecha section" do
+    project_types(:instalaciones).update!(require_stage_dates: true)
+    Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
+    get project_type_projects_path(project_types(:instalaciones).slug)
+    assert_response :success
+    assert_operator response.body.index("Listado"), :<, response.body.index("Pendientes de fecha")
+  end
+
   test "new renders the right input for each new data type" do
     project_type = project_types(:instalaciones)
     FieldDefinition.create!(project_type: project_type, key: "cantidad", label: "Cantidad", data_type: "number", position: 10)
