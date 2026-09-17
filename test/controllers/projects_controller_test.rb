@@ -805,7 +805,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_type_projects_path(slug)
     assert_response :success
-    assert_select ".card-header", text: "Pendientes de fecha", count: 0
+    assert_select ".card-header", text: /Pendientes de fecha/, count: 0
   end
 
   test "index shows a pending-start-date row with a date form, for auto-duration types" do
@@ -826,7 +826,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
     Project.create!(project_type: project_types(:instalaciones), name: "Torre Norte", custom_fields: {})
     get project_type_projects_path(project_types(:instalaciones).slug)
     assert_response :success
-    assert_select ".card-header", text: "Pendientes de fecha", count: 0
+    assert_select ".card-header", text: /Pendientes de fecha/, count: 0
   end
 
   test "apply_auto_duration computes and persists stage dates" do
@@ -863,7 +863,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_type_projects_path(slug)
     assert_response :success
-    assert_select ".card-header", text: "Pendientes de fecha", count: 0
+    assert_select ".card-header", text: /Pendientes de fecha/, count: 0
   end
 
   test "index's pendientes de fecha panel, with a stage filter active, shows a project only if THAT stage lacks a date" do
@@ -888,7 +888,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
 
     get project_type_projects_path(slug), params: { stage_name: "Instalación", status: "" }
     assert_response :success
-    assert_select ".card-header", text: "Pendientes de fecha", count: 0
+    assert_select ".card-header", text: /Pendientes de fecha/, count: 0
   end
 
   test "index's unfiltered Gantt omits a project whose stages are all undated, when the type requires dates" do

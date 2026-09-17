@@ -45,6 +45,7 @@ export default class extends Controller {
   }
 
   changeViewMode(event) {
+    if (!this.gantt) return
     this.gantt.change_view_mode(event.currentTarget.dataset.mode)
     this.viewModeButtonTargets.forEach((btn) => btn.classList.remove("active"))
     event.currentTarget.classList.add("active")
@@ -52,6 +53,7 @@ export default class extends Controller {
   }
 
   toggleSort() {
+    if (!this.gantt) return
     this.ascending = !this.ascending
     const ordered = this.ascending ? this.tasksValue : [...this.tasksValue].reverse()
     this.gantt.refresh(ordered)

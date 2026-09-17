@@ -306,24 +306,24 @@
           </button>
         </div>
         <div class="collapse" id="pendientes-fecha-<%= slug %>">
-        <div class="card-body p-0">
-          <ul class="list-group list-group-flush">
-            <% pending_projects.each do |project, missing, needs_start| %>
-              <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <span>
-                  <%= link_to project.name, project_path(project) %>
-                  <% if missing.any? %> — falta fecha en: <%= missing.map(&:name).join(", ") %><% end %>
-                </span>
-                <% if needs_start %>
-                  <%= form_with url: apply_auto_duration_project_path(project), method: :post, local: true, class: "d-flex gap-2 align-items-center" do |f| %>
-                    <%= f.date_field :start_date, class: "form-control form-control-sm", required: true %>
-                    <%= f.submit "Calcular", class: "btn btn-outline-primary btn-sm" %>
+          <div class="card-body p-0">
+            <ul class="list-group list-group-flush">
+              <% pending_projects.each do |project, missing, needs_start| %>
+                <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <span>
+                    <%= link_to project.name, project_path(project) %>
+                    <% if missing.any? %> — falta fecha en: <%= missing.map(&:name).join(", ") %><% end %>
+                  </span>
+                  <% if needs_start %>
+                    <%= form_with url: apply_auto_duration_project_path(project), method: :post, local: true, class: "d-flex gap-2 align-items-center" do |f| %>
+                      <%= f.date_field :start_date, class: "form-control form-control-sm", required: true %>
+                      <%= f.submit "Calcular", class: "btn btn-outline-primary btn-sm" %>
+                    <% end %>
                   <% end %>
-                <% end %>
-              </li>
-            <% end %>
-          </ul>
-        </div>
+                </li>
+              <% end %>
+            </ul>
+          </div>
         </div>
       </div>
     <% end %>
@@ -337,28 +337,28 @@
       </button>
     </div>
     <div class="collapse" id="cronograma-<%= slug %>">
-    <div class="card-body" data-controller="gantt-project-list"
-         data-gantt-project-list-tasks-value="<%= gantt_tasks.to_json %>"
-         data-gantt-project-list-colors-value="<%= gantt_colors.to_json %>">
-      <div class="btn-group btn-group-sm mb-2" role="group" id="view-mode-<%= slug %>">
-        <button type="button" class="btn btn-outline-secondary view-mode-btn active" data-mode="Day"
-                data-gantt-project-list-target="viewModeButton" data-action="click->gantt-project-list#changeViewMode">Día</button>
-        <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Week"
-                data-gantt-project-list-target="viewModeButton" data-action="click->gantt-project-list#changeViewMode">Semana</button>
-        <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Month"
-                data-gantt-project-list-target="viewModeButton" data-action="click->gantt-project-list#changeViewMode">Mes</button>
-        <button type="button" class="btn btn-outline-secondary" data-gantt-project-list-target="sortButton"
-                data-action="click->gantt-project-list#toggleSort" title="Invertir orden">
-          <i class="bi bi-sort-down"></i>
-        </button>
-      </div>
-      <% if selected_type && gantt_colors.any? %>
-        <%= render "gantt_legend", entries: gantt_colors.map { |_, name, color| [name, color] } %>
-      <% end %>
-      <div id="gantt-<%= slug %>" data-gantt-project-list-target="chart" class="mb-0"></div>
+      <div class="card-body" data-controller="gantt-project-list"
+           data-gantt-project-list-tasks-value="<%= gantt_tasks.to_json %>"
+           data-gantt-project-list-colors-value="<%= gantt_colors.to_json %>">
+        <div class="btn-group btn-group-sm mb-2" role="group" id="view-mode-<%= slug %>">
+          <button type="button" class="btn btn-outline-secondary view-mode-btn active" data-mode="Day"
+                  data-gantt-project-list-target="viewModeButton" data-action="click->gantt-project-list#changeViewMode">Día</button>
+          <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Week"
+                  data-gantt-project-list-target="viewModeButton" data-action="click->gantt-project-list#changeViewMode">Semana</button>
+          <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Month"
+                  data-gantt-project-list-target="viewModeButton" data-action="click->gantt-project-list#changeViewMode">Mes</button>
+          <button type="button" class="btn btn-outline-secondary" data-gantt-project-list-target="sortButton"
+                  data-action="click->gantt-project-list#toggleSort" title="Invertir orden">
+            <i class="bi bi-sort-down"></i>
+          </button>
+        </div>
+        <% if selected_type && gantt_colors.any? %>
+          <%= render "gantt_legend", entries: gantt_colors.map { |_, name, color| [name, color] } %>
+        <% end %>
+        <div id="gantt-<%= slug %>" data-gantt-project-list-target="chart" class="mb-0"></div>
 
-      <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@1.2.2/dist/frappe-gantt.umd.js"></script>
-    </div>
+        <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@1.2.2/dist/frappe-gantt.umd.js"></script>
+      </div>
     </div>
   </div>
 <% end %>
