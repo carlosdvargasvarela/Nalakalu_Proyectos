@@ -64,6 +64,16 @@
   --bs-btn-hover-color: #0F172A;
 }
 
+/* White on the brighter dark-mode primary is ~3.7:1 (labels via text-white-50
+   are worse); dark text clears 4.5:1, same fix as the dark .btn-primary. */
+[data-bs-theme="dark"] .bg-primary.text-white {
+  color: #0F172A !important;
+}
+
+[data-bs-theme="dark"] .bg-primary .text-white-50 {
+  color: rgba(15, 23, 42, 0.75) !important;
+}
+
 .btn-primary {
   --bs-btn-bg: var(--bs-primary);
   --bs-btn-border-color: var(--bs-primary);
