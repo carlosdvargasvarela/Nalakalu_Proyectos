@@ -19,7 +19,7 @@ function isProjectEventsRow(id) {
 // (already present in tasksValue - see projects/show.html.erb) since
 // frappe-gantt 1.2.2 ignores `type: "milestone"`.
 export default class extends Controller {
-  static targets = ["chart", "viewModeButton", "sortButton"]
+  static targets = ["chart", "viewModeButton", "sortButton", "status", "progressBar"]
   static values = { patchUrl: String, tasks: Array, colors: Array, events: Array }
 
   connect() {
@@ -273,8 +273,32 @@ export default class extends Controller {
     }
   }
 
+  // Saves run one at a time: overlapping PATCHes (the user dragging again while
+  // the previous save is in flight) race each other and fail. The status badge
+  // tells the user a save is in progress so they don't keep retrying.
   saveStage(stageId, attrs) {
-    fetch(this.patchUrlValue, {
+    this.pendingSaves = (this.pendingSaves || 0) + 1
+    this.showStatus("saving")
+    this.saveQueue = (this.saveQueue || Promise.resolve()).then(() => this.sendStage(stageId, attrs))
+  }
+
+  showStatus(state) {
+    if (!this.hasStatusTarget) return
+    const el = this.statusTarget
+    clearTimeout(this.statusTimer)
+    if (this.hasProgressBarTarget) this.progressBarTarget.classList.toggle("d-none", state !== "saving")
+    const pill = { saving: "text-bg-primary", saved: "text-bg-success", error: "text-bg-danger" }[state]
+    const body = {
+      saving: '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Guardando cambios…',
+      saved: '<i class="bi bi-check-circle-fill"></i> Cambios guardados',
+      error: '<i class="bi bi-exclamation-circle-fill"></i> No se pudo guardar. Intenta de nuevo.'
+    }[state]
+    el.innerHTML = `<span class="badge rounded-pill ${pill} fs-6 fw-normal px-3 py-2">${body}</span>`
+    if (state !== "saving") this.statusTimer = setTimeout(() => { el.textContent = "" }, state === "error" ? 6000 : 2500)
+  }
+
+  sendStage(stageId, attrs) {
+    return fetch(this.patchUrlValue, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -299,9 +323,14 @@ export default class extends Controller {
         this.drawEventMarkers()
       })
       .catch(() => {
+        this.saveFailed = true
         this.gantt.refresh(this.currentOrder())
         this.refreshVisuals()
-        alert("No se pudo guardar el cambio. Intenta de nuevo.")
+      })
+      .finally(() => {
+        if (--this.pendingSaves > 0) return
+        this.showStatus(this.saveFailed ? "error" : "saved")
+        this.saveFailed = false
       })
   }
 }

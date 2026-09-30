@@ -102,7 +102,8 @@
        data-gantt-stage-editor-tasks-value="<%= gantt_tasks.to_json %>"
        data-gantt-stage-editor-colors-value="<%= stage_colors.to_json %>"
        data-gantt-stage-editor-events-value="<%= events_data.to_json %>">
-    <div class="btn-group btn-group-sm mb-2" role="group" id="view-mode-show">
+    <div class="d-flex align-items-center mb-2">
+    <div class="btn-group btn-group-sm" role="group" id="view-mode-show">
       <button type="button" class="btn btn-outline-secondary view-mode-btn active" data-mode="Day"
               data-gantt-stage-editor-target="viewModeButton" data-action="click->gantt-stage-editor#changeViewMode">Día</button>
       <button type="button" class="btn btn-outline-secondary view-mode-btn" data-mode="Week"
@@ -113,6 +114,11 @@
               data-action="click->gantt-stage-editor#toggleSort" title="Invertir orden">
         <i class="bi bi-sort-down"></i>
       </button>
+    </div>
+    <span class="ms-2" data-gantt-stage-editor-target="status" role="status" aria-live="polite"></span>
+    </div>
+    <div class="progress mb-2 d-none" style="height: 4px" data-gantt-stage-editor-target="progressBar" aria-hidden="true">
+      <div class="progress-bar progress-bar-striped progress-bar-animated w-100"></div>
     </div>
     <%= render "gantt_legend", entries: stage_colors.map { |_, name, color| [name, color] } + event_type_legend %>
     <div id="gantt" data-gantt-stage-editor-target="chart" class="mb-4"></div>
