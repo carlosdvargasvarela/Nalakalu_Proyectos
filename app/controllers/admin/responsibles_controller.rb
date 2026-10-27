@@ -1,4 +1,7 @@
 class Admin::ResponsiblesController < Admin::BaseController
+  # Gerentes may list and edit (name/color only); everything else stays admin-only.
+  skip_before_action :require_admin!, only: [:index, :edit, :update]
+  before_action :require_admin_or_gerente!, only: [:index, :edit, :update]
   before_action :set_responsible, only: [:edit, :update, :destroy]
 
   def index
@@ -57,7 +60,13 @@ class Admin::ResponsiblesController < Admin::BaseController
     end
   end
 
+  def require_admin_or_gerente!
+    return if current_user&.gerente?
+    require_admin!
+  end
+
   def responsible_params
+    return params.require(:responsible).permit(:name, :color) unless current_user.admin?
     params.require(:responsible).permit(:name, :color, :user_id,
       responsible_project_types_attributes: [:id, :project_type_id, :responsible_type_id])
   end

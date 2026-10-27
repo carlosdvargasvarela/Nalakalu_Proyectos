@@ -31,11 +31,11 @@ class NavbarTest < ActionDispatch::IntegrationTest
     assert_select "nav a[href=?]", admin_responsibles_path
   end
 
-  test "navbar does not show the Responsables link to a gerente" do
+  test "navbar shows the Responsables link to a gerente" do
     sign_in users(:carla)
     get root_path
     assert_response :success
-    assert_select "nav a[href=?]", admin_responsibles_path, count: 0
+    assert_select "nav a[href=?]", admin_responsibles_path
   end
 
   test "navbar includes a link to Tipos de asociación for admin" do

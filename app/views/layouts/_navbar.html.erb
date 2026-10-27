@@ -13,6 +13,9 @@
       <% if user_signed_in? && (current_user.admin? || current_user.gerente?) %>
         <%= link_to "Importar", new_import_path, class: "nav-link" %>
       <% end %>
+      <% if user_signed_in? && current_user.gerente? %>
+        <%= link_to "Responsables", admin_responsibles_path, class: "nav-link" %>
+      <% end %>
       <% if user_signed_in? && current_user.admin? %>
         <div class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="admin-nav-dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">

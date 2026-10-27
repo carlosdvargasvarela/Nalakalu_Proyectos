@@ -108,4 +108,42 @@ class Admin::ResponsiblesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "select[data-controller=?]#responsible_user_id", "tom-select"
   end
+
+  test "gerente sees the list without create or delete buttons" do
+    sign_in users(:carla)
+    get admin_responsibles_path
+    assert_response :success
+    assert_select "a[href=?]", new_admin_responsible_path, count: 0
+    assert_select "form[action=?]", admin_responsible_path(responsibles(:ana_gomez)), count: 0
+  end
+
+  test "gerente edit form shows only name and color" do
+    sign_in users(:carla)
+    get edit_admin_responsible_path(responsibles(:ana_gomez))
+    assert_response :success
+    assert_select "input[name='responsible[name]']"
+    assert_select "input[name='responsible[color]']"
+    assert_select "select[name='responsible[user_id]']", count: 0
+  end
+
+  test "gerente update changes only name and color" do
+    sign_in users(:carla)
+    responsible = responsibles(:ana_gomez)
+    other_user = User.create!(email: "otro@example.com", password: "password123", role: "responsable")
+    patch admin_responsible_path(responsible), params: { responsible: { name: "Ana Gerente", color: "#123456", user_id: other_user.id } }
+    assert_redirected_to admin_responsibles_path
+    responsible.reload
+    assert_equal "Ana Gerente", responsible.name
+    assert_equal "#123456", responsible.color
+    assert_not_equal other_user.id, responsible.user_id
+  end
+
+  test "gerente cannot create or delete responsibles" do
+    sign_in users(:carla)
+    assert_no_difference("Responsible.count") do
+      post admin_responsibles_path, params: { responsible: { name: "X" } }
+      delete admin_responsible_path(responsibles(:ana_gomez))
+    end
+    assert_redirected_to root_path
+  end
 end

@@ -5,8 +5,10 @@
     usuario de la app (para que vea solo lo que le corresponde) o ser
     solo un nombre de referencia.
   </p>
-  <%= link_to new_admin_responsible_path, class: "btn btn-primary mb-3" do %>
-    <i class="bi bi-plus-lg"></i> Nuevo responsable
+  <% if current_user.admin? %>
+    <%= link_to new_admin_responsible_path, class: "btn btn-primary mb-3" do %>
+      <i class="bi bi-plus-lg"></i> Nuevo responsable
+    <% end %>
   <% end %>
   <ul class="list-group">
     <% @responsibles.each do |responsible| %>
@@ -17,8 +19,10 @@
         </span>
         <span>
           <%= link_to "Editar", edit_admin_responsible_path(responsible), class: "btn btn-outline-secondary btn-sm" %>
+          <% if current_user.admin? %>
           <%= button_to "Borrar", admin_responsible_path(responsible), method: :delete,
                 class: "btn btn-outline-danger btn-sm", form: { style: "display:inline-block", onsubmit: "return confirm('¿Eliminar responsable?')" } %>
+          <% end %>
         </span>
       </li>
     <% end %>

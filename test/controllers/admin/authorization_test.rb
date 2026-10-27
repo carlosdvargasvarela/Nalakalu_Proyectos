@@ -9,7 +9,7 @@ class Admin::AuthorizationTest < ActionDispatch::IntegrationTest
 
   test "gerente is redirected away from admin controllers" do
     sign_in users(:carla)
-    get admin_responsibles_path
+    get admin_project_types_path
     assert_redirected_to root_path
     assert_equal "No tenés permiso para acceder a esa sección.", flash[:alert]
   end
